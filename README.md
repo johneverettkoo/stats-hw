@@ -1,5 +1,7 @@
 # Statistics Homework Assignments
 
+### Indiana University
+
 ## Courses covered:
 
 * STAT-S631 (Linear Models I)
