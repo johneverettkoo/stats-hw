@@ -1,0 +1,206 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 2'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r load_data}
+un.df <- alr4::UN11
+```
+
+```{r packages}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+theme_set(theme_bw())
+import::from(scales, log_trans, pretty_breaks)
+import::from(xtable, xtable)
+```
+
+# Problem 1
+
+Assume that your data set is the entire population of interest, i.e., let 
+$S = \{\text{set of all UN members}\}$ (you can assume all the data entries 
+correspond to all UN members). Let female life expectancy, `lifeExpF`, be the
+response variable and `fertility` (rounded to the nearest integer) the
+predictor. Obtain the following results:
+
+```{r rounded_fertility}
+un.df %<>% dp$mutate(fertility.rounded = round(fertility))
+```
+
+## Part a
+
+Find the expected value and the variance of `lifExpF`
+
+```{r q1pa}
+mean(un.df$lifeExpF)
+var(un.df$lifeExpF)
+```
+
+## Part b
+
+Find the expected value of `lifExpF` given that `fertility ` $=i$ where 
+$i= 1, . . . ,7$.
+
+```{r q1pb, results = 'asis'}
+un.df %>% 
+  dp$group_by(fertility.rounded) %>% 
+  dp$summarise(mean.female.life.exp = mean(lifeExpF)) %>% 
+  dp$ungroup() %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+```
+
+## Part c
+
+Find the variance of `lifExpF` given that `fertility` $= i$ where 
+$i= 1, . . . ,7$.
+
+```{r q1pc, results = 'asis'}
+un.df %>% 
+  dp$group_by(fertility.rounded) %>% 
+  dp$summarise(var.female.life.exp = var(lifeExpF)) %>% 
+  dp$ungroup() %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+```
+
+$var(\text{female life expectancy} | \text{fertility} = 7)$ could not be 
+computed because only one country has a fertility rate of 7, and variance is 
+undefined when $n = 1$.
+
+# Problem 2
+
+**United Nations** (Data file: `UN11`) The data in the file `UN11` contains 
+several variables, including `ppgdp`, the gross national product per person in 
+USD, and `fertility`, the birth rate per 1000 females, both from the year 2009. 
+The data are for 199 localities, mostly UN member countries, but also other 
+areas such as Hong Kong, that are not independent countries. The data were 
+collected from United Nations (2011). We will study the dependence of 
+`fertility` on `ppgdp`.
+
+## Part 1
+
+Identify the predictor and the response. 
+
+Predictor: GDP per capita  
+Response: Fertility rate
+
+## Part 2
+
+Draw the scatterplot of `fertility` on the vertical axis versus `ppgdp` on the
+horizontal axis and summarize the information in this graph. Does a
+straight-line mean function seem to be plausible for a summary of this graph?
+
+```{r q2p2}
+ggplot(un.df) + 
+  geom_point(aes(x = ppgdp, y = fertility)) + 
+  labs(x = 'per capita GDP [USD]') + 
+  stat_smooth(aes(x = ppgdp, y = fertility), 
+              method = 'lm')
+```
+
+From the scatterplot, it appears that a straight line would be a poor model for
+these data. The rate at which `fertility` changes per `ppgdp` is not constant. 
+
+To test this, we can try constructing an OLS model and checking the residuals. 
+If the residuals appear to depend on the predictor, then a linear model would 
+not describe the data very well.
+
+```{r q2p2_lm}
+linear.mod.q2p2 <- lm(fertility ~ ppgdp, data = un.df)
+un.df %>% 
+  dp$mutate(fertility.hat = predict(linear.mod.q2p2, 
+                                    newdata = .)) %>% 
+  dp$mutate(resid = fertility - fertility.hat) %>% 
+  ggplot() + 
+  geom_point(aes(x = ppgdp, y = resid)) + 
+  geom_hline(yintercept = 0) + 
+  labs(x = 'per capita GDP [USD]', 
+       y = 'measured - modeled fertility')
+```
+
+## Part 3
+
+Draw the scatterplot of log(`fertility`) versus log(`ppgdp`) using natural
+logarithms. Does the simple linear regression model seem plausible for a summary 
+of this graph? If you use a different base of logarithms, the *shape* of the 
+graph won't change, but the *values on the axes* will change.
+
+```{r q2p3}
+ggplot(un.df) + 
+  geom_point(aes(x = ppgdp, y = fertility)) + 
+  labs(x = 'per capita GDP (USD)', 
+       y = 'number of children per woman') + 
+  scale_x_continuous(trans = log_trans(), breaks = pretty_breaks()) + 
+  scale_y_continuous(trans = log_trans(), breaks = pretty_breaks())
+```
+
+From the log-log plot, the rate at which log(`fertility`) changes per 
+log(`ppgdp`) appears to be more constant than the rate at which `fertility` 
+changes per `ppgdp`. So a linear regression appears to be more appropriate after
+taking the log transformations of each. 
+
+# Problem 3
+
+**Smallmouth bass data** (Data file: `wblake`) Compute the means and the
+variances for each of the eight subpopulations in the smallmouth bass data. Draw
+a graph of average length versus `Age` and compare with Figure 1.5. Draw a graph
+of the standard deviations versus age. If the variance function is constant,
+then a plot of standard deviation versus `Age` should be a null plot. Summarize
+the information. 
+
+```{r q3_setup}
+wblake.df <- alr4::wblake
+```
+
+Means and variances for each age:
+```{r age_summary, results = 'asis'}
+bass.summary.df <- wblake.df %>% 
+  dp$group_by(Age) %>% 
+  dp$summarise_all(c('mean', 'sd')) %>% 
+  dp$ungroup()
+
+bass.summary.df %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+
+ggplot(bass.summary.df) + 
+  geom_point(aes(x = Age, y = Length_mean)) + 
+  labs(title = 'average length vs age', 
+       y = 'mean length [mm]') + 
+  geom_line(aes(x = Age, y = Length_mean)) + 
+  stat_smooth(aes(x = Age, y = Length_mean), method = 'lm')
+
+ggplot(bass.summary.df) + 
+  geom_point(aes(x = Age, y = Length_sd)) + 
+  labs(title = 'standard deviation of length vs age', 
+       y = 'standard deviation of length [mm]') + 
+  stat_smooth(aes(x = Age, y = Length_sd), method = 'lm')
+```
+
+It looks like there *might* be a linear trend, but we can check for sure using 
+OLS:
+
+```{r q3_lm}
+linear.mod.q3 <- lm(Length_sd ~ Age, data = bass.summary.df)
+summary(linear.mod.q3)
+```
+
+The t-test on $\hat{\beta}_1$ suggests that maybe there is a significant lienar 
+trend. This depends on the $\alpha$ threshold chosen at the start as well as 
+the fact that there aren't very many data points here to create a linear model. 
