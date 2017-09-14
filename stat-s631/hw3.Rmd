@@ -43,11 +43,12 @@ $$= \sum_i \frac{(x_i - \bar{x})}{\text{SXX}}y_i$$
 Which is a linear combination of $y_i$s.
 
 On the other hand, $\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}$, and 
-$\bar{y} = \sum_i y_i$, so:
+$\frac{1}{n} \bar{y} = \sum_i y_i$, so:
 
 $$\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}$$
-$$= \sum_i y_i - \sum_i \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} y_i$$
-$$= \sum_i \Big( 1 - \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} \Big) y_i$$
+$$= \sum_i \frac{y_i}{n} - \sum_i \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} y_i$$
+$$= \sum_i 
+\Big( \frac{1}{n} - \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} \Big) y_i$$
 Which is a linear combination of $y_i$.
 
 # Question 2
@@ -285,8 +286,8 @@ they are unbiased.
 
 The variance of $\hat{\beta}_0$ is also fairly close to the original value. 
 Looking at the true value, we can see that there is a 
-$\frac{\bar{x}^2}{\text{SXX}}$ term, and $\text{SXX} ~ x^2$ and 
-$\bar{x}^2 ~ x^2$, so the change in the $x$s cancel each other out. 
+$\frac{\bar{x}^2}{\text{SXX}}$ term, and $\text{SXX} \sim x^2$ and 
+$\bar{x}^2 \sim x^2$, so the change in the $x$s cancel each other out. 
 
 The variance of $\hat{\beta}_1$ is much smaller, by a factor of $10^4$. 
 Looking at the true value of the variance, we can see that it's inversely 
