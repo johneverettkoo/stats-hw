@@ -1,0 +1,295 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 3'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      dpi = 300, 
+                      fig.height = 3, 
+                      fig.width = 5, 
+                      fig.retina = 1, 
+                      cache = TRUE)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(foreach, foreach, `%dopar%`)
+doMC::registerDoMC(parallel::detectCores())
+library(ggplot2)
+theme_set(ggthemes::theme_base())
+```
+
+# Question 1
+
+Show that $\hat{\beta}_0$ and $\hat{\beta}_1$ can be written as a linear 
+combination of $y_{1}, ..., y_n$
+
+$\hat{\beta}_1 = \frac{\text{SXY}}{\text{SXX}}$, and 
+$\text{SXY} = \sum_i (x_i - \bar{x}) y_i$. SXX does not depend on any of the 
+$y_i$s. Therefore:
+
+$$\hat{\beta}_1 = \frac{\text{SXY}}{\text{SXX}}$$
+$$= \sum_i \frac{(x_i - \bar{x})}{\text{SXX}}y_i$$
+Which is a linear combination of $y_i$s.
+
+On the other hand, $\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}$, and 
+$\bar{y} = \sum_i y_i$, so:
+
+$$\hat{\beta}_0 = \bar{y} - \hat{\beta}_1 \bar{x}$$
+$$= \sum_i y_i - \sum_i \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} y_i$$
+$$= \sum_i \Big( 1 - \frac{(x_i - \bar{x}) \bar{x}}{\text{SXX}} \Big) y_i$$
+Which is a linear combination of $y_i$.
+
+# Question 2
+
+[From ALR 2.2]
+
+## Part 1
+
+Points above the line $y = x$ represent cities for which rice prices were higher 
+in 2009 than in 2003. Similarly, points below the line $y = x$ represent cities 
+for which rice prices were lower in 2009 than in 2003. 
+
+## Part 2
+
+```{r q2_p2}
+ubs.df <- alr4::UBSprices
+ubs.df %>% 
+  dp$mutate(city = rownames(.)) %>% 
+  dp$mutate(rice.price.diff = rice2009 - rice2003) %>% 
+  dp$filter(rice.price.diff == max(rice.price.diff)) %>% 
+  .$city
+```
+
+## Part 3
+
+No, there is a $\hat{\beta}_0$ term. 
+
+If rice prices in 2009 were lower than rice prices in 2003 according to the 
+model, then the inequality $\hat{\beta}_0 + \hat{\beta}_1 x < x$ would have 
+to be true. Then (assuming $\hat{\beta}_1 < 1$ as in the question), the solution 
+of this inequality is $x > \frac{\hat{\beta}_0}{1 - \hat{\beta}_1}$. In other 
+words, according to the model the statement is true only when rice prices in 
+2003 were greater than $\frac{\hat{\beta}_0}{1 - \hat{\beta}_1}$. 
+
+Furthermore, this is an empirical model for the overall trend, so it does not 
+describe the data exactly regardless.
+
+## Part 4
+
+We can check if the data fit the OLS assumptions:
+
+```{r q2_p4}
+rice.model <- lm(rice2009 ~ rice2003, data = ubs.df)
+hist(rice.model$residuals)
+qqnorm(rice.model$residuals)
+ubs.df %>% 
+  dp$mutate(resids = rice.model$residuals) %>% 
+  ggplot() + 
+  geom_point(aes(x = rice2003, y = resids)) + 
+  labs(x = 'rice prices in 2003 [USD]', 
+       y = 'residuals of OLS model [USD]') + 
+  geom_hline(yintercept = 0, colour = 'red')
+```
+
+Here we can see that the residuals are not i.i.d. normal conditioned on our 
+input variable. In particular, the distribution appears skewed to the right 
+based on the histogram, and the plot of the residuals vs the input variable 
+is not a null plot.
+
+# Question 3
+
+Simulation: Assume the simple linear regression model:
+
+$$y_i = \beta_0 + \beta_1 x_i + e_i, i = 1, ..., n$$
+
+where $e_i ~ N(0, \sigma^{2})$ for $i = 1, ..., n$.
+
+Let's set $\beta_0 = 10$, $\beta_1 = -2.5$, and $n = 30$
+
+```{r q3_setup}
+b0 <- 10
+b1 <- -2.5
+n <- 30
+```
+
+## Part a
+
+Set $\sigma = 100$ and $x_i = i$ for $i = 1, ..., n$.
+
+```{r q1_pa}
+s <- 100
+x <- seq(n)
+```
+
+## Part b
+
+Your simulation will have 10,000 iterations. Before you start your iterations, 
+set a random seed using your birthday date (MMDD) and report the seed with your 
+responses. For each iteration, obtain and store your linear regression parameter 
+estimates: $\hat{\beta}_0$, $\hat{\beta}_1$, and $\hat{\sigma}^2$. (Include 
+syntax. DO NOT include output)
+
+```{r q3_pb}
+iter <- 1e5
+set.seed(0825)
+estimates.df <- foreach(i = seq(iter), .combine = dp$bind_rows) %dopar% {
+  y <- b0 + b1 * x + rnorm(length(x), sd = s)
+  temp.model <- lm(y ~ x)
+  dplyr::data_frame(b0.hat = coef(temp.model)['(Intercept)'], 
+                    b1.hat = coef(temp.model)['x'], 
+                    sigma.hat = sigma(temp.model))
+}
+```
+
+## Part c
+
+Obtain and present three histograms, one for each 
+$\hat{\beta}_0$'s, $\hat{\beta}_1$'s, and $\hat{\sigma}^2$'s. Briefly describe 
+the  main characteristics of these histograms (shape of the estimated 
+distributions). (Include syntax and output)
+
+```{r q3_pc}
+ggplot(estimates.df) +
+  geom_histogram(aes(x = b0.hat), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(beta)[0]))
+
+ggplot(estimates.df) +
+  geom_histogram(aes(x = b1.hat), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(beta)[1]))
+
+ggplot(estimates.df) + 
+  geom_histogram(aes(x = sigma.hat ** 2), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(sigma)^2))
+```
+
+$\hat{\beta}_0$ and $\hat{\beta}_1$ appear to be normally distributed with 
+means at around the true values. The histogram of $\hat{\sigma}^2$ is skewed 
+to the right, similar to that of an $\chi^2$-distribution. 
+
+## Part d
+
+Find the averages of $\hat{\beta}_0$'s, $\hat{\beta}_1$'s, and 
+$\hat{\sigma}^2$'s. How do they compare with the true parameters? Briefly 
+explain. (Include syntax and output)
+
+```{r q3_pd}
+estimates.df %>% 
+  dp$mutate(sigma2.hat = sigma.hat ** 2) %>% 
+  dp$select(-sigma.hat) %>% 
+  dp$summarise_all(mean)
+```
+
+They are close to the true parameters, $(10, -2.5, 10000)$. We can say that 
+the expected relative error is on the order of 
+$\frac{1}{\sqrt{\text{iterations}}} = .01$, which appears consistent with the 
+results. 
+
+## Part e
+
+Find the (sample) variance of $\hat{\beta}_0$'s and $\hat{\beta}_1$'s. How do 
+they compare with the true variances? Briefly explain. (Include syntax and 
+output)
+
+```{r q3_pe}
+estimates.df %>% 
+  dp$select(-sigma.hat) %>% 
+  dp$summarise_all(var)
+
+cross.prod.sum <- function(x, y = NULL) {
+  # sum of cross product (e.g., SXX, SYY, SXY)
+  if (is.null(y)) y <- x
+  sum((x - mean(x)) * (y - mean(y)))
+}
+
+# var(beta1.hat | x)
+s ** 2 / cross.prod.sum(x)
+
+# var(beta0.hat | x)
+s ** 2 * (1 / n + mean(x) ** 2 / cross.prod.sum(x))
+```
+
+The values are very close to the true values. 
+
+## Part f
+
+Now set $\sigma = 100$ and $x_i = 100i$ for $i = 1, ... ,n$. Repeat parts b), 
+d), and e). How does the (sample) variance of $\hat{\beta}_0$'s and 
+$\hat{\beta}_1$'s compare with your previous results (in part e))? Briefly 
+explain why.
+
+```{r q3_pf_simulation}
+# redefine the variables
+s <- 100
+x <- 100 * seq(n)
+
+# run the simulation
+set.seed(0825)
+estimates.df <- foreach(i = seq(iter), .combine = dp$bind_rows) %dopar% {
+  y <- b0 + b1 * x + rnorm(length(x), sd = s)
+  temp.model <- lm(y ~ x)
+  dplyr::data_frame(b0.hat = coef(temp.model)['(Intercept)'], 
+                    b1.hat = coef(temp.model)['x'], 
+                    sigma.hat = sigma(temp.model))
+}
+```
+
+```{r q3_pf_results}
+# histograms
+ggplot(estimates.df) +
+  geom_histogram(aes(x = b0.hat), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(beta)[0]))
+ggplot(estimates.df) +
+  geom_histogram(aes(x = b1.hat), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(beta)[1]))
+ggplot(estimates.df) + 
+  geom_histogram(aes(x = sigma.hat ** 2), 
+                 fill = 'white', colour = 'black') + 
+  labs(x = expression(hat(sigma)^2))
+
+# mean of estimates
+estimates.df %>% 
+  dp$mutate(sigma2.hat = sigma.hat ** 2) %>% 
+  dp$select(-sigma.hat) %>% 
+  dp$summarise_all(mean)
+
+# variance of estimates
+estimates.df %>% 
+  dp$select(-sigma.hat) %>% 
+  dp$summarise_all(var)
+
+# var(beta1.hat | x)
+s ** 2 / cross.prod.sum(x)
+
+# var(beta0.hat | x)
+s ** 2 * (1 / n + mean(x) ** 2 / cross.prod.sum(x))
+```
+
+The means of the estimators do not change much, in support of the fact that 
+they are unbiased. 
+
+The variance of $\hat{\beta}_0$ is also fairly close to the original value. 
+Looking at the true value, we can see that there is a 
+$\frac{\bar{x}^2}{\text{SXX}}$ term, and $\text{SXX} ~ x^2$ and 
+$\bar{x}^2 ~ x^2$, so the change in the $x$s cancel each other out. 
+
+The variance of $\hat{\beta}_1$ is much smaller, by a factor of $10^4$. 
+Looking at the true value of the variance, we can see that it's inversely 
+proportional to SXX, so it's inversely proportional to $x^2$. Since the scale 
+of $x$ changed by a factor of 100, the scale of the variance changed by a factor 
+of 10000. 
