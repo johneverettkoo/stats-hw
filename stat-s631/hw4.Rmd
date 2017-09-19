@@ -25,8 +25,6 @@ options(xtable.comment = FALSE,
 ```{r packages}
 dp <- loadNamespace('dplyr')
 import::from(magrittr, `%>%`, `%<>%`)
-import::from(foreach, foreach, `%dopar%`)
-doMC::registerDoMC(parallel::detectCores())
 library(ggplot2)
 theme_set(theme_bw())
 ```
@@ -82,8 +80,167 @@ summary(sahlins.mod.2)
 
 We would reject the null hypothesis for both $\beta_0$ and $\beta_1$. This would 
 imply that each household receives some base amount but also can work for 
-additional resources. 
+additional resources. This is a different conclusion than before, when we used 
+all the data.
+
+```{r q2_pb_3}
+ggplot() + 
+  geom_point(data = sahlins.df[-4, ], 
+             aes(x = consumers, y = acres, shape = 'not outlier')) + 
+  labs(x = 'consumers/gardener', 
+       y = 'acres/gardner', 
+       colour = 'linear fit', fill = 'linear fit',  
+       shape = NULL) + 
+  geom_point(data = sahlins.df[4, ], 
+             aes(x = consumers, y = acres, shape = 'outlier')) + 
+  stat_smooth(data = sahlins.df, 
+              aes(x = consumers, y = acres, 
+                  colour = 'all data', fill = 'all data'), 
+              method = 'lm') + 
+  stat_smooth(data = sahlins.df[-4, ], 
+              aes(x = consumers, y = acres, 
+                  colour = 'outlier removed', fill = 'outlier removed'), 
+              method = 'lm') + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1')
+```
+
+We can say that the first model is not a good fit since we failed to reject 
+the null hypothesis that $\beta_1 \neq 0$. 
+
+For the second model (with the 4^th^ data point removed), we can check the 
+residuals:
+
+```{r q2_pb_4}
+sahlins.outlier.removed.df <- sahlins.df[-4, ] %>% 
+  dp$mutate(resids = sahlins.mod.2$residuals)
+
+ggplot(sahlins.outlier.removed.df) + 
+  geom_histogram(aes(x = resids), 
+                 fill = 'white', colour = 'black', bins = 16)
+
+ggplot(sahlins.outlier.removed.df) + 
+  geom_point(aes(x = consumers, 
+                 y = resids)) + 
+  geom_hline(yintercept = 0, colour = 'red') + 
+  labs(x = 'consumers/gardener', y = 'residuals')
+```
+
+```{r q2_pb_5, fig.width = 3}
+qqnorm(sahlins.outlier.removed.df$resids)
+```
+
+Here we can see that the residuals do not depend on the input variable and 
+appear approximately normally distributed around 0, so the assumptions of the 
+linear model hold. As for the strength of the predictions, 
+$\hat{\sigma} \approx 0.3681$, so on average the model is ~0.4 acres/gardener 
+off the true value. 
 
 ## Part c
 
+### For the first model
+
+```{r q2_pc_1}
+summary(sahlins.mod)$coefficients
+```
+
+If we set $\alpha = .05$ and the null hypotheses as $\beta_0 = 0$ and 
+$\beta_1 = 0$, then we would reject the $\beta_0 = 0$ and fail to reject 
+$\beta_1 = 0$ (these are from the `summary` command from part (b)).
+
+Using the same $\alpha$, we can compute the confidence intervals:
+
+```{r q2_pc_2}
+alpha <- .05
+t.alpha <- qt(1 - alpha / 2, sahlins.mod$df.residual)
+
+mod1.b0.ci <- 
+  c(-t.alpha, t.alpha) * 
+summary(sahlins.mod)$coefficients['(Intercept)', 'Std. Error'] + 
+  sahlins.mod$coefficients['(Intercept)']
+
+mod1.b1.ci <- 
+  c(-t.alpha, t.alpha) * 
+summary(sahlins.mod)$coefficients['consumers', 'Std. Error'] + 
+  sahlins.mod$coefficients['consumers']
+
+print(mod1.b0.ci)
+print(mod1.b1.ci)
+```
+
+The C.I. for $\beta_0$ does not contain 0 while the C.I. for $\beta_1$ does, 
+which is consistent with our hypothesis tests.
+
+### For the second model
+
+Using the same $\alpha$, we reject the null hypothesis for both $\beta_0 = 0$ 
+and $\beta_1 = 0$ (from the `summary` command from part (b)). 
+
+For the confidence intervals: 
+
+```{r q2_pc_3}
+alpha <- .05
+t.alpha <- qt(1 - alpha / 2, sahlins.mod.2$df.residual)
+
+mod2.b0.ci <- 
+  c(-t.alpha, t.alpha) * 
+summary(sahlins.mod.2)$coefficients['(Intercept)', 'Std. Error'] + 
+  sahlins.mod.2$coefficients['(Intercept)']
+
+mod2.b1.ci <- 
+  c(-t.alpha, t.alpha) * 
+summary(sahlins.mod.2)$coefficients['consumers', 'Std. Error'] + 
+  sahlins.mod.2$coefficients['consumers']
+
+print(mod2.b0.ci)
+print(mod2.b1.ci)
+```
+
+The C.I.s for neither $\beta_0$ nor $\beta_1$ contain 0, which is consistent 
+with the results of our hypothesis tests.
+
 ## Part d
+
+If we assume that the model is valid:
+
+```{r q2_pd}
+cross.prod.sum <- function(x, y = NULL) {
+  # sum of cross product (e.g., SXX, SYY, SXY)
+  if (is.null(y)) y <- x
+  sum((x - mean(x)) * (y - mean(y)))
+}
+
+pred.y <- function(x, model, alpha = .05) {
+  # predicts y given a simple linear model and input
+  # also gives confidence interval for a certain alpha value
+  
+  # compute t for the alpha C.I. and deg of freedom
+  t.alpha <- qt(1 - alpha / 2, model$df.residual)
+  
+  # compute expected
+  y.mean <- unname(model$coefficients[1] + model$coefficients[2] * x)
+  
+  # compute standard error
+  x.mean <- mean(model$model[, 2])
+  sxx <- cross.prod.sum(model$model[, 2])
+  y.se <- 
+    sigma(model) * 
+    sqrt(1 / nrow(model$model) + (x - x.mean) ** 2 / sxx)
+  
+  return(list(y = y.mean, 
+              ci = c(y.mean - y.se * t.alpha, y.mean + y.se * t.alpha)))
+}
+
+pred.y(1.5, sahlins.mod, alpha = .02)
+
+# alternatively
+predict(sahlins.mod, 
+        newdata = data.frame(consumers = 1.5), 
+        interval = 'confidence', 
+        level = .98)
+```
+
+The confidence interval does not indicate that there is a 98\% probability 
+that the true mean is contained within the interval. Instead, there is a 98\% 
+probability that the interval captures the true mean (i.e., the 98\% probability 
+is on the interval, not the true value). 
