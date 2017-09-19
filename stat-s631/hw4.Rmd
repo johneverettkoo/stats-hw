@@ -1,0 +1,89 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 4'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+  
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      dpi = 300, 
+                      fig.height = 3, 
+                      fig.width = 5, 
+                      fig.retina = 1, 
+                      cache = FALSE)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(foreach, foreach, `%dopar%`)
+doMC::registerDoMC(parallel::detectCores())
+library(ggplot2)
+theme_set(theme_bw())
+```
+# Question 1
+
+# Question 2
+
+```{r q2_setup}
+sahlins.df <- read.delim('~/dev/stats-hw/stat-s631/Sahlins.txt', sep = ' ')
+```
+
+## Part a
+
+```{r q2_pa}
+ggplot(sahlins.df) + 
+  geom_point(aes(x = consumers, y = acres)) + 
+  labs(x = 'consumers/gardener', y = 'acres/gardener')
+```
+
+From the scatterplot, the data do not appear to be particularly linear, although 
+there appears to be a very slight positive correlation. We can compute this:
+
+```{r q2_pa_2}
+cor(sahlins.df$consumers, sahlins.df$acres)
+```
+
+Most of the data appear to be clustered in the center with a ring of points 
+surrounding it. One household has an unusually high value for acres per 
+gardener---it's almost 3 times its value for consumers per gardener (~3 vs ~1). 
+
+## Part b
+
+```{r q2_pb_1}
+sahlins.mod <- lm(acres ~ consumers, data = sahlins.df)
+summary(sahlins.mod)
+```
+
+The results indicate that, if we set the conventional value of $\alpha = .05$, 
+we would fail to reject the null hypothesis that $\beta_1 \neq 0$, implying that 
+there is no significant relationship between acres per gardener and consumers per 
+gardener. However, using the same value of $\alpha$, we reject the null 
+hypothesis that $\beta_0 = 0$, indicating that each household receives some 
+amount regardless of productivity. 
+
+The residual standard error $\hat{\sigma}$ is `r round(sigma(sahlins.mod), 4)`
+
+If we remove the 4^th^ data point:
+
+```{r q2_pb_2}
+sahlins.mod.2 <- lm(acres ~ consumers, data = sahlins.df[-4, ])
+summary(sahlins.mod.2)
+```
+
+We would reject the null hypothesis for both $\beta_0$ and $\beta_1$. This would 
+imply that each household receives some base amount but also can work for 
+additional resources. 
+
+## Part c
+
+## Part d
