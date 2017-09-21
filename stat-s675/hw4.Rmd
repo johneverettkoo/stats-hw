@@ -202,16 +202,31 @@ A.QR <- gramSchmidt(A)
 Y <- X.spiral %*% t(A.QR$Q)
 ```
 
-# Part a
+## Part a
 
 Vectors containing the $n(n - 1)/2$ pairwise Euclidean distances of each 
-configuration can be computed using the `dist` function. Verify that the 
+configuration can be computed using the `dist` function. Investigate the 
+distribution of pairwise distances in the `X.spiral`configuration, e.g., 
+by computing the following:
+
+```{r q3_pa}
+dX <- dist(X.spiral)
+summary(dX)
+hist(dX)
+```
+
+The pairwise distances tend toward ~2.6 but aren't normally distributed (fat 
+tails). It's also slightly right-skew, which is expected since distances 
+cannot be below 1. 
+
+## Part b
+
+Verify that the 
 configurations `Y` and `X.spiral` are isometrically equivalent by showing that 
 they have the same pairwise distances, e.g., by showing that the *root mean 
 squared error* (RMSE) vanishes:
 
-```{r p3_setup_a}
-dX <- dist(X.spiral)
+```{r p3_setup_b}
 dY <- dist(Y)
 m <- length(dX)
 rmse <- sqrt(sum((dY-dX)^2)/m)
@@ -222,13 +237,13 @@ rmse <- sqrt(sum((dY-dX)^2)/m)
 
 The RMSE here is $`r signif(rmse, 4)`$. 
 
-# Part b
+## Part c
 
 Investigate the extent of distortion introduced by the following random 
 projection technique, which replaces the $n \times q$ data matrix `Y` with the 
 $n \times 10$ data matrix `Y10`:
 
-```{r p3_setup_b}
+```{r p3_setup_c}
 Q10 <- matrix(rnorm(q*10),ncol=10)/sqrt(q)
 Y10 <- Y %*% Q10
 ```
@@ -236,7 +251,7 @@ Y10 <- Y %*% Q10
 Find the distance matrix of `Y10` and compute its RMSE to the distance matrix 
 of `Y`:
 
-```{r p3_b_dist}
+```{r p3_c_dist}
 dY10 <- dist(Y10)
 
 sqrt(sum((dY - dY10) ** 2) / m)
@@ -245,11 +260,14 @@ sqrt(sum((dY - dY10) ** 2) / m)
 Here the RMSE is quite large, especially when compared to the typical spread of 
 the values of the distance matrix of Y:
 
-```{r p3_b_dist_normalized}
+```{r p3_c_dist_normalized}
 sqrt(sum((dY - dY10) ** 2) / m) / sd(dY)
+
+summary(dY10 / dY)
 ```
 
 So the RMSE is twice the standard deviation of the distances in the original Y. 
+Furthermore, `dY` is quite a bit larger than `dY10`, by around a factor of 44.
 
 We can also see how this changes as the number of random projections changes:
 
@@ -268,3 +286,49 @@ ggplot() +
 ```
 
 And as expected, the RMSE decreases as we increase the number of projections. 
+
+## Part d
+
+Construct a 2-dimensional principal components representation of `Y10`, 
+obtaining a configuration `Z`. Compare the interpoint distances of `Z` to the 
+interpoint distances of `X.spiral`. How does the RMSE compare to the magnitude 
+of the interpoint distances of `X.spiral`? Comment on the loss of information 
+entailed by preceding PCA with the random projection technique in part (c).
+
+```{r q3_pd}
+y10.pca <- princomp(Y10)
+
+y10.pca$scores %>% 
+  as.data.frame() %>% 
+  ggplot() + 
+  geom_point(aes(x = Comp.1, y = Comp.2))
+```
+
+We can see that the first two principal components recapture the spiral 
+structure.
+
+Comparing the interpoint distances:
+
+```{r q3_pd_2}
+dY10.pca <- dist(y10.pca$scores[, 1:2])
+
+# RMSE
+sqrt(sum((dX - dY10.pca) ** 2) / m)
+
+# relative error
+summary(abs(1 - dY10.pca / dX))
+
+# mean dX
+mean(dX)
+
+# relative spread of dX
+sd(dX) / mean(dX)
+
+# relative spread of dY10.pca
+sd(dY10.pca) / mean(dY10.pca)
+```
+
+The result is similar to that of part (c). The RMSE is large compared to 
+the typical size of `dX`, but upon closer inspection, the relative distances of 
+each are close. The spiral structure is preserved, but the magnitude of 
+`X.spiral` is lost.
