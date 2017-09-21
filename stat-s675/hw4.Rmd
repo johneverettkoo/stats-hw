@@ -253,7 +253,7 @@ So the RMSE is twice the standard deviation of the distances in the original Y.
 
 We can also see how this changes as the number of random projections changes:
 
-```{r random_projections}
+```{r random_projections, cache = TRUE}
 d <- seq(10, 1000, 10)
 rmse.vector <- sapply(d, function(x) {
   Qd <- matrix(rnorm(q * x), ncol = x) / sqrt(q)
