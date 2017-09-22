@@ -257,18 +257,37 @@ off the true value.
 
 ### For the first model
 
+If we set $\alpha = .05$ and the null hypotheses as $\beta_0 \leq 0$ and 
+$\beta_1 \leq 0$:
+
 ```{r q2_pc_1}
-summary(sahlins.mod)$coefficients
+# set alpha
+alpha <- .05
+
+# --- t-test --- #
+
+mod1.b0.tval <- 
+  sahlins.mod$coefficients['(Intercept)'] / 
+  summary(sahlins.mod)$coefficients['(Intercept)', 'Std. Error']
+mod1.b1.tval <- 
+  sahlins.mod$coefficients['consumers'] / 
+  summary(sahlins.mod)$coefficients['consumers', 'Std. Error']
+
+# t-statistics
+c(mod1.b0.tval, mod1.b1.tval)
+
+# p-values
+1 - pt(c(mod1.b0.tval, mod1.b1.tval), 
+       df = sahlins.mod.2$df.residual)
 ```
 
-If we set $\alpha = .05$ and the null hypotheses as $\beta_0 = 0$ and 
-$\beta_1 = 0$, then we would reject the $\beta_0 = 0$ and fail to reject 
-$\beta_1 = 0$ (these are from the `summary` command from part (b)).
+Here we see that the $p$-value for $\beta_0$ is less than our chosen $\alpha$ 
+while the $p$-value for $\beta_1$ is greater. So we would reject the first null 
+hypothesis while failing to reject the second. 
 
 Using the same $\alpha$, we can compute the confidence intervals:
 
 ```{r q2_pc_2}
-alpha <- .05
 t.alpha <- qt(1 - alpha / 2, sahlins.mod$df.residual)
 
 mod1.b0.ci <- 
@@ -281,6 +300,7 @@ mod1.b1.ci <-
 summary(sahlins.mod)$coefficients['consumers', 'Std. Error'] + 
   sahlins.mod$coefficients['consumers']
 
+# confidence intervals
 print(mod1.b0.ci)
 print(mod1.b1.ci)
 ```
@@ -290,20 +310,40 @@ which is consistent with our hypothesis tests.
 
 ### For the second model
 
-Using the same $\alpha$, we reject the null hypothesis for both $\beta_0 = 0$ 
-and $\beta_1 = 0$ (from the `summary` command from part (b)). 
+Using the same $\alpha$ for the second model with the same null hypotheses:
 
 For the confidence intervals: 
 
-```{r q2_pc_3}
+```{r q2_pc_3_ttest}
+# set alpha
 alpha <- .05
+
+# --- t-test --- #
+
+mod2.b0.tval <- 
+  sahlins.mod.2$coefficients['(Intercept)'] / 
+  summary(sahlins.mod.2)$coefficients['(Intercept)', 'Std. Error']
+mod2.b1.tval <- 
+  sahlins.mod.2$coefficients['consumers'] / 
+  summary(sahlins.mod.2)$coefficients['consumers', 'Std. Error']
+
+# t-statistics
+c(mod2.b0.tval, mod2.b1.tval)
+
+# p-values
+1 - pt(c(mod2.b0.tval, mod2.b1.tval), 
+       df = sahlins.mod.2$df.residual)
+```
+
+... and find the confidence intervals for the same $\alpha$
+
+```{r q2_p3_ci}
 t.alpha <- qt(1 - alpha / 2, sahlins.mod.2$df.residual)
 
 mod2.b0.ci <- 
   c(-t.alpha, t.alpha) * 
 summary(sahlins.mod.2)$coefficients['(Intercept)', 'Std. Error'] + 
   sahlins.mod.2$coefficients['(Intercept)']
-
 mod2.b1.ci <- 
   c(-t.alpha, t.alpha) * 
 summary(sahlins.mod.2)$coefficients['consumers', 'Std. Error'] + 
@@ -313,8 +353,11 @@ print(mod2.b0.ci)
 print(mod2.b1.ci)
 ```
 
-The C.I.s for neither $\beta_0$ nor $\beta_1$ contain 0, which is consistent 
-with the results of our hypothesis tests.
+Here we reject the null hypothesis for both $\beta_0$ and $\beta_1$ since 
+both $p$-values are below our chosen $\alpha$. Neither confidence interval 
+contains 0, which is consistent with the results of the hypothesis tests. 
+However, since it's a one-sided $t$-test, this is not necessarily true for all 
+cases.
 
 ## Part d
 
