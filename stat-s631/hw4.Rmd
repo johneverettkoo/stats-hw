@@ -30,6 +30,124 @@ theme_set(theme_bw())
 ```
 # Question 1
 
+[From ALR 2.16]
+
+```{r q1_setup}
+un.df <- alr4::UN11 %>% 
+  dp$mutate(country = rownames(.))
+```
+
+## Part 1
+
+```{r q1_p1}
+fertility.mod <- lm(log(fertility) ~ log(ppgdp), data = un.df)
+
+summary(fertility.mod)
+```
+
+## Part 2
+
+```{r q1_p2}
+fert.vs.gdp.plot <- un.df %>% 
+  dp$mutate(fert.hat = 
+              exp(fertility.mod$coefficients['(Intercept)']) * 
+              ppgdp ** fertility.mod$coefficients['log(ppgdp)']) %>% 
+  ggplot() + 
+  geom_point(aes(x = ppgdp, y = fertility)) + 
+  geom_line(aes(x = ppgdp, y = fert.hat), colour = 'red') + 
+  labs(x = 'GDP per capita [USD]', y = 'children per woman')
+
+fert.vs.gdp.plot
+fert.vs.gdp.plot + scale_x_log10() + scale_y_log10()
+```
+
+## Part 3
+
+Using $\alpha = 0.05$:
+
+```{r q1_p3}
+# alternatively, we can just look at summary(fertility.mod)
+
+b1.mean <- fertility.mod$coefficients['log(ppgdp)']
+b1.sterr <- summary(fertility.mod)$coefficients['log(ppgdp)', 'Std. Error']
+b1.tval <- unname(-b1.mean / b1.sterr)
+1 - pt(b1.tval, df = fertility.mod$df.residual)
+```
+
+Here our $p$-value is below machine precision, so it is definitely lower than 
+our chosen value of $\alpha$.
+
+## Part 4
+
+```{r q1_p4}
+summary(fertility.mod)$r.squared
+```
+
+The $R^2$ value can be interpreted as the proportion of variance that has been 
+explained by the model. In this case, about half of the variance of $Y$ is 
+accounted for by the linear fit with $X$. 
+
+## Part 5
+
+```{r q1_p5}
+cross.prod.sum <- function(x, y = NULL) {
+  # sum of cross product (e.g., SXX, SYY, SXY)
+  
+  if (is.null(y)) y <- x
+  sum((x - mean(x)) * (y - mean(y)))
+}
+
+pred.y <- function(x, model, alpha = .05) {
+  # predicts new y given a simple linear model and input
+  # also gives confidence interval for a certain alpha value
+  
+  # compute t for the alpha C.I. and deg of freedom
+  t.alpha <- qt(1 - alpha / 2, model$df.residual)
+  
+  # compute expected
+  y.mean <- unname(model$coefficients[1] + model$coefficients[2] * x)
+  
+  # compute standard error
+  x.mean <- mean(model$model[, 2])
+  sxx <- cross.prod.sum(model$model[, 2])
+  y.se <- 
+    sigma(model) * 
+    sqrt(1 + 1 / nrow(model$model) + (x - x.mean) ** 2 / sxx)
+  
+  return(list(y = y.mean, 
+              ci = c(y.mean - y.se * t.alpha, y.mean + y.se * t.alpha)))
+}
+
+new.y <- pred.y(log(1000), fertility.mod)
+new.y
+lapply(new.y, exp)
+```
+
+So the 95\% prediction interval for $Y$ given $\log{X} = 1000$ is 
+[`r round(exp(new.y$ci), 3)`]
+
+## Part 6
+
+```{r q1_p6, fig.height = 13, fig.width = 8}
+# lowest fertility
+dp$filter(un.df, fertility == min(fertility))$country
+
+# highest fertility
+dp$filter(un.df, fertility == max(fertility))$country
+
+# most positive residuals
+un.df$country[order(-fertility.mod$residuals)[1:2]]
+
+# most negative residuals
+un.df$country[order(fertility.mod$residuals)[1:2]]
+
+ggplot(un.df) + 
+  geom_point(aes(x = ppgdp, y = fertility)) + 
+  ggrepel::geom_label_repel(aes(x = ppgdp, y = fertility, label = country)) +
+  scale_x_log10() + scale_y_log10() + 
+  stat_smooth(aes(x = ppgdp, y = fertility), method = 'lm', level = .99)
+```
+
 # Question 2
 
 ```{r q2_setup}
@@ -201,17 +319,23 @@ with the results of our hypothesis tests.
 
 ## Part d
 
-If we assume that the model is valid:
+For prediction (the first question):
 
-```{r q2_pd}
-cross.prod.sum <- function(x, y = NULL) {
-  # sum of cross product (e.g., SXX, SYY, SXY)
-  if (is.null(y)) y <- x
-  sum((x - mean(x)) * (y - mean(y)))
-}
+```{r q2_pd_predict}
+pred.y(1.5, sahlins.mod, alpha = .02)
 
-pred.y <- function(x, model, alpha = .05) {
-  # predicts y given a simple linear model and input
+# alternatively
+predict(sahlins.mod, 
+        newdata = data.frame(consumers = 1.5), 
+        interval = 'predict', 
+        level = .98)
+```
+
+For our estimate of the mean (the second question):
+
+```{r q2_pd_confidence}
+mean.y <- function(x, model, alpha = .05) {
+  # predicts mean y given a simple linear model and input
   # also gives confidence interval for a certain alpha value
   
   # compute t for the alpha C.I. and deg of freedom
@@ -231,7 +355,7 @@ pred.y <- function(x, model, alpha = .05) {
               ci = c(y.mean - y.se * t.alpha, y.mean + y.se * t.alpha)))
 }
 
-pred.y(1.5, sahlins.mod, alpha = .02)
+mean.y(1.5, sahlins.mod, alpha = .02)
 
 # alternatively
 predict(sahlins.mod, 
@@ -240,7 +364,7 @@ predict(sahlins.mod,
         level = .98)
 ```
 
-The confidence interval does not indicate that there is a 98\% probability 
-that the true mean is contained within the interval. Instead, there is a 98\% 
-probability that the interval captures the true mean (i.e., the 98\% probability 
-is on the interval, not the true value). 
+The prediction interval (first value) is what we expect a new value to have 
+given that $x = 1.5$. On the other hand, the confidence interval (second 
+value) is what we expect the mean of all $y$ would be given that $x = 1.5$. 
+The standard error for each case is different. 
