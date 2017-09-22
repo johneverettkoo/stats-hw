@@ -71,11 +71,10 @@ Using $\alpha = 0.05$:
 b1.mean <- fertility.mod$coefficients['log(ppgdp)']
 b1.sterr <- summary(fertility.mod)$coefficients['log(ppgdp)', 'Std. Error']
 b1.tval <- unname(-b1.mean / b1.sterr)
-1 - pt(b1.tval, df = fertility.mod$df.residual)
+pt(-abs(b1.tval), df = fertility.mod$df.residual)
 ```
 
-Here our $p$-value is below machine precision, so it is definitely lower than 
-our chosen value of $\alpha$.
+Here our $p$-value is much smaller than $\alpha$.
 
 ## Part 4
 
