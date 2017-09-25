@@ -34,7 +34,7 @@ Expanding this out to series:
 $$= \sum_i^n y_i^2 - 2 \sum_i^n y_i (x_{i, \cdot} \hat{\beta}) + 
 \sum_i^n (x_{i, \cdot} \hat{\beta}) ^ 2$$
 
-$$= \sum_i^n y_i^n - 2 y_i (x_{i, \cdot} \hat{\beta}) + 
+$$= \sum_i^n y_i^2 - 2 y_i (x_{i, \cdot} \hat{\beta}) + 
 (x_{i, \cdot} \hat{\beta}) ^ 2$$
 
 Which is just an expansion of:
