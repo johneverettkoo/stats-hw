@@ -1,0 +1,96 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 5'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Part a
+
+Start by expanding $(Y - X \hat{\beta})^T (Y - X \hat{\beta})$
+
+$$(Y - X \hat{\beta})^T (Y - X \hat{\beta})$$
+$$= Y^T Y - Y^T (X \hat{\beta}) - 
+(X \hat{\beta})^T Y + (X \hat{\beta})^T (X \hat{\beta})$$
+
+Note that $x^T y = y^T x$ when $x, y \in \mathbb{R}^n$. So the above is equal to
+
+$$Y^T Y - 2 Y^T (X \hat{\beta}) + (X \hat{\beta})^T (X \hat{\beta})$$
+
+Expanding this out to series:
+
+$$= \sum_i^n y_i^2 - 2 \sum_i^n y_i (x_{i, \cdot} \hat{\beta}) + 
+\sum_i^n (x_{i, \cdot} \hat{\beta}) ^ 2$$
+
+$$= \sum_i^n y_i^n - 2 y_i (x_{i, \cdot} \hat{\beta}) + 
+(x_{i, \cdot} \hat{\beta}) ^ 2$$
+
+Which is just an expansion of:
+
+$$ \sum_i^n (y_i - x_{i, \cdot} \hat{\beta}) ^ 2$$
+
+# Part b
+
+If $H$ is symmetric, then $H = H^T$.
+
+$$ H^T = [X(X^T X)^{-1} X^T]^T$$
+$$= [X^T]^T [(X^T X)^{-1}]^T [X]^T$$
+$$= [X] [(X^T X)^T]^{-1} [X^T]$$
+$$= X [(X^T) (X^T)^T]^{-1} X^T$$
+$$= X(X^T X)^{-1} X^T$$
+$$= H$$
+Therefore $H = H^T$.
+
+# Part c
+
+## Show symmetric
+
+$(I - H)^T = I^T - H^T = I - H$
+
+## Show idempotent
+
+We know that $HH = H$.
+
+$(I-H)^2 = II - IH - HI + H^2 = I - H - H + H = I - H$
+
+# Part d
+
+$HX = [X(X^T X)^{-1} X^T] X = X (X^T X)^{-1} (X^T X) = XI = X$
+
+# Part e
+
+$$(I - H)(Y - X \hat{\beta}) = Y - X \hat{\beta} - HY + HX \hat{\beta}$$
+$$= Y - X \hat{\beta} - HY + X \hat{\beta}$$
+$$= Y - HY = (I - H)Y$$
+
+# Part f
+
+$$(Y - X \hat{\beta})^T (I - H) (Y - X \hat{\beta})$$
+$$= [(I - H)^T (Y - X \hat{\beta})]^T (Y - X \hat{\beta})$$
+$$= [(I - H)(Y - X \hat{\beta})]^T (Y - X \hat{\beta})$$
+$$= [(I - H) Y]^T Y$$
+$$= Y^T (I - H)^T Y$$
+$$= Y^T (I - H) Y$$
+
+# Part g
+
+$$RSS(\hat{\beta}) = (Y - X \hat{\beta})^T (Y - X \hat{\beta})$$
+$$= (Y - HY)^T (Y - HY)$$
+$$= Y^T Y - Y^T HY - (HY)^T Y + (HY)^T HY$$
+$$= Y^T Y - Y^T HY - Y^T H^T Y + Y^T H^T H Y$$ 
+$$= Y^T Y - Y^T H Y - Y^T H Y + Y^T H Y$$
+$$= Y^T Y - Y^T H Y$$
+$$= (Y^T - Y^T H) Y$$ 
+$$= Y^T (I - H) Y$$
