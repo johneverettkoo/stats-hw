@@ -2,8 +2,8 @@
 title: "STAT-S675"
 subtitle: 'Homework 6'
 author: "John Koo"
-output: pdf_document
-# output: html_document
+# output: pdf_document
+output: html_document
 header-includes:
 - \usepackage{float}
 ---
@@ -21,7 +21,32 @@ options(xtable.comment = FALSE,
 
 # Problem 1
 
+[Exercise 5.7.2 from the text]
+
+We want to show $LX = M(X) X$ is equivalent to 
+$\sum_k^n w_{rk} (x_{rs} - x_{ks}) = 
+\sum_k^n w_{rk} \frac{\delta_{rk}}{d_{rk}} (x_{rs} - x_{ks})$
+
 # Problem 2
+
+[Exercise 5.7.3 from the text]
+
+By definition, $A$ is positive definite iff 
+$\forall x \in \mathbb{R}^n \backslash \{0\}$, $x^T A x > 0$. 
+
+So given an arbitrary $x$, we can check if $x^T (L + ee^T) x > 0$. 
+
+$$x^T (L + ee^T) x = x^T L x + x^T ee^T x$$
+$$= x^T L x + (e^T e) (e^T x)$$
+$$= x^T L x + (e^T x) ^ 2$$ 
+
+since $e^T x = x^T e \in \mathbb{R}^n$. Then
+
+$$x^T L x + (e^T x) ^ 2 = x^T L x + \Big(\sum_i^n x_i \Big) ^ 2$$
+
+We know that $L$ is positive semidefinite, so $x^T L x \geq 0$. On the other 
+hand, $(\sum_i^n x_i) ^ 2 \geq 0$. Therefore, 
+$x^T (L + ee^T) x = x^T L x + (\sum_i^n x_i) ^ 2 \geq 0$. 
 
 # Problem 3
 
@@ -82,7 +107,7 @@ for (k in k.vector[-1]) {
 }
 
 mds.df <- dplyr::data_frame(k = k.vector, random.stress = stress.vector)
-ggplot(mds.df) + 
+ggplot(mds.df[seq(6), ]) + 
   geom_point(aes(x = k, y = random.stress)) + 
   labs(x = 'iterations', y = 'stress criterion')
 ```
@@ -120,3 +145,10 @@ ggplot(mds.df) +
   theme(legend.position = 'bottom') + 
   labs(x = 'iterations', y = 'stress criterion', colour = NULL)
 ```
+
+Here we see that while the CMDS initialization basically converges after 
+3 or 4 iterations, the randomly initialized matrix has a much higher stress
+criterion and is far from converging. In fact, it takes ~60 iterations for the 
+random matrix to converge to the same stress criterion as the CMDS 
+initialization, and it seems to have gotten stuck at a higher value for ~30 
+iterations. 
