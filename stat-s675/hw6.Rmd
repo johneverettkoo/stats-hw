@@ -1,0 +1,26 @@
+---
+title: "STAT-S675"
+subtitle: 'Homework 6'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+# Problem 2
+
+# Problem 3
