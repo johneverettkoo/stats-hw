@@ -2,8 +2,8 @@
 title: "STAT-S675"
 subtitle: 'Homework 6'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 header-includes:
 - \usepackage{float}
 ---
@@ -25,7 +25,72 @@ options(xtable.comment = FALSE,
 
 We want to show $LX = M(X) X$ is equivalent to 
 $\sum_k^n w_{rk} (x_{rs} - x_{ks}) = 
-\sum_k^n w_{rk} \frac{\delta_{rk}}{d_{rk}} (x_{rs} - x_{ks})$
+\sum_k^n w_{rk} \frac{\delta_{rk}}{d_{rk}} (x_{rs} - x_{ks})$.
+
+$L = \frac{1}{2} \sum_{i, j} w_{ij} (e_i - e_j) (e_i - e_j)^T$  
+$L = T - W$  
+$M(X) = \sum_{i, j} w_{ij} \frac{\delta_{ij}}{d_{ij}(X)} (e_i - e_j) (e_i - e_j)^T$
+
+### Show $LX = \sum_k^n w_{rk} (x_{rs} - x_{ks})$
+
+Since $L = T - W$, $LX = (T - W)X = TX - WX$. 
+
+$[TX]_{ik} = \sum_j t_{ij} x_{jk}$
+
+But $T$ is a diagonal matrix. Therefore $[TX]_{ik} = t_{ii} x_{ik}$.
+
+Then note that $t_{ii} = \sum_j w_{ij}$. Therefore, 
+$[TX]_{ik} = \sum_j w_{ij} x_{ik}$.
+
+Then moving onto $[WX]_{ik} = \sum_j w_{ij} x_{ik}$.
+
+Therefore, $[TX - WX]_{ik} = \sum_j w_{ij} x_{ik} - \sum_j w_{ij} x_{ik}$
+
+Or grouping them under one sum, 
+$[TX - WX]_{ik} = \sum_j (w_{ij} x_{ik} - w_{ij} x_{ik})$ 
+
+But we can just change the variables: $i \rightarrow r$, $j \rightarrow k$, and 
+$k \rightarrow s$. Therefore, 
+$[TX - WX]_{rs} = \sum_k (w_{rk} x_{ik} - w_{rs} x_{ks})$ 
+
+And after factoring, 
+$[LX]_{rs} = [TX - WX]_{rs} = \sum_k^n w_{rk} (x_{rs} - x_{ks})$
+
+### Show $M(X) X = \sum_k^n w_{rk} \frac{\delta_{rk}}{d_{rk}} (x_{rs} - x_{ks})$
+
+Note that $w_{ij} \frac{\delta_{ij}}{d_{ij}} (e_i - e_j) (e_i - e_j)^T$ is a 
+matrix of all zeroes except for the elements at $ii$ and $jj$ which are 
+$w_{ii} \frac{\delta_{ii}}{d_{ii}}$ and $w_{jj} \frac{\delta_{jj}}{d_{jj}}$ 
+respectively, as well as the elements at $ij$ and $ji$ which are 
+$-w_{ij} \frac{\delta_{ij}}{d_{ij}} = -w_{ji} \frac{\delta_{ji}}{d_{ji}}$. 
+So then we can describe the diagonal elements $[M(X)]_{ii}$ as 
+$\sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}}$ and the off-diagonal elements 
+$[M(X)]_{ij} = -w_{ij} \frac{\delta_{ij}}{d_{ij}}$.
+
+Next, we can say that $M(X) = M^d(X) + M^{-d}(X)$ where $M^d(X)$ is the 
+diagonal matrix of $M(X)$ while $M^{-d}(X)$ is the off-diagonal matrix. 
+
+Then $[M^d(X)X]_{ik} = m^d_{ii} x_{ik}$ (since $M^d(X)$ is diagonal), but then 
+$m^d_{ii} = \sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}}$, so 
+$[M^d(X)X]_{ik} = \sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik}$. 
+
+On the other hand, 
+$[M^{-d}(X)X]_{ik} = m^{-d}_{ij} x_{ik} = 
+\sum_j -w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik}$.
+
+Then ...
+
+$$[M(X)X]_{ik} = [(M^d(X) + M^{-d}(X))X]_{ik}$$
+$$= [M^d(X)]_{ik} + [M^{-d}(X)]_{ik}$$\
+$$= \sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik} + 
+\sum_j -w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik}$$
+$$= \sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik} 
+- w_{ij} \frac{\delta_{ij}}{d_{ij}} x_{ik}$$
+$$= \sum_j w_{ij} \frac{\delta_{ij}}{d_{ij}} (x_{ik} - x_{ik})$$
+
+And then if we just change the arbitrary indices as before, we get:
+
+$$\sum_k w_{rk} \frac{\delta_{rk}}{d_{rk}} (x_{rs} - x_{ks})$$
 
 # Problem 2
 
@@ -46,7 +111,21 @@ $$x^T L x + (e^T x) ^ 2 = x^T L x + \Big(\sum_i^n x_i \Big) ^ 2$$
 
 We know that $L$ is positive semidefinite, so $x^T L x \geq 0$. On the other 
 hand, $(\sum_i^n x_i) ^ 2 \geq 0$. Therefore, 
-$x^T (L + ee^T) x = x^T L x + (\sum_i^n x_i) ^ 2 \geq 0$. 
+$x^T (L + ee^T) x = x^T L x + (\sum_i^n x_i) ^ 2 \geq 0 \implies L + ee^T$ is 
+positive semidefinite.
+
+So now what's left is showing that $L + ee^T$ is positive *definite*. Since 
+both $L$ and $ee^T$ are positive semidefinite, we just have to show that if 
+$x^T L x = 0$ then $x^T ee^T x \neq 0$ or vice versa.
+
+Let $x^T ee^T x = 0$. Then 
+$x^T ee^T x = (x^T e)(e^T x) = (e^T x)^2 \implies e^T x = 0 \implies e \perp x$.
+
+So now let $e \perp x$ and examine $x^T L x$. From **Theorem C.1** in the text, 
+we know that $L$ has one zero eigenvalue with its corresponding eigenvector 
+being of the form $\alpha e$. Therefore, if $x \perp \alpha e$, then 
+$x^T L x \neq 0$. Since $x^T L x \geq 0$, $x^T L x$ must be greater than 0, 
+hence $x^T (L + ee^T) x > 0 \implies L + ee^T$ is positive definite.
 
 # Problem 3
 
