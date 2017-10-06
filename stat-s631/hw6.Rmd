@@ -1,0 +1,170 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 6'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+theme_set(theme_bw())
+import::from(GGally, ggpairs)
+```
+
+```{r load_data}
+angell.df <- read.table('~/dev/stats-hw/stat-s631/Angell.txt', 
+                        stringsAsFactors = FALSE) %>% 
+  dp$mutate(city = rownames(.))
+```
+
+# Part a
+
+```{r part_a}
+ggpairs(angell.df, 
+        columns = c('moralIntegration', 'heterogeneity', 'mobility'), 
+        aes(colour = region))
+```
+
+There appears to be a linear trend between `moralIntegration` and each of the 
+predictors, `heterogeneity` and `mobility`. At the very least it can be said 
+that there is no reason to not believe that the trend is linear---there are no 
+obvious changes in the slope, and there is no obvious change in the variance 
+of the response variable for various values of each predictor. There is also no obvious trend between the two predictors. OLS appears to be a plausible method for a 
+model in this case.
+
+# Part b
+
+```{r part_b}
+model.b <- lm(moralIntegration ~ heterogeneity, data = angell.df)
+summary(model.b)
+```
+
+Here $\hat{\beta}_0 \approx 14.426$. If `heterogeneity` $= 0$, then the 
+response `moralIntegration` would be estimated to equal this value. However, in 
+this case, we cannot exactly say this since `heterogeneity` never crosses $0$ 
+in the data.
+
+$\hat{\beta}_1 \approx -0.103$. The model implies that for each unit increase in 
+`heterogeneity`, on average, `moralIntegration` decreases by $\sim 0.103$. We do 
+not need to account for other predictors in this case. 
+
+$R^2 \approx 0.345$. This means that around 34\% of the variance in 
+`moralIntegration` is explained by OLS model using `heterogeneity`. 
+
+# Part c
+
+Before we build the full model, from the scatterplot of `heterogeneity` vs. 
+`mobility`, we can see that there is little to no correlation between the two. 
+So we would expect that adding `mobility` to the model won't take any of 
+`heterogeneity`'s influence in the model. In other words, we do not expect 
+$\hat{\beta}_1$ to change much (here we will say $\beta_1$ corresponds to 
+`heterogeneity` while $\beta_2$ corresponds to `mobility`).
+
+```{r part_c_1}
+model.c <- lm(moralIntegration ~ heterogeneity + mobility, data = angell.df)
+summary(model.c)
+```
+
+As expected, $\hat{\beta}_1$ did not change much. Given fixed `mobility`, 
+one unit increase in `heterogeneity` would result in, on average, a 
+$\sim 0.109$ decrease in `moralIntegration`. Likewise, given fixed 
+`heterogeneity`, one unit increase in `mobility` would result in, on average, a 
+$\sim 0.193$ decrease in `moralIntegration`, given our $\hat{\beta}_2$. 
+
+Here $\hat{\beta}_0 \approx 19.941$. Like in part (b), this can be interpreted 
+as "If our inputs are 0s, then we expect the response, `moralIntegration` to be 
+equal to 19.941." Of course, like in part (b), the input values in the data 
+never cross 0, so we cannot exactly claim this. One thing to note is that 
+$\hat{\beta}_0$ increased by around 5, which is approximately equal to the 
+sample mean of `mobility` times its coefficient, $\hat{\beta}_2$. This is 
+consistent with our previous observation where the two predictors were 
+uncorrelated.
+
+$R^2 \approx 0.624$. In other words, the full model using both predictors 
+explains around 62\% of the variability in `moralIntegration`. 
+
+```{r part_c_2}
+car::avPlots(model.c)
+```
+
+The added-variable plots show the contribution of each predictor given the 
+other predictor. Both plots are linear, implying that they both contribute to 
+the model, which is consistent with our previous observations about the two 
+predictors being uncorrelated. If instead they were highly correlated, one of 
+the plots would look like a null plot.
+
+# Part d
+
+The output of `summary(model.c)` includes the estimate for $\beta_1$ as well as 
+the corresponding standard error. These can be used to compute the $t$-value 
+with the null hypothesis that $\beta_1 = 0$. Here the magnitude of the 
+$t$-value is very large, which corresponds to a small $p$-value. Thus we can 
+reject the null hypothesis that $\beta_1 = 0$. 
+
+If we want to find a 97\% confidence interval for $\hat{\beta}_1$:
+
+```{r part_d}
+# confidence level
+p <- .97
+
+# compute t
+deg.freedom <- model.c$df.residual
+t.val <- qt((p + 1) / 2, deg.freedom)
+
+# find estimate and standard error
+estimate <- coef(model.c)['heterogeneity']
+std.err <- summary(model.c)$coefficients['heterogeneity', 'Std. Error']
+
+# confidence interval
+c(-t.val, t.val) * std.err + estimate
+```
+
+# Part e
+
+```{r part_e}
+set.seed(100)
+
+# new column that's just a linear combination of the covariates
+angell.df %<>% 
+  dp$mutate(social = heterogeneity + mobility + rnorm(nrow(.), 0, .1))
+
+# model using this new covariate
+model.e <- lm(moralIntegration ~ heterogeneity + mobility + social, 
+              data = angell.df)
+
+summary(model.e)
+
+ggpairs(angell.df, 
+        columns = c('moralIntegration', 'heterogeneity', 'mobility', 'social'), 
+        aes(colour = region))
+
+car::avPlots(model.e)
+```
+
+Assuming a reasonable value of $\alpha$ (say, $\alpha = 0.05$), we would 
+fail to reject the null hypothesis that $\beta_1 = 0$. This is true of all 
+of our estimates for the coefficients (except for $\beta_0$). On the other 
+hand, our $R^2$ value is very high, and the $F$-statistic related to the 
+null hypothesis that $\beta_1 = \beta_2 = \beta_3 = 0$ corresponds to a very 
+low $p$-value, implying that this model is much better than an intercept-only 
+model. It's also worth noting that the $t$-test can only make conclusions about 
+the $\beta$s individually, not all at once (for that we would need the 
+$F$-test).
+
+This occurs because one of our predictors is highly correlated with two of 
+the others. We can see the effect of this by comparing the pairwise 
+scatterplots vs. the added-variable plots. 
