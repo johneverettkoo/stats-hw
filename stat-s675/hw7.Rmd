@@ -1,0 +1,98 @@
+---
+title: "STAT-S675"
+subtitle: 'Homework 7'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+[Link to assignment](http://pages.iu.edu/~mtrosset/Courses/675/hwGraphs.txt)
+
+```{r packages}
+library(ggplot2)
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(ggrepel, geom_text_repel)
+import::from(viridis, scale_colour_viridis)
+
+theme_set(ggthemes::theme_base())
+
+source('http://pages.iu.edu/~mtrosset/Courses/675/stress.r')
+```
+
+# Problem 1
+
+## Figure ??(a)
+
+```{r p1a}
+# parameters/constants
+a <- sqrt(2 - 2 * cos(pi / 3))
+b <- sqrt(2 + 2 * cos(pi / 3))
+
+# construct the data
+input.df <- dplyr::data_frame(i = seq(6)) %>% 
+  dp$mutate(theta = (i - 1) * pi / 3) %>% 
+  dp$mutate(x = cos(theta), y = sin(theta)) %>% 
+  # attach i+1, i+2, and i+3 for the edge weights
+  dp$mutate(x.next = lead(x), y.next = lead(y), 
+            x.next.2 = lead(x, 2), y.next.2 = lead(y, 2), 
+            x.next.3 = lead(x, 3), y.next.3 = lead(y, 3))
+
+# plot
+figure.a <- ggplot(input.df) + 
+  coord_fixed() + 
+  # scale_colour_viridis() + 
+  scale_colour_distiller(palette = 'Spectral') + 
+  labs(x = NULL, y = NULL, colour = 'dissimilarity') + 
+  # edge weights
+  geom_segment(aes(x = x, y = y, 
+                   xend = x.next, yend = y.next, 
+                   colour = a)) + 
+  geom_segment(aes(x = x, y = y, 
+                   xend = x.next.2, yend = y.next.2, 
+                   colour = b)) + 
+  geom_segment(aes(x = x, y = y, 
+                   xend = x.next.3, yend = y.next.3, 
+                   colour = 2)) + 
+  # vertices
+  geom_point(aes(x = x, y = y)) + 
+  geom_text_repel(aes(x = x, y = y, label = i))
+
+figure.a
+```
+
+## Figure ??(b)
+
+```{r p1b}
+# paramters/constants
+N.iter <- 20
+
+# compute distance matrix
+Dist <- as.matrix(dist(dp$select(input.df, x, y)))
+
+Delta <- rbind(c(0, a, b, 2, a + 2, b + 2), 
+               c(a, 0, a, b, 2, a + 2), 
+               c(b, a, 0, a, b, 2), 
+               c(2, b, a, 0, a, b), 
+               c(a + 2, 2, b, a, 0, a), 
+               c(b + 2, a + 2, 2, b, a, 0))
+```
+
+# Problem 2
+
+[Exercise 6.8.1 from the text]
+
+# Problem 3

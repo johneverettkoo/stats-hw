@@ -164,12 +164,12 @@ $P(BRB) = \frac{2}{7} \frac{5}{6} \frac{1}{5} = \boxed{\frac{1}{21}}$
 
 ## Part c
 
-$P(RBB) = \frac{2}{7} \frac{5}{6} \frac{4}{5} = \boxed{\frac{4}{21}}$
+$P(RBB) = \frac{5}{7} \frac{2}{6} \frac{1}{5} = \boxed{\frac{1}{21}}$
 
 ## Part d
 
 We can just sum up our answers from parts (a), (b), and (c):
-$P(\text{third is } B) = \frac{4 + 1 + 4}{21} = \boxed{\frac{2}{7}}$
+$P(\text{third is } B) = \frac{4 + 1 + 1}{21} = \boxed{\frac{2}{7}}$
 
 We also know that $P(\text{third is }B) = P(B) = \boxed{\frac{2}{7}}$.
 
@@ -183,8 +183,8 @@ $\approx \boxed{29.29}$.
 For this scenario, we need one out in the first seven bats, followed by two 
 outs. So one possibility is out, not out six times, out, out. This has 
 probability $p q^6 p p$ where $p = 0.6$ and $q = 0.4$. We can then see that 
-all possibilities have the same probability $p^3 q^6$ and the first six can be 
+all possibilities have the same probability $p^3 q^6$ and the first seven can be 
 ordered however. Then there are $\binom{7}{1}$ possibilities. So 
 $P(\text{2nd and 3rd outs are made by 8th and 9th players})$ 
-$= \binom{7}{1} 0.6^3 0.4^4 \approx \boxed{6.193 \times 10^{-3}}$ We can also 
+$= \binom{7}{1} 0.6^3 0.4^6 \approx \boxed{6.193 \times 10^{-3}}$ We can also 
 just think of this as $P(T_2 = 8)p$.
