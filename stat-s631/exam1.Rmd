@@ -1,0 +1,95 @@
+---
+title: "STAT-S631"
+subtitle: 'Exam 1'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Statement
+
+On my honor, I have not had any form of communicationabout this exam with any 
+other individual (including other students, teaching assistants, instructors, 
+etc.).
+
+Signed: *John Koo*
+
+```{r packages_and_data}
+# packages
+import::from(magrittr, `%>%`)
+dp <- loadNamespace('dplyr')
+library(ggplot2)
+import::from(GGally, ggpairs)
+
+# plotting stuff
+theme_set(theme_bw())
+
+# read data
+city.df <- read.table('~/dev/stats-hw/stat-s631/takehome1.txt')
+```
+
+# Question 1
+
+```{r q1}
+N <- nrow(city.df)
+prop.crime.above.3200 <- nrow(dp$filter(city.df, crime > 3200)) / N
+
+ggplot(city.df) + 
+  geom_histogram(aes(x = crime), 
+                 fill = 'white', 
+                 colour = 'black', 
+                 binwidth = 200) + 
+  labs(x = 'crime rate [per 100,000]')
+
+qqnorm(city.df$crime)
+```
+
+From the data, the estimated probability that a randomly selected city will have 
+a crime rate higher than 3,200 per 100,000 people is `r prop.crime.above.3200`.
+
+The histogram of `crime` seems to suggest that the data are normally 
+distributed. The histogram is a symmetric, unimodal bell curve. A QQ-plot 
+confirms this.
+
+# Question 2
+
+```{r q2}
+ggpairs(city.df, lower = list(continuous = 'smooth'))
+
+city.df %>% 
+  dp$transmute(log.population = log(population), 
+               log.nonwhite = log(nonwhite), 
+               log.density = log(density), 
+               crime) %>% 
+  ggpairs(lower = list(continuous = 'smooth'))
+```
+
+From the pairwise scatterplots, if `crime` is the response variable, a log 
+transformation is appropriate for all three of the covariates.
+
+```{r q2_2}
+model.2 <- lm(crime ~ log(population), data = city.df)
+summary(model.2)
+```
+
+## Part a
+
+From the scatterplot of `crime` vs `population`, there are no obvious violations 
+of our assumptions. The trend looks linear and there is an even number of 
+points to either side of the OLS line. 
+
+## Part b
+
