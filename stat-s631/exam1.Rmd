@@ -93,3 +93,12 @@ points to either side of the OLS line.
 
 ## Part b
 
+We can interpret $\hat{\beta}_1$, the coefficient for `log(population)`, as 
+follows: For a unit increase in `log(population)`, we expect that, on average, 
+the response variable, `crime`, to increase by 648.9 units.
+
+The underlying hypothesis test is $H_0 : \beta_1 = 0$, $H_A : \beta_1 \neq 0$.
+We know that $\frac{\hat{\beta}_1 - \beta_1}{se(\beta_1)} \sim t_{n - p - 1}$. 
+Under $H_0$, $\beta_1 = 0$, so 
+$\frac{\hat{\beta}_1}{se(\beta_1)} ~ t_{n - p - 1}$. Then our $p$-value for 
+this hypothesis test is $P(|t|
