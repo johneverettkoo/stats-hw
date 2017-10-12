@@ -2,8 +2,8 @@
 title: "STAT-S675"
 subtitle: 'Homework 7'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 header-includes:
 - \usepackage{float}
 ---
