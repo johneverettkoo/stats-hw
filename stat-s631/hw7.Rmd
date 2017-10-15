@@ -1,0 +1,56 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 6'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+theme_set(theme_bw())
+import::from(GGally, ggpairs)
+```
+
+# Problem 1
+
+[From ALR 4.1]
+
+```{r q1_setup}
+bgsgirls.df <- alr4::BGSgirls %>% 
+  dp$mutate(ave = (WT2 + WT9 + WT18) / 3, 
+            lin = WT18 - WT2, 
+            quad = WT2 - 2 * WT9 + WT18)
+
+bgsgirls.df %>% 
+  dp$transmute(ave, lin, quad, BMI18) %>% 
+  ggpairs(lower = list(continuous = 'smooth'))
+
+model.1 <- lm(BMI18 ~ ave + lin + quad, data = bgsgirls.df)
+
+summary(model.1)
+```
+
+From the scatterplot matrix, we know that while both `ave` and `lin` correlate 
+fairly strongly with `BMI18`, they also correlate with each other. 
+
+# Problem 2
+
+[From ALR 4.2]
+
+# Problem 3
+
+[From ALR 4.6 and 4.7]
