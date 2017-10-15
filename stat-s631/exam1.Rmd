@@ -267,5 +267,24 @@ predict(model.3,
         level = .99)
 ```
 
-Our 99\% confidence interval for an otherwise average city with a population of 
-$1.15 \times 10^6$ is 3,065.6 to 3,308.9 per 100,000 people.
+Our 99\% confidence interval for the crime rate of an otherwise average city 
+with a population of $1.15 \times 10^6$ is 3,065.6 to 3,308.9 per 100,000 
+people. In other words, we are 99\% confident that the average crime rate for a 
+city with a population of $1.15 \times 10^6$ is between 3,065.6 and 3,308.9 per 
+100,000.
+
+If instead, we want a 99\% confidence interval for a randomly selected city with 
+this population (and is otherwise average), then
+
+```{r q4c_2}
+predict(model.3, 
+        newdata = data.frame(population = 1150, 
+                             nonwhite = mean(city.df$nonwhite, na.rm = TRUE), 
+                             density = mean(city.df$density, na.rm = TRUE)), 
+        interval = 'predict', 
+        level = .99)
+```
+
+(I wasn't sure if the question was asking for the average crime rate across 
+all cities with certain attributes or what we would expect to see for a randomly 
+selected city with these attributes.)
