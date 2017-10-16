@@ -29,7 +29,7 @@ import::from(GGally, ggpairs)
 
 [From ALR 4.1]
 
-```{r q1_setup}
+```{r q1_setup, cache = TRUE}
 bgsgirls.df <- alr4::BGSgirls %>% 
   dp$mutate(ave = (WT2 + WT9 + WT18) / 3, 
             lin = WT18 - WT2, 
@@ -45,7 +45,13 @@ summary(model.1)
 ```
 
 From the scatterplot matrix, we know that while both `ave` and `lin` correlate 
-fairly strongly with `BMI18`, they also correlate with each other. 
+fairly strongly and positively with `BMI18`, they also correlate with each 
+other. On the other hand, `quad` doesn't seem to correlate very strongly with 
+any of the variables. 
+
+From the model summary, we can see that only the intercept term and the 
+coefficient estimate for `lin` are significant at reasonable significance levels 
+(e.g., $\alpha = 0.01$ or $0.05$).
 
 # Problem 2
 
