@@ -1,0 +1,96 @@
+---
+title: "STAT-S675"
+subtitle: 'Homework 8'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+[Link to assignment](http://pages.iu.edu/~mtrosset/Courses/675/hwManifold.txt)
+
+```{r setup_for_assignment}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(foreach, foreach, `%do%`)
+import::from(readr, read_table2)
+import::from(scatterplot3d, scatterplot3d)
+library(ggplot2)
+
+source('http://pages.iu.edu/~mtrosset/Courses/675/out.r')
+source('http://pages.iu.edu/~mtrosset/Courses/675/stress.r')
+source('http://pages.iu.edu/~mtrosset/Courses/675/manifold.r')
+
+theme_set(theme_bw())
+```
+
+# Exercise 7.4.1
+
+[From the text]
+
+Here we will construct $\Delta$ from the circle (since the result is identical 
+in either case). 
+
+```{r construct_delta, cache = TRUE}
+# number of points
+n <- 200
+
+# radius of circle
+r <- 1 / pi
+
+# construct dissimilarity matrix
+theta <- seq(2 * pi / n, 2 * pi, 2 * pi / n)
+Delta <- foreach(i = theta, .combine = rbind) %do% {
+  foreach(j = theta, .combine = c) %do% {
+    theta.ij <- abs(i - j)
+    if (theta.ij > pi) theta.ij <- 2 * pi - theta.ij
+    arc.length <- theta.ij * r
+    return(arc.length)
+  }
+}
+```
+
+```{r embed_delta}
+# spectral decomposition of tau(Delta2)
+B <- mds.tau(Delta ** 2)
+B.eigen <- eigen(B)
+
+# find first two components
+projection.df <- B.eigen$vectors[, 1:2] %>% 
+  apply(2, function(x) x * sqrt(B.eigen$values[1:2])) %>% 
+  as.data.frame()
+
+# plot first two components
+ggplot(projection.df) + 
+  geom_point(aes(x = V1, y = V2)) + 
+  coord_fixed()
+```
+
+```{r load_data}
+file.url <- 'http://pages.iu.edu/~mtrosset/Courses/675/manifold.y'
+Y <- read_table2(file.url, col_names = FALSE)
+
+scatterplot3d(Y$X1, Y$X2, Y$X3)
+```
+
+# Problem 1
+
+# Problem 2
+
+# Problem 3
+
+# Problem 4
+
+# Problem 5
