@@ -64,7 +64,8 @@ Delta <- foreach(i = theta, .combine = rbind) %do% {
 
 ```{r embed_delta}
 # spectral decomposition of tau(Delta2)
-B <- mds.tau(Delta ** 2)
+Delta2 <- Delta ** 2
+B <- mds.tau(Delta2)
 B.eigen <- eigen(B)
 
 # find first two components
@@ -87,10 +88,41 @@ scatterplot3d(Y$X1, Y$X2, Y$X3)
 
 # Problem 1
 
+```{r p1}
+# CMDS on Y
+Y.dist <- mds.edm1(Y)
+Y.cmds <- cmdscale(Y.dist)
+
+# plot first two components
+Y.cmds.df <- Y.cmds %>% 
+  as.data.frame() %>% 
+  dp$mutate(id = rownames(.))
+ggplot(Y.cmds.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+# rank by first component
+rank(Y.cmds.df$V1)
+```
+
 # Problem 2
+
+```{r p2}
+# set k
+k <- 4
+
+# define dissimilarity matrix for Y
+Y.knn <- graph.knn(Y.dist, k)
+Y.dis <- graph.dis(Y.knn, Y.dist)
+Y.shortest <- graph.short(Y.dis)
+
+
+```
 
 # Problem 3
 
 # Problem 4
 
 # Problem 5
+
+# Problem 6
