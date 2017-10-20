@@ -1,6 +1,6 @@
 ---
 title: "STAT-S631"
-subtitle: 'Assignment 6'
+subtitle: 'Assignment 7'
 author: "John Koo"
 # output: pdf_document
 output: html_document
@@ -30,18 +30,24 @@ import::from(GGally, ggpairs)
 [From ALR 4.1]
 
 ```{r q1_setup, cache = TRUE}
+# set up data
 bgsgirls.df <- alr4::BGSgirls %>% 
   dp$mutate(ave = (WT2 + WT9 + WT18) / 3, 
             lin = WT18 - WT2, 
             quad = WT2 - 2 * WT9 + WT18)
 
+# pairwise scatterplot
 bgsgirls.df %>% 
   dp$transmute(ave, lin, quad, BMI18) %>% 
   ggpairs(lower = list(continuous = 'smooth'))
 
+# fit model
 model.1 <- lm(BMI18 ~ ave + lin + quad, data = bgsgirls.df)
-
 summary(model.1)
+
+# also model from 4.1
+model.4.1 <- lm(BMI18 ~ WT2 + WT9 + WT18, data = bgsgirls.df)
+summary(model.4.1)
 ```
 
 From the scatterplot matrix, we know that while both `ave` and `lin` correlate 
@@ -51,12 +57,81 @@ any of the variables.
 
 From the model summary, we can see that only the intercept term and the 
 coefficient estimate for `lin` are significant at reasonable significance levels 
-(e.g., $\alpha = 0.01$ or $0.05$).
+(e.g., $\alpha = 0.01$ or $0.05$). This is consistent with what we observed in 
+the scatterplots: `quad` has no correlation with `BMI18`, and although both 
+`ave` and `lin` correlate with `BMI18`, they correlate with each other, so we 
+expect some unexpected behavior. In this case, the model fit `BMI18` on `lin` 
+and not on `ave`. 
+
+Comparing the results here to the example in Section 4.1, we can see that 
+$\hat{\beta}_0$ is the same here as it is in the example. This is expected, 
+since the regressors are all from the same set of three predictors, and although 
+they end up being at different scales, this can just be adjusted by the 
+estimates for the $\beta$s. Summary statistics such as the residual standard 
+error, $R^2$, and $F$-statistic are identical, which is, again, expected, since 
+the regressors are derived from the same set of predictors. 
 
 # Problem 2
 
 [From ALR 4.2]
 
+```{r p2}
+transact.df <- car::Transact %>% 
+  dp$mutate(a = (t1 + t2) / 2, 
+            d = t1 - t2)
+
+m1 <- lm(time ~ t1 + t2, data = transact.df)
+summary(m1)
+
+m2 <- lm(time ~ a + d, data = transact.df)
+summary(m2)
+
+m3 <- lm(time ~ t2 + d, data = transact.df)
+summary(m3)
+
+m4 <- lm(time ~ t1 + t2 + a + d, data = transact.df)
+summary(m4)
+```
+
+## Part 1
+
+Coefficients are omitted when the model matrix isn't full rank. Since `a` and 
+`d` are linear combinations of `t1` and `t2`, the model matrix of `m4`, which 
+has five columns, isn't of rank 5. 
+
+## Part 2
+
+All of the models have the same $\hat{\beta}_0$ (including standard error), 
+$R^2$, residuals (and therefore, RMSE), $F$-statistic, and degrees of freedom 
+(since two of the four regressors are omitted in `m4`). However, they do not 
+have the same $\hat{\beta}_1$ or $\hat{\beta}_2$, even when the corresponding 
+regressors are the same. 
+
+## Part 3
+
+`d` is a linear combination of `t1` and `t2`. Therefore, `m2` and `m3` are 
+equivalent models. 
+
+Starting with model 2:
+
+$$E[Y | a, d] = \beta_0 + \beta_{21} a + \beta_{22} d$$
+$$= \beta_0 + \beta_{21}\frac{t_1 + t_2}{2} + \beta_{22} (t_1 - t_2)$$
+$$= \beta_0 + (\frac{\beta_{21}}{2} + 
+\beta_{22}) t_1 + (\frac{\beta_{21}}{2} - \beta_{22}) t_2$$
+
+Therefore, for model 3, $\beta_{31} = \frac{\beta_{21}}{2} + \beta_{22}$ and 
+$\beta_{32} = \frac{\beta_{21}}{2} - \beta_{22}$.
+
 # Problem 3
 
 [From ALR 4.6 and 4.7]
+
+```{r p3}
+un11.df <- alr4::UN11
+```
+
+$$\log{(\hat{\text{fertility}})} = 1.501 - 0.01 \text{pctUrban}$$
+So ...
+
+$$\hat{\text{fertility}} = \exp{(1.501 - .01 \text{pctUrban})}$$
+$$= 4.486 e^{-0.01 \text{pctUrban}}$$
