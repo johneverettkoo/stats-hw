@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 7'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 header-includes:
 - \usepackage{float}
 ---
@@ -126,12 +126,39 @@ $\beta_{32} = \frac{\beta_{21}}{2} - \beta_{22}$.
 
 [From ALR 4.6 and 4.7]
 
-```{r p3}
-un11.df <- alr4::UN11
-```
-
 $$\log{(\hat{\text{fertility}})} = 1.501 - 0.01 \text{pctUrban}$$
 So ...
 
 $$\hat{\text{fertility}} = \exp{(1.501 - .01 \text{pctUrban})}$$
 $$= 4.486 e^{-0.01 \text{pctUrban}}$$
+
+Then for one unit increase in `pctUrban`, `fertility` is multiplied by 
+$4.487 e^{-0.01}$ (on average). 
+
+```{r p3}
+un11.df <- alr4::UN11
+model.4.7 <- lm(log(fertility) ~ log(ppgdp) + lifeExpF, data = un11.df)
+summary(model.4.7)
+```
+
+The model here is:
+
+$$E[\log{Y} | x_1, x_2] = \beta_0 + \beta_1 \log{x_1} + \beta_2 x_2$$
+
+This is equivalent to (after some algebra):
+
+$$E[Y | x_1, x_2] = \gamma_0 x_1^{\beta_1} e^{\beta_2 x_2}$$
+
+Where $\gamma_0 = e^{\beta_0}$.
+
+Then if `ppgdp`, which is $x_1$ in this case (and replacing our parameters with 
+estimates) we can verify that a 25\% increase in $x_1$ would yield:
+
+$$\frac{\hat{\gamma}_0 (1.25 x_1)^{\hat{\beta}_1} e^{\hat{\beta}_2 x_2})}
+{\hat{\gamma}_0 x_1^{\hat{\beta}_1} e^{\hat{\beta}_2 x_2}}$$
+
+$$= \frac{(1.25 x_1) ^ {\hat{\beta}_1}}{x_1 ^ {\hat{\beta}_1}}$$
+
+$$= 1.25 ^ {\hat{\beta}_1} \approx 0.9855$$
+
+And $1 - 0.9855 = 0.014497$
