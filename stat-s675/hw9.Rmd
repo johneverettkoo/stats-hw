@@ -1,9 +1,9 @@
 ---
 title: "STAT-S675"
-subtitle: 'Homework 8'
+subtitle: 'Homework 9'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -49,6 +49,45 @@ Therefore, single-linkage doesn't satisfy the triangle inequality and so is not
 EDM-1.
 
 # Exercise 8.5.2
+
+```{r p2_cluster}
+import::from(readr, read_table2)
+import::from(magrittr, `%>%`)
+
+voting.url <- 'http://pages.iu.edu/~mtrosset/Courses/675/congress.dat'
+voting.matrix <- read_table2(voting.url, 
+                             col_names = FALSE) %>% 
+  as.dist()
+
+single.link <- hclust(voting.matrix, 'single')
+plot(single.link)
+
+complete.link <- hclust(voting.matrix, 'complete')
+plot(complete.link)
+
+average.link <- hclust(voting.matrix, 'average')
+plot(average.link)
+```
+
+The complete and average linkage methods had similar results compared to the 
+single linkage method. 
+
+We can also try looking at an embedding of the dissimilarity matrix:
+
+```{r p2_embed}
+cmdscale(voting.matrix) %>% 
+  as.data.frame() %>% 
+  dplyr::mutate(id = seq(n())) %>% 
+  ggplot() + 
+  coord_fixed() + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  labs(x = 'component 1', y = 'component 2')
+```
+
+Based on an (imperfect) 2-dimensional embedding, the complete and average 
+linkage methods were able to create two clusters based on the first component. 
+It appears that 3 and 8 would naturally fall within a cluster, and this is seen 
+in the average linkage dendrogram, we can see this. 
 
 # Exercise 8.5.3
 
