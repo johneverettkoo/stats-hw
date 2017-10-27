@@ -1,0 +1,239 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 8'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.width = 5, 
+                      fig.height = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r load_data, results = 'asis'}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(readr, read_table2)
+import::from(xtable, xtable)
+library(ggplot2)
+theme_set(theme_bw())
+
+robey.df <- read.table('~/dev/stats-hw/stat-s631/Robey.txt') %>% 
+  dp$mutate(country = rownames(.))
+
+head(robey.df) %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+```
+
+`tfr` (total fertility rate) makes the most sense as a response variable since 
+`contraceptors` (percent of married women using contraception) would directly 
+affect this. 
+
+# Part a
+
+```{r a_viz}
+robey.df %>%
+  ggplot() +
+  geom_boxplot(aes(x = region, group = region, y = tfr, fill = region)) +
+  scale_fill_brewer(palette = 'Set1') + 
+  theme(legend.position = 'bottom')
+```
+
+From a plot of fertility rate vs. region, we might expect that there is a 
+somewhat significant difference between Africa and the Near East while there 
+isn't much of a significant difference between Asia and Latin America. 
+
+```{r a_mod}
+region.mod <- lm(tfr ~ region, data = robey.df)
+summary(region.mod)
+```
+
+From the model summary, we can see that the significance value between 
+Africa (the baseline in the model) vs the Near East is 0.0544. If we set our 
+$\alpha = 0.05$ or $0.01$, then we would fail to reject the null hypothesis, 
+although the value is still very close to $0.05$ and below $0.1$, another common 
+significance level. 
+
+Comparing Asia and Latin America is a bit more difficult. One thing we can do 
+is perform the following hypothesis test:
+
+$H_0 : \beta_1 = \beta_2$  
+$H_A : \beta_1 \neq \beta_2$
+
+Then our test statistic is a $t$ value with degrees of freedom  $n - p - 1$:
+
+$$t_{n - p - 1} = \frac{\hat{\beta}_2 - \hat{\beta}_3}{\sqrt{SE_2^2 + SE_3^2}}$$
+
+where $SE_i$ is the sample standard error for the $i$^th^ coefficient (written 
+this way for brevity).
+
+```{r beta_2_3_test}
+coefs <- summary(region.mod)$coefficients
+t.stat <- 
+  (coefs['regionAsia', 'Estimate'] - coefs['regionLatin.Amer', 'Estimate']) / 
+  sqrt(coefs['regionAsia', 'Std. Error'] ^ 2 + coefs['regionLatin.Amer', 'Std. Error'] ^ 2)
+
+# p-value
+pt(t.stat, region.mod$df.residual) / 2
+```
+
+So if $\alpha = 0.05$ or $0.01$, we would fail to reject the null hypothesis, 
+but again, if our significance level was just 10\%, we would reject the null 
+hypothesis.
+
+# Part b
+
+The intercept term $\hat{\beta}_0$ is the average fertility rate of the baseline 
+region, Africa. So on average, the fertility rate of African countries is 
+around $5.856$. 
+
+The rest of the coefficients are relative to the baseline. So Asia's average 
+fertility rate is $2.316$ less than Africa's, Latin America's average fertility 
+rate is $1.806$ less than Africa's, and the Near East's average fertility rate 
+is $1.056$ less than Africa's.
+
+$E[Y | Africa] = \hat{\beta}_0 = 5.856$  
+$E[Y | Asia] = \hat{\beta}_0 + \hat{\beta}_1 = 5.856 - 2.316 = 3.54$  
+$E[Y | Latin America] = \hat{\beta}_0 + \hat{\beta}_2 = 5.856 - 1.806 = 4.05$  
+$E[Y | Near East] = \hat{\beta}_0 + \hat{\beta}_3 = 5.856 - 1.056 = 4.8$
+
+# Part c
+
+```{r c}
+plot(effects::Effect('region', region.mod, confidence.level = .95))
+```
+
+The above plot shows the sample mean and 95\% confidence interval of fertility 
+rate for each region. Going back to part a, the sample mean fertility rate of 
+Africa is inside the 95\% confidence interval of the fertility rate of the Near 
+East (and vice versa), and the same is true of Asia and Latin America. 
+
+# Part d
+
+```{r d, fig.width = 8}
+ggplot(robey.df) + 
+  geom_point(aes(x = contraceptors, y = tfr, colour = region)) + 
+  stat_smooth(method = 'lm', 
+              aes(x = contraceptors, y = tfr, 
+                  fill = region, colour = region), 
+              se = FALSE) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1') + 
+  labs(x = 'contraception rate [%]', 
+       y = 'fertility rate [children per woman]') + 
+  theme(legend.position = 'bottom')
+
+ggplot(robey.df) + 
+  geom_point(aes(x = contraceptors, y = tfr, colour = region)) + 
+  stat_smooth(method = 'lm', 
+              aes(x = contraceptors, y = tfr, 
+                  fill = region, colour = region), 
+              alpha = .1) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1') + 
+  labs(x = 'contraception rate [%]', 
+       y = 'fertility rate [children per woman]') + 
+  theme(legend.position = 'bottom')
+
+ggplot(robey.df) + 
+  geom_point(aes(x = contraceptors, y = tfr, colour = region)) + 
+  stat_smooth(method = 'lm', 
+              aes(x = contraceptors, y = tfr, 
+                  fill = region, colour = region)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1') + 
+  labs(x = 'contraception rate [%]', 
+       y = 'fertility rate [children per woman]') + 
+  theme(legend.position = 'bottom') + 
+  facet_wrap(~ region, nrow = 1)
+```
+
+We can nitpick a bit, but overall, it appears that there's no reason to believe 
+that there is a significant difference in slopes or intercepts among the 
+regions. Especially once we add the standard errors, they all overlap. 
+
+# Part e
+
+```{r e}
+full.mod <- lm(tfr ~ contraceptors * region, data = robey.df)
+summary(full.mod)
+```
+
+As expected, the `region` terms (differences in the intercept among regions) 
+and the interaction terms (differences in the slope among regions) are all 
+not significant, although we can't say this just from the individual $t$-tests.
+
+Again, the baseline region is Africa. On average, if no country in Africa used 
+contraception, a fertility rate of 6.833\% is expected (although we can't 
+exactly say this since contraception rate of 0 isn't in the data for any 
+country). Similarly, the average fertility rates of Asia, Latin America, and the 
+Near East are `r round(full.mod$coefficients[1] + full.mod$coefficients[3], 3)`%, 
+`r round(full.mod$coefficients[1] + full.mod$coefficients[4], 3)`%, and 
+`r round(full.mod$coefficients[1] + full.mod$coefficients[5], 3)`% respectively, 
+given that the contraceptive use rate is 0. 
+
+Moving onto the slopes, the average fertility rate in Africa decreases by 
+0.054 per 1% increase in contraception use. For Asia, this value is 
+`r round(full.mod$coefficients[2] + full.mod$coefficients[6], 3)`, for 
+Latin America, it's 
+`r round(full.mod$coefficients[2] + full.mod$coefficients[7], 3)` and for the 
+Near East, it's 
+`r round(full.mod$coefficients[2] + full.mod$coefficients[8], 3)`.
+
+# Part f
+
+First, we can build a few more models:
+
+```{r f_models}
+contraceptor.mod <- lm(tfr ~ contraceptors, data = robey.df)
+summary(contraceptor.mod)
+
+no.interact.mod <- lm(tfr ~ contraceptors + region, data = robey.df)
+summary(no.interact.mod)
+
+slopes.mod <- lm(tfr ~ contraceptors:region, data = robey.df)
+summary(slopes.mod)
+
+anova(contraceptor.mod, no.interact.mod, full.mod)
+anova(region.mod, no.interact.mod, full.mod)
+anova(slopes.mod, full.mod)
+anova(contraceptor.mod, slopes.mod)
+```
+
+Just from the individual model summaries, we might be tempted to say 
+`slopes.mod`, the model for which each region has its own slope but they all 
+share the same intercept, is the best model, since all of the coefficients are 
+significant. However, we can't take all of the individual $t$-tests together as 
+one summary, and from the $F$-tests, it appears that this model is not 
+significantly different from the model that disregards region altogether and 
+just regresses on contraception use rate. 
+
+# Part g
+
+```{r g}
+ggplot(robey.df) + 
+  stat_smooth(method = 'lm', colour = 'black', 
+              aes(x = contraceptors, y = tfr)) + 
+  geom_point(aes(x = contraceptors, y = tfr, colour = region)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  labs(x = 'contraception rate [%]', 
+       y = 'fertility rate [children per woman]') + 
+  theme(legend.position = 'bottom')
+
+summary(contraceptor.mod)
+```
+
+# Part h
