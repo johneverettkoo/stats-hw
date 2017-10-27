@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 8'
 author: "John Koo"
-output: pdf_document
-# output: html_document
+# output: pdf_document
+output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -74,20 +74,21 @@ $H_0 : \beta_1 = \beta_2$
 $H_A : \beta_1 \neq \beta_2$
 
 Then our test statistic is a $t$ value with degrees of freedom  $n - p - 1$:
-
-$$t_{n - p - 1} = \frac{\hat{\beta}_2 - \hat{\beta}_3}{\sqrt{SE_2^2 + SE_3^2}}$$
+$$t_{n - p - 1} = 
+\frac{\hat{\beta}_2 - \hat{\beta}_3}{\sqrt{a^T \hat{\sigma}^2 (X^T X)^{-1} a}}$$
 
 where $SE_i$ is the sample standard error for the $i$^th^ coefficient (written 
 this way for brevity).
 
 ```{r beta_2_3_test}
 coefs <- summary(region.mod)$coefficients
+a <- c(0, 1, -1, 0)
 t.stat <- 
   (coefs['regionAsia', 'Estimate'] - coefs['regionLatin.Amer', 'Estimate']) / 
-  sqrt(coefs['regionAsia', 'Std. Error'] ^ 2 + coefs['regionLatin.Amer', 'Std. Error'] ^ 2)
+  sqrt(t(a) %*% vcov(region.mod) %*% a)
 
 # p-value
-pt(t.stat, region.mod$df.residual) / 2
+pt(t.stat, region.mod$df.residual) * 2
 ```
 
 So if $\alpha = 0.05$ or $0.01$, we would fail to reject the null hypothesis, 
