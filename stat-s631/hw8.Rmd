@@ -77,8 +77,7 @@ Then our test statistic is a $t$ value with degrees of freedom  $n - p - 1$:
 $$t_{n - p - 1} = 
 \frac{\hat{\beta}_2 - \hat{\beta}_3}{\sqrt{a^T \hat{\sigma}^2 (X^T X)^{-1} a}}$$
 
-where $SE_i$ is the sample standard error for the $i$^th^ coefficient (written 
-this way for brevity).
+where $a = [0, 1, -1, 0]^T$
 
 ```{r beta_2_3_test}
 coefs <- summary(region.mod)$coefficients
@@ -91,9 +90,7 @@ t.stat <-
 pt(t.stat, region.mod$df.residual) * 2
 ```
 
-So if $\alpha = 0.05$ or $0.01$, we would fail to reject the null hypothesis, 
-but again, if our significance level was just 10\%, we would reject the null 
-hypothesis.
+So for typical values of $\alpha$ we would fail to reject the null hypothesis.
 
 # Part b
 
@@ -237,4 +234,23 @@ ggplot(robey.df) +
 summary(contraceptor.mod)
 ```
 
+Since there is only one regressor in the model, the interpretation of the plot 
+is straightforward. According to the model, the relationship between `ftr`, the 
+response, and `contraceptors`, the explanatory variable, is on average linear. 
+For a unit increase in `contraceptors`, we expect, on average, that `ftr` 
+decreases by 0.058.
+
 # Part h
+
+For this part, we'll set $\alpha = .01$.
+
+```{r h}
+predict(contraceptor.mod, 
+        newdata = dp$summarise_all(robey.df, mean), 
+        interval = 'predict', 
+        confidence = .99)
+```
+
+We are 99% confident that this interval will capture the fertility rate of a 
+new country that happens to have a contraception use rate that is the sample 
+mean of all of the other countries.
