@@ -1,0 +1,149 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 9'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+[From ALR 5.14]
+
+# Problem 2
+
+We are given:
+
+$X = [X_1 | X_2]$  
+$H = X (X^T X)^{-1} X^T$  
+$H_R = X_1 (X_1^T X_1)^{-1} X_1^T$
+
+## Part a
+
+#### Show $H_R X_1 = X_1$
+
+$H_R X_1 = X_1 (X_1^T X_1)^{-1} X_1^T X_1$ 
+$= X_1 (X_1^T X_1)^{-1} (X_1^T X_1) = X_1$
+
+#### Show $H X_1 = X_1$
+
+Consider $H X$. We know that $HX = X$, so we can say:
+
+$$HX = H [x_0, x_1, x_2, ..., x_p]$$
+$$= [H x_0, H x_1, ..., H x_p]$$
+
+Where $x_i$ is the $i$^th^ column vector of $X$.
+
+But then $HX = X = [x_0, ..., x_p]$. Therefore:
+
+$$[H x_0, ..., H x_p] = [x_0, ..., x_p]$$
+$$\implies H x_i = x_i$$
+
+Then if we consider $H X_1$:
+
+$$ H X_1 = H [x_0, ..., x_q]$$
+$$= [H x_0, ..., H x_q]$$
+$$= [x_0, ..., x_q]$$
+$$= H_1$$
+
+#### Show $H H_R = H_R$
+
+$H H_R = H \big(X_1 (X_1^T X_1)^{-1} X_1^T \big)$ 
+$= (HX_1) (X_1^T X_1)^{-1} X_1^T = X_1 (X_1^T X_1)^{-1} X_1^T = H_R$
+
+## Part b
+
+#### Show $H - H_R$ is symmetric
+
+$H - H_R$ is symmetric iff $H - H_R = (H - H_R)^T$.
+
+We also know that $H$ and $H_R$ are symmetric. 
+
+Therefore, $(H - H_R)^T = H^T - H_R^T = H - H_R$.
+
+#### Show $H - H_R$ is idempotent
+
+$H - H_R$ is idempotent iff $(H - H_R)^2 = H - H_R$
+
+We know that $H$ and $H_R$ are idempotent. 
+
+Therefore:
+
+$$(H - H_R) (H - H_R) = HH - H H_R - H_R H H_R H_R$$
+$$= H - H_R - H_R H + H_R$$
+$$= H - H_R H$$
+
+Consider that $H$ and $H_R$ are symmetric and $H H_R = H_R$. Therefore, 
+$H_R = H_R^T = (H H_R)^T = H_R^T H^T = H_R H$  
+$\implies H_R = H_R H$.
+
+Therefore:
+
+$$H - H_R H = H - H_R$$
+$$\implies (H - H_R)^2 = H - H_R$$
+
+## Part c
+
+$$\frac{SSreg}{\sigma^2} = \frac{RSS_R - RSS_F}{\sigma^2}$$
+$$= \frac{Y^T (I - H_R) Y - Y^T (I - H) Y}{\sigma^2}$$
+$$= \frac{Y^T (H - H_R) Y}{\sigma^2}$$
+$$= \frac{(Y - X_1 \hat{\beta}_1)^T (H - H_R) (Y - X_1 \hat{\beta}_1)}{\sigma^2}$$
+
+We know that $Y - X_1 \hat{\beta}_1 \sim \mathcal{N}(0, \sigma^2 (I - H_R))$.
+Furthermore, we know that 
+$rank(H - H_R) = rank(H) - rank(H_R) = p + 1 - (p + 1 - q) = q$ (assuming $H$ 
+and $H_R$ are full rank).
+
+Then $\frac{SSreg}{\sigma^2} \sim \chi^2_q$ if 
+$(\frac{H - H_R}{\sigma^2})(\sigma^2 (I - H_R)) = (H - H_R)(I - H_R)$ is 
+idempotent. But 
+$(H - H_R)(I - H_R) = H - H H_R - H_R + H_R H_R = H - H_R - H_R + H_R = H - H_R$ 
+which we already know to be idempotent. Therefore, 
+
+$$\frac{SSreg}{\sigma^2} \sim \chi^2_q$$
+
+## Part d
+
+$$\hat{\sigma}^2 = \frac{RSS}{n - p - 1}$$
+$$= Y^T \frac{I - H}{n - p - 1} Y$$
+
+So we have to show:
+
+$$\bigg(\frac{H - H_R}{\sigma^2} \bigg)
+\bigg(\sigma^2 (I - H) \bigg)
+\bigg(\frac{I - H}{n - p - 1} \bigg)
+= 0$$
+
+We know that the product of the first two components is $H - H_R$. Therefore, 
+
+$$\bigg(\frac{H - H_R}{\sigma^2} \bigg)
+\bigg(\sigma^2 (I - H) \bigg)
+\bigg(\frac{I - H}{n - p - 1} \bigg)
+= (H - H_R)(I - H) \frac{1}{n - p - 1}$$
+$$= (H - H - H_R + H_R) \frac{1}{n - p - 1}$$
+$$= 0$$
+
+## Part e
+
+We know that $\frac{SSreg}{\sigma^2} \sim \chi^2_q$ and 
+$\frac{RSS}{\sigma^2} \sim \chi^2_{n - p - 1}$. Then we know that 
+$\frac{\frac{SSreg}{\sigma^2} / q}{\frac{RSS}{\sigma^2} / (n - p - 1)}$ 
+$= \frac{SSreg / q}{RSS / (n - p - 1)} \sim F_{q, n - p - 1}$
+
+# Problem 3
+
+[From ALR 6.4]
