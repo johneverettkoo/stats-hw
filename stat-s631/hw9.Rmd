@@ -32,7 +32,8 @@ import::from(ggplot2,
              ggplot, 
              geom_point, stat_smooth, 
              aes, 
-             scale_colour_brewer, scale_fill_brewer, 
+             scale_colour_brewer, scale_fill_brewer, scale_x_log10, 
+             labs,
              theme_set, theme_bw)
 theme_set(theme_bw())
 
@@ -112,9 +113,9 @@ $$\implies H x_i = x_i$$
 
 Then if we consider $H X_1$:
 
-$$ H X_1 = H [x_0, ..., x_q]$$
-$$= [H x_0, ..., H x_q]$$
-$$= [x_0, ..., x_q]$$
+$$ H X_1 = H [x_0, ..., x_{p + 1 - q}]$$
+$$= [H x_0, ..., H x_{p + 1 - q}]$$
+$$= [x_0, ..., x_{p + 1 - q}]$$
 $$= H_1$$
 
 #### Show $H H_R = H_R$
@@ -197,10 +198,94 @@ $$= 0$$
 ## Part e
 
 We know that $\frac{SSreg}{\sigma^2} \sim \chi^2_q$ and 
-$\frac{RSS}{\sigma^2} \sim \chi^2_{n - p - 1}$. Then we know that 
+$\frac{RSS}{\sigma^2} \sim \chi^2_{n - p - 1}$. We also know that they are 
+independent. Then we know that 
 $\frac{\frac{SSreg}{\sigma^2} / q}{\frac{RSS}{\sigma^2} / (n - p - 1)}$ 
 $= \frac{SSreg / q}{RSS / (n - p - 1)} \sim F_{q, n - p - 1}$
 
 # Problem 3
 
 [From ALR 6.4]
+
+```{r p3_setup}
+un11.df <- alr4::UN11 %>% 
+  dp$mutate(country = rownames(.))
+
+h0.model <- lm(lifeExpF ~ log(ppgdp) + group:log(ppgdp), data = un11.df)
+summary(h0.model)
+
+ha.model <- lm(lifeExpF ~ group * log(ppgdp), data = un11.df)
+summary(ha.model)
+```
+
+## Part 1
+
+The full model is one in which each `group` has its own intercept and slope. 
+If the null hypothesis is true, each `group` has its own slope but the 
+intercepts are not unique. 
+
+## Part 2
+
+```{r p3_2}
+anova(h0.model, ha.model)
+
+ggplot(un11.df) + 
+  geom_point(aes(x = ppgdp, y = lifeExpF, colour = group)) + 
+  labs(x = 'per capita GDP', y = 'female life expectancy') + 
+  stat_smooth(aes(x = ppgdp, y = lifeExpF, colour = group, fill = group), 
+              method = 'lm') + 
+  scale_fill_brewer(palette = 'Set1') + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_x_log10()
+```
+
+We fail to reject the null hypothesis at the $\alpha = .05$ level but do reject 
+the null hypothesis at the $\alpha = .1$ level. If we go by $\alpha = .05$, then 
+we would say that we do not have enough evidence to say that each `group` has 
+its own intercept if we also say that each `group` has its own slope. In 
+particular, we can say that if the null hypothesis is true, the probability of 
+obtaining our data or something that's more extreme than our data compared to 
+the null hypothesis is around 0.0556. Looking at the scatterplot, it appears 
+that it would make more sense to try a model with both terms but without the 
+interaction term.
+
+## Additional part
+
+$H_0$ : $\beta_{02} - \beta_{03} = 14$ and $\beta_{12} + \beta_{13} = .2$
+
+(ere I'm assuming the first index refers to the intercept vs. slope while the 
+second refers to `group`. In that case, we are looking to see if the `group` 
+"other" has an intercept that is 14 units higher than that of the `group` 
+"africa" and that the sum of the slopes for `group`s "other" and "africa" is 0.2 
+units. 
+
+```{r p3_additional}
+# construct L
+L <- rbind(c(0, 1, -1, 0, 0, 0), 
+           c(0, 0, 0, 0, 1, 1))
+
+# construct c
+c.vec <- c(14, .2)
+
+# find beta.hat
+beta.vec <- ha.model$coefficients
+
+# find the variance of beta.hat
+V <- vcov(ha.model)
+
+# rows of L
+q. <- nrow(L)
+
+# compute the F-statistic
+F.stat <- 
+  t(L %*% beta.vec - c.vec) %*% 
+  solve(L %*% V %*% t(L)) %*% 
+  (L %*% beta.vec - c.vec) / 
+  q.
+
+# find p-value
+1 - pf(F.stat, q., ha.model$df.residual)
+```
+
+So for sensible values of $\alpha$, we would fail to reject the null hypothesis 
+as specified above. 
