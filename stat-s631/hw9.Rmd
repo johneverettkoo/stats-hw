@@ -24,6 +24,63 @@ options(xtable.comment = FALSE,
 
 [From ALR 5.14]
 
+```{r p1_setup}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(car, Anova)
+import::from(ggplot2, 
+             ggplot, 
+             geom_point, stat_smooth, 
+             aes, 
+             scale_colour_brewer, scale_fill_brewer, 
+             theme_set, theme_bw)
+theme_set(theme_bw())
+
+bgsall.df <- alr4::BGSall %>% 
+  dp$mutate(sex = dp$if_else(Sex == 0, 'male', 'female'))
+```
+
+## Part 1
+
+```{r p1_1}
+ggplot(bgsall.df) + 
+  geom_point(aes(x = HT9, y = HT18, shape = sex, colour = sex)) + 
+  stat_smooth(aes(x = HT9, y = HT18), method = 'lm', colour = 'black') + 
+  stat_smooth(aes(x = HT9, y = HT18, colour = sex, fill = sex), 
+              method = 'lm') + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1')
+```
+
+From the scatterplot, there's a fair amount of separation between the sexes, and 
+it appears that a model containing both `HT9` and `sex` but not an interaction 
+between the two would be the most appropriate.
+
+## Part 2
+
+```{r p1_2}
+ht9.model <- lm(HT18 ~ HT9, data = bgsall.df)
+parallel.model <- lm(HT18 ~ HT9 + sex, data = bgsall.df)
+full.model <- lm(HT18 ~ HT9 * sex, data = bgsall.df)
+
+Anova(full.model)
+```
+
+From the $F$-test (which is the same as a $t$-test in this case since the factor 
+only has two levels), we obtain a $p$-value of 0.0875, which is significant at 
+the $\alpha = .1$ level but not at $\alpha = .05$. On the other hand, the 
+$p$-value for the intercept term is significant. This test compares the model 
+with just `HT9` vs. the model with both `HT9` and `sex` without the interaction 
+term. 
+
+## Part 3
+
+```{r p1_3}
+summary(parallel.model)
+
+confint(parallel.model, 'sexmale')
+```
+
 # Problem 2
 
 We are given:
