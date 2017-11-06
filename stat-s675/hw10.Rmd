@@ -30,7 +30,8 @@ import::from(ggplot2, ggplot, aes,
              geom_abline, geom_vline, 
              coord_map, coord_fixed, 
              labs, theme_set, theme_bw, scale_colour_brewer, 
-             facet_wrap)
+             facet_wrap, 
+             scale_x_continuous, scale_y_log10)
 import::from(viridis, scale_fill_viridis)
 
 theme_set(theme_bw())
@@ -239,7 +240,7 @@ X.kmeans <- kmeans.exchange(X, init.centers[[1]])
 X.kmeans.2 <- kmeans.exchange2(X, init.centers[[1]])
 
 # extract the clusterings
-exchange.df <- dp$full_join(
+exchange.df <- dp$bind_rows(
   X.kmeans$X %>% 
     as.data.frame() %>% 
     dp$transmute(method = 'random', 
@@ -268,7 +269,168 @@ are chosen randomly in this method.
 
 # Exercise 5
 
-```{r e5}
+```{r e5, cache = TRUE}
 # vary the number of iterations
 iter.vec <- seq(1000, 10000, 100)
+
+# try for first method (random)
+W.vec <- sapply(iter.vec, function(i) {
+  # same seed for each since there's randomness in this method
+  set.seed(675)
+  
+  kmeans.exchange(X, init.centers[[1]], i)$W
+})
+
+# second method (cyclic)
+W.2.vec <- sapply(iter.vec, function(i) {
+  kmeans.exchange2(X, init.centers[[1]], i)$W
+})
+
+ggplot() + 
+  geom_point(aes(x = iter.vec, y = W.vec, colour = 'random')) + 
+  geom_point(aes(x = iter.vec, y = W.2.vec, colour = 'cyclic')) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  labs(x = 'niter', y = 'W', colour = NULL)
+```
+
+From this plot, we can see that as we increase `niter`, we converge to the 
+optimal clustering for the given $k$. The cyclic method converges faster, 
+although this may depend on the initial configuration. 
+
+# Exercise 6
+
+```{r e6_1}
+# for the sake of time, going to just look at 8 initial configurations
+init.centers %<>% magrittr::extract(seq(8))
+
+# clusterings with 10000 iterations
+niter <- 10000
+clusterings <- lapply(init.centers, function(i) kmeans.exchange(X, i, niter))
+clusterings.2 <- lapply(init.centers, function(i) kmeans.exchange2(X, i, niter))
+
+# within-cluster similarity
+
+W <- sapply(clusterings, function(clustering) clustering$W)
+W.2 <- sapply(clusterings.2, function(clustering) clustering$W)
+
+ggplot() + 
+  geom_point(aes(x = seq(8), y = W, colour = 'kmeans.exchange')) + 
+  geom_point(aes(x = seq(8), y = W.2, colour = 'kmeans.exchange2')) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  labs(x = 'iterations', colour = NULL)
+
+ggplot() + 
+  geom_point(aes(x = W, y = W.2)) + 
+  geom_abline(colour = 'red') + 
+  labs(x = 'kmeans.exchange', y = 'kmeans.exchange2')
+
+ggplot() + 
+  geom_histogram(aes(x = W - W.2), 
+                 colour = 'black', fill = 'white') + 
+  labs(x = 'kmeans.exchange - kmeans.exchange2') + 
+  geom_vline(xintercept = 0, colour = 'red')
+```
+
+```{r e6_2, fig.height = 13}
+# actual clusterings
+
+random.df <- lapply(seq(8), function(i) {
+  clusterings[[i]]$X %>% 
+    as.data.frame() %>% 
+    dp$transmute(iteration = i, 
+                 cluster = as.character(V1), 
+                 long, lat)
+}) %>% 
+  dp$bind_rows()
+
+cyclic.df <- lapply(seq(8), function(i) {
+  clusterings.2[[i]]$X %>% 
+    as.data.frame() %>% 
+    dp$transmute(iteration = i, 
+                 cluster = as.character(V1), 
+                 long, lat)
+}) %>% 
+  dp$bind_rows()
+
+ggplot(random.df) + 
+  geom_point(aes(x = long, y = lat, colour = cluster)) + 
+  facet_wrap(~ iteration, ncol = 2, labeller = 'label_both') + 
+  scale_colour_brewer(palette = 'Set1')
+
+ggplot(cyclic.df) + 
+  geom_point(aes(x = long, y = lat, colour = cluster)) + 
+  facet_wrap(~ iteration, ncol = 2, labeller = 'label_both') + 
+  scale_colour_brewer(palette = 'Set1')
+```
+
+With 10000 iterations, both methods achieve much closer results. 
+
+$k$-means clustering prefers spherical clusters, so some of the longer 
+clusters are separated into two different clusters. We can see this with 
+the first trial, which produced the smallest value of $W$ for both the random 
+and cyclic methods. The left-most group of points, which we might think should 
+be in one long cluster, is separated into two shorter clusters.
+
+# Exercise 7
+
+Just from the plots in exercise 2, I would guess 2 clusters. We can try some 
+data-driven methods to test this hypothesis.
+
+For this exercise, I'll just use the cyclic method since it has been shown in 
+previous exercises that it converges faster. We will also try the clusterings 
+16 times for each choice of $k$ and pick the best clustering for each $k$. 
+
+One thing to note is that $k$-means clustering isn't perfect. It prefers 
+spherical clusters, which may not be the best choice for our data.
+
+## $W$ vs. $k$
+
+```{r e7_1}
+# different values of k
+k.vector <- seq(2, 16)
+
+clusterings.k <- lapply(k.vector, function(K) {
+  # for each choice of k ...
+  
+  # initialize 16 configurations
+  init.centers <- lapply(seq(16), function(i) kmeans.start(nrow(X), K))
+  
+  # clustering for each initial configuration
+  temp.clusterings <- lapply(init.centers, function(init.center) {
+    kmeans.exchange2(X, init.center)
+  })
+  
+  # figure out which one has lowest W
+  argmin.W <- which.min(sapply(temp.clusterings, function(i) i$W))
+  
+  # return the clustering with the lowest W
+  return(temp.clusterings[[argmin.W]])
+})
+
+ggplot() + 
+  geom_point(aes(x = k.vector, y = sapply(clusterings.k, function(i) i$W))) + 
+  labs(x = 'k', y = 'W') + 
+  scale_x_continuous(breaks = k.vector)
+```
+
+$W$ always decreases as $k$ increases (assuming we iterated to convergence). 
+But perhaps one way of choosing the optimal number of clusters is by looking for 
+the point of diminishing returns, which appears to be around $k = 11$ in this 
+case.
+
+# Exercise 8
+
+Implement Lloyd's algorithm 
+
+```{r e8}
+#' @title Lloyd's algorithm for k-means clustering
+#' @param X (data frame) The data to be clustered
+#' @param init.centers (numeric) The row numbers of X for which the cluster 
+#'   centers are initialized
+#' @param n.iter (numeric) 
+#' @return (list) The clustered data, W, k
+kmeans.lloyd <- function(X, init.centers, n.iter = 100) {
+  # how many clusters?
+  k <- length(init.centers)
+}
 ```
