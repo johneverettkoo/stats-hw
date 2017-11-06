@@ -2,8 +2,8 @@
 title: "STAT-S675"
 subtitle: 'Homework 10'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -416,21 +416,103 @@ ggplot() +
 $W$ always decreases as $k$ increases (assuming we iterated to convergence). 
 But perhaps one way of choosing the optimal number of clusters is by looking for 
 the point of diminishing returns, which appears to be around $k = 11$ in this 
-case.
+case. However, $k$-means clustering might not be optimal for these data.
 
 # Exercise 8
 
 Implement Lloyd's algorithm 
 
-```{r e8}
+```{r e8, cache = TRUE}
 #' @title Lloyd's algorithm for k-means clustering
+#' @requires dplyr, magrittr, testthat
 #' @param X (data frame) The data to be clustered
 #' @param init.centers (numeric) The row numbers of X for which the cluster 
 #'   centers are initialized
 #' @param n.iter (numeric) 
 #' @return (list) The clustered data, W, k
-kmeans.lloyd <- function(X, init.centers, n.iter = 100) {
+kmeans.lloyd <- function(X, init.center, n.iter = 100) {
   # how many clusters?
-  k <- length(init.centers)
+  k <- length(init.center)
+  
+  # how many objects?
+  N <- nrow(X)
+  
+  # initialize
+  # find the centers of the clusters
+  centers.df <- lapply(init.center, function(i) X[i, ]) %>% 
+    dplyr::bind_rows()
+  # init cluster assignments
+  X$cluster <- rep(0, N)
+  
+  # iteration counter for breaking out when there's no convergence
+  iter.counter <- 0
+  
+  # also need an "old centers.df" to compare against current
+  # if they're the same then we're done
+  old.centers.df <- dplyr::data_frame()
+  
+  # keep iterating until old.centers.df is the same as centers.df
+  while(!identical(old.centers.df, centers.df)) {
+    # check if we converged within set number of iterations
+    iter.counter %<>% magrittr::add(1)
+    if (iter.counter >= n.iter) {
+      warning('did not converge :(')
+      break
+    }
+    
+    # assign each object to a cluster by euclidean distance to centers
+    X$cluster <- sapply(seq(N), function(i) {
+      sapply(seq(k), function(j) {
+        sum((X[i, -ncol(X)] - centers.df[j, ]) ** 2)
+      }) %>% 
+        which.min()
+    })
+    
+    # copy current centers.df to old.centers.df
+    old.centers.df <- centers.df
+    
+    # update centers.df
+    centers.df <- X %>% 
+      dplyr::group_by(cluster) %>% 
+      dplyr::summarise_all(mean) %>% 
+      dplyr::ungroup() %>% 
+      dplyr::arrange(cluster) %>% 
+      dplyr::select(-cluster)
+  }
+  
+  # compute W
+  W <- X %>% 
+    dplyr::group_by(cluster) %>% 
+    dplyr::summarise_all(dplyr::funs(sum((. - mean(.)) ** 2))) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::select(-cluster) %>% 
+    rowSums() %>% 
+    sum()
+    
+  
+  return(list(X = X, centers = centers.df, W = W, k = k, niter = iter.counter))
 }
+
+
+quakes.df <- dp$select(quakes, long, lat)
+init.centers <- sample(seq(nrow(quakes.df)), 8)
+
+clustering.lloyd <- kmeans.lloyd(quakes.df, init.centers)
+clustering.lloyd$W
+clustering.lloyd$k
+clustering.lloyd$niter
+
+ggplot() +
+  geom_point(data = clustering.lloyd$X,
+             aes(x = long, y = lat, colour = as.character(cluster))) +
+  geom_point(data = clustering.lloyd$centers,
+             aes(x = long, y = lat)) +
+  coord_map() +
+  scale_colour_brewer(palette = 'Set1') +
+  labs(colour = NULL)
 ```
+
+Lloyd's algorithm achieved a smaller $W$ and required fewer iterations. However, 
+each iteration took much longer. In the exchange algorithm, each iteration 
+reassigns one point at a time whereas in Lloyd's algorithm, all points are 
+reassigned each iteration. 
