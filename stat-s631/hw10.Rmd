@@ -220,7 +220,7 @@ We do not gain any significant information by including both `Speed` and
 
 ```{r p3_3}
 speed.var.mod <- lm(Distance ~ Speed + I(Speed ** 2) - 1, 
-                    weights = Speed, 
+                    weights = Speed ** -1, 
                     data = stopping.df)
 summary(speed.var.mod)
 
