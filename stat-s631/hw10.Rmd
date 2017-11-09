@@ -1,0 +1,196 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 10'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages_etc}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(car, Anova)
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+# Problem 1
+
+```{r p1_setup}
+# get the data
+robey.df <- read.table('~/dev/stats-hw/stat-s631/Robey.txt') %>% 
+  dp$mutate(country = rownames(.))
+
+# full model with region first
+model.1 <- lm(tfr ~ region * contraceptors, data = robey.df)
+summary(model.1)
+anova(model.1)
+Anova(model.1)
+
+# full model with contraception rate first
+model.2 <- lm(tfr ~ contraceptors * region, data = robey.df)
+summary(model.2)
+anova(model.2)
+Anova(model.2)
+```
+
+## Part a
+
+Here, for simplicity, we will just subscript in the order of the model. So for 
+example, $\beta_1$ corresponds to `regionAsia`, $\beta_4$ corresponds to 
+`contraceptors`, $\beta_7$ corresponds to `regionNear.East:contraceptors`, etc.
+
+### Type I anova (`anova(model.1)`)
+
+This test is sequential. So the first line tests $H_0$ : $\beta_i = 0$ for 
+$0 \lt i \leq 7$ and $H_A$ : $\beta_1 \neq 0$ and $\beta_2 \neq 0$ and 
+$\beta_3 \neq 0$ since these all fall under `region`. In other words, we want 
+to know if `region` adds anything to an intercept-only model. Since $p$ is 
+small, we can conclude that it does.
+
+The second line tests $H_0$ : $\beta_i = 0$ for $3 \lt i \leq 7$ and 
+$H_A$ : $\beta_i \neq 0$ for all of $3 \lt i \leq 4$. In other words, 
+given a model that just uses `region` and `contraceptors` without the 
+interaction, does `contraceptors` add significant predictive power to the model? 
+Since $p$ is small, we can conclude that a model with both (but no interaction 
+term) is significantly different from a model that just uses `region`. 
+
+The third line tests $H_0$ : $\beta_i = 0$ for $4 \lt i \leq 7$ and $H_A$ : 
+$\beta_i \neq 0$ for all $4 \lt \i \leq 7$. In other words, we want to know if 
+the interaction terms add anything to a model without interaction terms. Since 
+$p$ is close to 1, we can say that it does not. 
+
+### Type II anova (`Anova(model.1)`)
+
+In the first line, we test if a model containing `region` and the interaction 
+term is significantly different from the full model. Here we remove the 
+interaction term per the marginality principle. So $H_0$ : `tfr` $\sim$ 
+`contraceptors` and $H_A$ : `tfr` $\sim$ `contraceptors` + `region` + 
+`contraceptors:region`. Since $p$ is large, we can say that the alternative 
+model does not significantly add to the null model.
+
+In the second line, we switch `contraceptors` and `region`. Since $p$ is 
+small, we can say that `contraceptors` + `region:contraceptors` does add to a 
+model with just `region`. 
+
+In the third line, we test the non-interaction "parallel" model vs. the full 
+model with interactions. $H_0$ : `tfr` $\sim$ `region` + `contraceptors`, and 
+$H_A$ : `tfr` $\sim$ `region` + `contraceptors` + `region:contraceptors`. Since 
+$p$ is large, we can fail to reject the null hypothesis and say that there is 
+no significant addition to the model by adding the interaction term. 
+
+## Part b
+
+Type II anova is not sequential. It looks at each term separately (other than 
+the marginality principle). So the order in which the covariates are written 
+in the model call does not matter. On the other hand, type I anova is sequential 
+so the order makes an effect. In both models, the same set of covariates are 
+used, so the type II anova does not change, but since the order in which they 
+are listed changes, the type I anova results differ. 
+
+## Part c
+
+From the type II anova tests (doesn't matter which one), we might say that 
+`region` does not make a difference in the model (i.e., `contraceptors` already 
+explains all of the variance in `tfr` that `region` can). So a model we might 
+consider is:
+
+```{r p1_c}
+model.3 <- lm(tfr ~ contraceptors, data = robey.df)
+summary(model.3)
+anova(model.3, model.1)
+```
+
+So we can conclude that `region` does not add to a model with `contraceptors`. 
+This is the same result we obtained in Homework Assignment 8, where we made this 
+decision largely based on visualizations of the data. 
+
+# Problem 2
+
+Note that $[W]_{ij} = 0$ $\forall i \neq j$, and $[W]_{ii} > 0$ 
+$\forall i$ such that $0 < i \leq n$. Furthermore, 
+$[W^{1/2}]_{ij} = \sqrt{[W]_{ij}}$ $\forall i, j \leq n$. Then since $W$ and 
+$W^{1/2}$ are diagonal matricies, they are symmetric, i.e., $W^T = W$ and 
+$(W^{1/2})^T = W^{1/2}$.
+
+Since $W^{1/2}$ is a diagonal matrix, $W^{1/2}W^{1/2}$ is also diagonal. Note 
+that $[W^{1/2}W^{1/2}]_{ij} = \sum_k \sqrt{w_{ik}w_{kj}} = \sqrt{w_{ii}w_{ij}}$ 
+where $w_{ij} = [W]_{ij}$ and the other terms in the sum are zero since 
+$w_{ij} = 0$ when $i \neq j$. Then $[W^{1/2}W^{1/2}]_{ij} = 0$ when $i \neq j$ 
+and $[W^{1/2}W^{1/2}]_{ii} = w_{ii}$. Then $W^{1/2}W^{1/2} = W$.
+
+Since $Y|X \sim \mathcal{N}(X \beta, \sigma^2 W^{-1})$, 
+$\hat{\beta} = (X^T W X)^{-1} X^T W Y$. But if we start with the claim 
+$\hat{\beta} = (X^{*T} X^*)^{-1} X^{*T} Y^*$ where $X^* = W^{1/2}X$ and 
+$Y^* = W^{1/2} Y$:
+
+$$(X^{*T} X^*)^{-1} X^{*T} Y^*$$
+$$= ((W^{1/2}X)^T W^{1/2}X)^{-1} (W^{1/2}X)^T W^{1/2} Y$$
+$$= (X^T W^{1/2} W^{1/2} X)^{-1} X^T W^{1/2} W^{1/2} Y$$
+$$= (X^T W X)^{-1} X^T W Y$$
+
+Which is just our WLS estimator for $\hat{\beta}$.
+
+# Problem 3
+
+[From ALR 7.6]
+
+## Part 1
+
+```{r p3_1}
+stopping.df <- alr4::stopping
+
+ggplot(stopping.df) + 
+  geom_point(aes(x = Speed, y = Distance)) + 
+  stat_smooth(aes(x = Speed, y = Distance), 
+              se = FALSE, method = 'lm')
+```
+
+E[`Distance` | `Speed`] appears to change as we move along $x$. From the plot, 
+we can see that it curves along the OLS line, starting above it, dipping below, 
+and then increasing above it again. 
+
+## Part 2
+
+```{r p3_2}
+const.var.mod <- lm(Distance ~ Speed + I(Speed^2), data = stopping.df)
+summary(const.var.mod)
+
+# add the predictions to the data
+stopping.df %<>% 
+  dp$mutate(distance.hat = predict(const.var.mod, stopping.df)) %>% 
+  dp$mutate(resid.ols = Distance - distance.hat)
+
+ggplot(stopping.df) + 
+  geom_point(aes(x = distance.hat, y = resid.ols)) + 
+  geom_abline(slope = 0, colour = 'red') + 
+  labs(x = 'OLS predictions', y = 'OLS residuals')
+
+ggplot(stopping.df) + 
+  geom_point(aes(x = Speed, y = resid.ols)) + 
+  geom_abline(slope = 0, colour = 'red') + 
+  labs(y = 'OLS residuals')
+
+ggplot(stopping.df) + 
+  geom_point(aes(x = Speed ** 2, y = resid.ols)) + 
+  geom_abline(slope = 0, colour = 'red') + 
+  labs(y = 'OLS residuals')
+```
+
+## Part 3
+
+## Part 4
