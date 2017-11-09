@@ -57,20 +57,20 @@ example, $\beta_1$ corresponds to `regionAsia`, $\beta_4$ corresponds to
 ### Type I anova (`anova(model.1)`)
 
 This test is sequential. So the first line tests $H_0$ : $\beta_i = 0$ for 
-$0 \lt i \leq 7$ and $H_A$ : $\beta_1 \neq 0$ and $\beta_2 \neq 0$ and 
+$0 < i \leq 7$ and $H_A$ : $\beta_1 \neq 0$ and $\beta_2 \neq 0$ and
 $\beta_3 \neq 0$ since these all fall under `region`. In other words, we want 
 to know if `region` adds anything to an intercept-only model. Since $p$ is 
 small, we can conclude that it does.
 
-The second line tests $H_0$ : $\beta_i = 0$ for $3 \lt i \leq 7$ and 
-$H_A$ : $\beta_i \neq 0$ for all of $3 \lt i \leq 4$. In other words, 
+The second line tests $H_0$ : $\beta_i = 0$ for $3 < i \leq 7$ and 
+$H_A$ : $\beta_i \neq 0$ for all of $3 < i \leq 4$. In other words, 
 given a model that just uses `region` and `contraceptors` without the 
 interaction, does `contraceptors` add significant predictive power to the model? 
 Since $p$ is small, we can conclude that a model with both (but no interaction 
 term) is significantly different from a model that just uses `region`. 
 
-The third line tests $H_0$ : $\beta_i = 0$ for $4 \lt i \leq 7$ and $H_A$ : 
-$\beta_i \neq 0$ for all $4 \lt \i \leq 7$. In other words, we want to know if 
+The third line tests $H_0$ : $\beta_i = 0$ for $4 < i \leq 7$ and $H_A$ : 
+$\beta_i \neq 0$ for all $4 < i \leq 7$. In other words, we want to know if 
 the interaction terms add anything to a model without interaction terms. Since 
 $p$ is close to 1, we can say that it does not. 
 
