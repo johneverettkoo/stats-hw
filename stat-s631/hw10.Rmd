@@ -188,7 +188,7 @@ ggplot(stopping.df) +
 ggplot(stopping.df) + 
   geom_point(aes(x = Speed ** 2, y = resid.ols)) + 
   geom_abline(slope = 0, colour = 'red') + 
-  labs(y = 'OLS residuals')
+  labs(y = 'OLS residuals', x = expression(Speed^2))
 ```
 
 ## Part 3
