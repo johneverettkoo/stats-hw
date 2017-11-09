@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 10'
 author: "John Koo"
-output: pdf_document
-# output: html_document
+# output: pdf_document
+output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -23,7 +23,7 @@ options(xtable.comment = FALSE,
 ```{r packages_etc}
 dp <- loadNamespace('dplyr')
 import::from(magrittr, `%>%`, `%<>%`)
-import::from(car, Anova)
+import::from(car, Anova, ncvTest)
 library(ggplot2)
 theme_set(theme_bw())
 ```
@@ -164,10 +164,17 @@ E[`Distance` | `Speed`] appears to change as we move along $x$. From the plot,
 we can see that it curves along the OLS line, starting above it, dipping below, 
 and then increasing above it again. 
 
+Based on this scatterplot and our intuition of the problem, I believe it makes 
+sense to exclude the intercept term. If a car is not moving (i.e., `Speed` = 0), 
+then it cannot have a stopping distance, so `Distance` = 0, which eliminates the 
+intercept term. 
+
 ## Part 2
 
 ```{r p3_2}
-const.var.mod <- lm(Distance ~ Speed + I(Speed^2), data = stopping.df)
+# const.var.mod <- lm(Distance ~ Speed + I(Speed ** 2), data = stopping.df)
+# const.var.mod <- lm(Distance ~ I(Speed ** 2) - 1, data = stopping.df)
+const.var.mod <- lm(Distance ~ Speed + I(Speed ** 2) - 1, data = stopping.df)
 summary(const.var.mod)
 
 # add the predictions to the data
@@ -189,8 +196,39 @@ ggplot(stopping.df) +
   geom_point(aes(x = Speed ** 2, y = resid.ols)) + 
   geom_abline(slope = 0, colour = 'red') + 
   labs(y = 'OLS residuals', x = expression(Speed^2))
+
+# part a
+fv.test <- ncvTest(const.var.mod)
+fv.test
+
+# part b
+speed.test <- ncvTest(const.var.mod, ~ Speed)
+speed.test
+
+# part c
+speed.speed2.test <- ncvTest(const.var.mod, ~ Speed + I(Speed ** 2))
+speed.speed2.test
+
+# difference between b and c?
+1 - pchisq(speed.speed2.test$ChiSquare - speed.test$ChiSquare, 1)
 ```
 
+We do not gain any significant information by including both `Speed` and 
+`Speed`^2^ compared to just `Speed`.
+
 ## Part 3
+
+```{r p3_3}
+speed.var.mod <- lm(Distance ~ Speed + I(Speed ** 2) - 1, 
+                    weights = Speed, 
+                    data = stopping.df)
+summary(speed.var.mod)
+
+summary(const.var.mod)$coefficients
+summary(speed.var.mod)$coefficients
+```
+
+Our point estimates did not change, which is expected from the theroy. However 
+the standard errors (and therefore the $p$-values) do change. 
 
 ## Part 4
