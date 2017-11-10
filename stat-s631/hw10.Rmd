@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 10'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -219,8 +219,9 @@ We do not gain any significant information by including both `Speed` and
 ## Part 3
 
 ```{r p3_3}
+# build the WLS model
 speed.var.mod <- lm(Distance ~ Speed + I(Speed ** 2) - 1, 
-                    weights = Speed ** -1, 
+                    weights = Speed ** -1,
                     data = stopping.df)
 summary(speed.var.mod)
 
@@ -228,7 +229,24 @@ summary(const.var.mod)$coefficients
 summary(speed.var.mod)$coefficients
 ```
 
-Our point estimates did not change, which is expected from the theroy. However 
-the standard errors (and therefore the $p$-values) do change. 
+Note that now our estimate for $\hat{\beta} = (X^T W X)^{-1} X^T W Y$ and 
+$var(\hat{\beta} | X) = \sigma^2 (X^T X)^{-1} X^T W^{-1} X (X^T X)^{-1}$.
 
 ## Part 4
+
+```{r p3_4}
+# weight matrix
+# it's diagonal since we only have one covariate
+W <- diag(stopping.df$Speed ** -1)
+
+# model matrix
+X <- model.matrix(~ Speed + I(Speed**2), data = stopping.df)
+
+beta.hat <- solve(t(X) %*% X) %*% t(X) %*% stopping.df$Distance
+
+# estimate standard error
+var.beta.hat <- sigma(const.var.mod) ** 2 * 
+  solve(t(X) %*% X) %*% 
+  (t(X) %*% solve(W) %*% X) %*% 
+  solve(t(X) %*% X)
+```
