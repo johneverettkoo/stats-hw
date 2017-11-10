@@ -230,7 +230,8 @@ summary(speed.var.mod)$coefficients
 ```
 
 Note that now our estimate for $\hat{\beta} = (X^T W X)^{-1} X^T W Y$ and 
-$var(\hat{\beta} | X) = \sigma^2 (X^T X)^{-1} X^T W^{-1} X (X^T X)^{-1}$.
+$var(\hat{\beta} | X) = \sigma^2 (X^T X)^{-1} X^T W^{-1} X (X^T X)^{-1}$. 
+$w_{ii}$ is small when both $x_{i1}$ and $x_{i2}$ are large.
 
 ## Part 4
 
@@ -240,13 +241,23 @@ $var(\hat{\beta} | X) = \sigma^2 (X^T X)^{-1} X^T W^{-1} X (X^T X)^{-1}$.
 W <- diag(stopping.df$Speed ** -1)
 
 # model matrix
-X <- model.matrix(~ Speed + I(Speed**2), data = stopping.df)
+X <- model.matrix(~ Speed + I(Speed**2) - 1, data = stopping.df)
 
-beta.hat <- solve(t(X) %*% X) %*% t(X) %*% stopping.df$Distance
+# response
+Y <- stopping.df$Distance
 
-# estimate standard error
-var.beta.hat <- sigma(const.var.mod) ** 2 * 
-  solve(t(X) %*% X) %*% 
-  (t(X) %*% solve(W) %*% X) %*% 
-  solve(t(X) %*% X)
+# projection matrix
+H <- X %*% solve(t(X) %*% X) %*% t(X)
+
+# sandwich term
+S <- t(X) %*% diag(residuals(const.var.mod) ** 2 / (1 - diag(H)) ** 2) %*% X
+
+# copute standard errors
+var.beta.hat <- solve(t(X) %*% X) %*% S %*% solve(t(X) %*% X)
+diag(sqrt(var.beta.hat))
+
+# equivalent
+diag(sqrt(sandwich::vcovHC(const.var.mod)))
 ```
+
+We end up with much larger standard errors for $var(\hat{\beta}|X)$. 
