@@ -1,0 +1,199 @@
+---
+title: "STAT-S631"
+subtitle: 'Exam 2'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Statement
+
+On my honor, I have not had any form of communication about this exam with any 
+other individual (including other students, teaching assistants, instructors, 
+etc.).
+
+Signed: *John Koo*
+
+```{r packages_and_data}
+# packages
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+library(ggplot2)
+import::from(car, Anova, ncvTest)
+
+# plotting stuff
+theme_set(theme_bw())
+
+# read data
+flight.df <- read.table('~/dev/stats-hw/stat-s631/takehome2.txt')
+head(flight.df)
+summary(flight.df)
+```
+
+# Problem 1
+
+```{r p1}
+ggplot(flight.df) + 
+  geom_boxplot(aes(x = Type, y = Energy, group = Type, fill = Type)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  guides(fill = FALSE)
+
+mod.1 <- lm(Energy ~ Type, data = flight.df)
+summary(mod.1)
+```
+
+`Energy` for `Type` = `"non-echolocating bats"` and `"non-echolocating birds"` 
+is significantly different than the baseline, `Type` = `"echolocating bats"`, 
+for usual values of $\alpha$. However, the plot suggests that there isn't a 
+significant difference between `"non-echolocating bats"` and 
+`"non-echolocating birds"`. We can test this as follows:
+
+```{r p1_2}
+L <- c(0, 1, -1)
+c <- 0
+beta.hat <- mod.1$coefficients
+V.hat <- vcov(mod.1)
+
+F.stat <- t(L %*% beta.hat - c) %*% 
+  solve(L %*% V.hat %*% L) %*% 
+  (L %*% beta.hat - c)
+F.stat
+1 - pf(F.stat, 1, mod.1$df.residual)
+```
+
+So we fail to reject the null hypothesis that $\beta_1 = \beta_2$. In other 
+words, we cannot say that the difference in `Energy` is statistically 
+significant between `Type`s `"non-echolocating bats"` and 
+`"non-echolocating birds"`. But since they are both significantly different 
+from the baseline, we can say it is reasonable to use `Type` as a regressor. 
+We might want to try this model:
+
+```{r p1_3}
+flight.df %<>% 
+  dp$mutate(type = dp$if_else(Type != 'echolocating bats', 
+                              'non-echolocating bats/birds', 
+                              'echolocating bats'))
+mod.2 <- lm(Energy ~ type, data = flight.df)
+summary(mod.2)
+anova(mod.2, mod.1)  # should be the same as before
+```
+
+# Problem 2
+
+```{r p2}
+ggplot(flight.df) + 
+  geom_point(aes(x = Mass, y = Energy)) + 
+  scale_x_continuous(trans = 'log') + 
+  annotation_logticks(sides = 'b') + 
+  stat_smooth(aes(x = Mass, y = Energy), method = 'lm', se = FALSE)
+
+lin.mod <- lm(Energy ~ log(Mass), data = flight.df)
+quad.mod <- lm(Energy ~ log(Mass) + I(log(Mass) ** 2), data = flight.df)
+anova(quad.mod)
+```
+
+From the scatterplot, it appears that there is no reason to use higher order 
+terms. The ANOVA test confirms this. 
+
+```{r p2_2}
+summary(lin.mod)
+```
+
+A linear model using `Mass` appears to be appropriate in this case.
+
+# Problem 3
+
+```{r p3}
+ggplot(flight.df) + 
+  geom_point(aes(x = Mass, y = Energy, colour = Type)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_x_continuous(trans = 'log') + 
+  annotation_logticks(sides = 'b') + 
+  stat_smooth(aes(x = Mass, y = Energy, fill = Type, colour = Type),
+              method = 'lm') +
+  scale_fill_brewer(palette = 'Set1')
+```
+
+From the scatterplot, it appears that changes in `Energy` explained by `Type` 
+is pretty much all captured by `Mass`. We can test this:
+
+```{r p3_2}
+summary(flight.df)
+full.mod <- lm(Energy ~ log(Mass) * Type, data = flight.df)
+Anova(full.mod)
+anova(lin.mod, full.mod)
+```
+
+Type II test (`Anova`):
+
+* A model excluding `log(Mass)` (and the interaction term, per the marginality 
+principle), i.e., the model `Energy ~ Type`, is significantly different than the 
+full model.
+* A model excluding `Type` (and the interaction term, per the marginality 
+principle), i.e., the model `Energy ~ Mass`, is not significantly different than 
+the full model.
+* A model excluding the interaction term, i.e., `Energy ~ Mass + Type`, is not 
+significantly different than the full model. 
+
+Type I test (`anova`): The model `Energy ~ log(Mass)` is not significantly 
+different from the full model. This is consistent with the scatterplot. So we 
+can conclude that the most appropriate model is `Energy ~ log(Mass)`. 
+
+# Problem 4
+
+## Part a
+
+```{r p4_a}
+# quick tests for normality
+qqnorm(lin.mod$residuals)
+shapiro.test(lin.mod$residuals)
+
+flight.df %<>% 
+  dp$mutate(energy.pred = predict(lin.mod, flight.df), 
+            resid = Energy - energy.pred)
+
+ggplot(flight.df) + 
+  geom_point(aes(x = Mass, y = resid, colour = Type)) + 
+  geom_abline(slope = 0) + 
+  labs(y = 'residuals') + 
+  scale_colour_brewer(palette = 'Set1')
+
+ncvTest(lin.mod, ~ log(Mass), data = flight.df)
+ncvTest(lin.mod, data = flight.df)
+ncvTest(lin.mod, ~ Type, data = flight.df)
+```
+
+Visually, there appears to be no reason to believe that that variance isn't 
+consistent. The non-constant variance tests confirm this. 
+
+## Part b
+
+Since we have no reason to believe that the residuals are heteroskedastic, we 
+will just use the OLS estimators. 
+
+```{r p4_b}
+alpha <- .98
+
+mass.t <- unname(lin.mod$coefficients['log(Mass)'])
+mass.se <- summary(lin.mod)$coefficients['log(Mass)', 'Std. Error']
+t.98 <- qt(.5 + alpha / 2, lin.mod$df.residual)
+c('lower' = mass.t - t.98 * mass.se, 
+  'estimate' = mass.t, 
+  'upper' = mass.t + t.98 * mass.se)
+
+# same thing
+confint(lin.mod, 'log(Mass)', .98)
+```

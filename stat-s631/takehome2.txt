@@ -1,0 +1,21 @@
+"Mass" "Type" "Energy"
+"1" 779 "non-echolocating bats" 3.77734810210154
+"2" 628 "non-echolocating bats" 3.54961738678043
+"3" 258 "non-echolocating bats" 3.14845336057165
+"4" 315 "non-echolocating bats" 3.10906095886099
+"5" 24.3 "non-echolocating birds" 0.900161349944271
+"6" 35 "non-echolocating birds" 1.36863942588117
+"7" 72.8 "non-echolocating birds" 2.21375387928743
+"8" 120 "non-echolocating birds" 2.62466859216316
+"9" 213 "non-echolocating birds" 2.68102152871429
+"10" 275 "non-echolocating birds" 3.1267605359604
+"11" 370 "non-echolocating birds" 3.26575941076705
+"12" 384 "non-echolocating birds" 3.25424296870549
+"13" 442 "non-echolocating birds" 3.38439026334577
+"14" 412 "non-echolocating birds" 3.77734810210154
+"15" 330 "non-echolocating birds" 3.52636052461616
+"16" 480 "non-echolocating birds" 3.32503602069659
+"17" 93 "echolocating bats" 2.17815501461587
+"18" 8 "echolocating bats" 0.300104592450338
+"19" 6.7 "echolocating bats" 0.113328685307003
+"20" 7.7 "echolocating bats" 0.0198026272961797
