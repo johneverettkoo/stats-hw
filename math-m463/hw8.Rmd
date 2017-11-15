@@ -1,0 +1,123 @@
+---
+title: "MATH-M463"
+subtitle: 'Homework 8'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+## Part a
+
+$\lambda(t) = t^2$  
+$G(t) = \exp(-\int_0^t \lambda(u) du)$ 
+$= \exp(-\int_0^t u^2 du) = \exp(-t^3 /3)$. 
+
+$P(T > 10) = G(10) = \boxed{\exp(-1000/3)}$
+
+## Part b
+
+$f(t) = -\frac{dG}{dt} = -\frac{d}{dt} \exp(-t^3/3)$  
+$= -(-t^2) \exp(-t^3 / 3) = \boxed{t^2 \exp(-t^3/3)}$
+
+## Part c
+
+$E[T^3] = \int_0^\infty t^5 \exp(-t^3 / 3) dt$
+
+Let:  
+$u = t^3$, $du = 3 t^2 dt$  
+$v = -\exp(-t^3 / 3)$, $dv = t^2 \exp(-t^3/3) dt$
+
+Then we get $-t^3 \exp(-t^3/3) |_0^\infty + 3\int_0^\infty t^2 \exp(-t^3/3)dt$
+
+The first term goes to 0 and so we're left with 
+$3\int_0^\infty t^2 \exp(-t^3/3)dt$. Then let:
+
+$u = -t^3/3$  
+$du = -t^2 dt$
+
+Then this becomes $-3 \int_0^\infty \exp(u) du$  
+$= -3 \exp(u) |_{u=0}^\infty$  
+$= -3 (0 - 1) = \boxed{3}$
+
+# Problem 2
+
+## Part a
+
+$P(T_2 < 16) = 1 - P(T_2 > 16) = 1 - P(N_{16} < 1)$  
+$= 1 - e^{-8/3} (1 + 8/3)$ 
+$= \boxed{1 - \frac{11}{3}e^{-8/3} \approx 0.745}$
+
+## Part b
+
+This is equivalent to an example from the book/lectures, so we have 
+$m = x / \lambda = 6x$ and $x \approx 1.675$, so $m \approx \boxed{10.05}$
+
+# Problem 3
+
+## Part a
+
+```{r p3_a, echo = FALSE}
+library(ggplot2)
+theme_set(theme_bw())
+
+x <- seq(-3, 3, .01)
+y <- dplyr::if_else(x >= 0, x ** 2 - x, -x ** 2 - x)
+
+ggplot() + 
+  geom_line(aes(x = x, y = y)) + 
+  scale_x_continuous(breaks = seq(-3, 3, .5)) + 
+  scale_y_continuous(breaks = seq(-6, 6))
+```
+
+## Part b
+
+\[ \frac{dy}{dx} =
+  \begin{cases}
+    2x - 1 & \quad \text{if } x \geq 0\\
+    -2x - 1 & \quad \text{if } x < 0
+  \end{cases}
+\]
+
+## Part c
+
+Solving for $x$ wrt $y$ for each of the cases, we get:
+
+$$x = \frac{1 \pm \sqrt{1 \pm 4y}}{2}$$
+
+With $(+, +)$ when $x \geq 1/2$, $(-, +)$ when $0 \leq x < 1/2$, $(+, -)$ when 
+$-1/2 \leq x < 0$, and $(-, -)$ when $x < 1/2$.
+
+# Problem 4
+
+## Part a
+
+When $y > 1/4$, $y(x) = x^2 - x$ and $x(y) = \frac{1 + \sqrt{1 + 4y}}{2}$. Then 
+$f_Y(y) = f_X(x) / |\frac{dy}{dx}| = f_X(x) / |2x - 1|$  
+$= \boxed{f_X(\frac{1 + \sqrt{1 + 4y}}{2}) \bigg/ \sqrt{1 + 4y}}$
+
+## Part b
+
+When $0 < y < 1/4$, $x \in [-1, 0] \cup [1, \infty)$. In terms of $y$, this 
+defines 3 of the regions specified in the previous problem. Then:
+
+$$f_Y(y) = \frac{f_X(1/2 + \sqrt{1 + 4y}/2)}{\sqrt{1 + 4y}} + 
+\frac{f_X(1/2 + \sqrt{1 - 4y}/2) + f_X(1/2 - \sqrt{1 - 4y}/2)}{\sqrt{1 - 4y}}$$
+
+# Problem 5
+
+# Problem 6
