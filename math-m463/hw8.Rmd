@@ -58,14 +58,15 @@ $= -3 (0 - 1) = \boxed{3}$
 
 ## Part a
 
-$P(T_2 < 16) = 1 - P(T_2 > 16) = 1 - P(N_{16} < 1)$  
-$= 1 - e^{-8/3} (1 + 8/3)$ 
-$= \boxed{1 - \frac{11}{3}e^{-8/3} \approx 0.745}$
+$P(T_2 > 16) = P(N_{16} < 1)$  
+$= e^{-8/3} (1 + 8/3)$ 
+$= \boxed{\frac{11}{3}e^{-8/3} \approx 0.255}$
 
 ## Part b
 
 This is equivalent to an example from the book/lectures, so we have 
-$m = x / \lambda = 6x$ and $x \approx 1.675$, so $m \approx \boxed{10.05}$
+$m = x / \lambda = 6x$ and $x \approx 1.675$, so $m \approx 10.05$ or 
+$\boxed{10 \text{ weeks}}$.
 
 # Problem 3
 
@@ -115,9 +116,65 @@ $= \boxed{f_X(\frac{1 + \sqrt{1 + 4y}}{2}) \bigg/ \sqrt{1 + 4y}}$
 When $0 < y < 1/4$, $x \in [-1, 0] \cup [1, \infty)$. In terms of $y$, this 
 defines 3 of the regions specified in the previous problem. Then:
 
-$$f_Y(y) = \frac{f_X(1/2 + \sqrt{1 + 4y}/2)}{\sqrt{1 + 4y}} + 
-\frac{f_X(1/2 + \sqrt{1 - 4y}/2) + f_X(1/2 - \sqrt{1 - 4y}/2)}{\sqrt{1 - 4y}}$$
+$$\boxed{
+  f_Y(y) = \frac{f_X(1/2 + \sqrt{1 + 4y}/2)}{\sqrt{1 + 4y}} + 
+  \frac{f_X(1/2 + \sqrt{1 - 4y}/2) + f_X(1/2 - \sqrt{1 - 4y}/2)}{\sqrt{1 - 4y}}
+}$$
 
 # Problem 5
 
+## Part a
+
+```{r, echo = FALSE}
+ggplot() + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 0), 
+               arrow = arrow()) + 
+  geom_segment(aes(x = 1, xend = 2, y = 1/6, yend = 1/6)) + 
+  geom_segment(aes(x = 2, xend = 3, y = 1/3, yend = 1/3)) + 
+  geom_segment(aes(x = 3, xend = 4, y = 1/2, yend = 1/2)) + 
+  geom_segment(aes(x = 4, xend = 5, y = 2/3, yend = 2/3)) + 
+  geom_segment(aes(x = 5, xend = 6, y = 5/6, yend = 5/6)) + 
+  geom_segment(aes(x = 6, xend = 7, y = 1, yend = 1), 
+               arrow = arrow()) + 
+  geom_point(aes(x = seq(6), y = seq(1/6, 1, 1/6))) + 
+  labs(x = 'x', y = 'F(x)') + 
+  scale_x_continuous(breaks = seq(0, 7))
+```
+
+## Part b
+
+$F_{max}(x) = P(X_1 \leq x)^4$, so 
+
+\[ F_{max}(x) =
+  \begin{cases}
+    0 & \quad \text{if } x < 1\\
+    \lfloor \frac{x}{6} \rfloor^4 & \quad \text{if } 1 \leq x < 6\\
+    1 & \quad \text{otherwise}
+  \end{cases}
+\]
+
+## Part c
+
+$F_{min}(x) = (1 - P(X_1 \leq x))^4$, so 
+
+\[ F_{min}(x) = 
+  \begin{cases}
+    0 & \quad \text{if } x < 1\\
+    1 - (1 - \lfloor \frac{x}{6} \rfloor)^4 & \quad \text{if } 1 \leq x < 6\\
+    1 & \quad \text{otherwise}
+  \end{cases}
+\]
+
 # Problem 6
+
+## Part a
+
+$f(x) = \frac{d}{dx} \frac{4}{\pi} \arctan(x)$  
+$= \boxed{\frac{4}{\pi} \frac{1}{x^2 + 1}}$
+
+## Part b
+
+$\boxed{
+  f_{(3)}(x) = 5 \frac{4}{\pi} \frac{1}{x^2+1} \binom{4}{2} 
+  (\frac{4}{\pi} \arctan(x))^2 (1 - \frac{4}{\pi} \arctan(x))^2
+}$
