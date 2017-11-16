@@ -27,52 +27,24 @@ etc.).
 
 Signed: *John Koo*
 
-```{r packages_and_data}
-# packages
-import::from(magrittr, `%>%`, `%<>%`)
-dp <- loadNamespace('dplyr')
-library(ggplot2)
-import::from(car, Anova, ncvTest)
+# Writeup (Interpretations and Explanations)
 
-# plotting stuff
-theme_set(theme_bw())
+See code below---I often refer to the output of code in the writeup as if they 
+were right above the explanations/interpretations. 
 
-# read data
-flight.df <- read.table('~/dev/stats-hw/stat-s631/takehome2.txt')
-head(flight.df)
-summary(flight.df)
-```
+## Problem 1
 
-# Problem 1
+[Boxplots---see code below]
 
-```{r p1}
-ggplot(flight.df) + 
-  geom_boxplot(aes(x = Type, y = Energy, group = Type, fill = Type)) + 
-  scale_colour_brewer(palette = 'Set1') + 
-  guides(fill = FALSE)
-
-mod.1 <- lm(Energy ~ Type, data = flight.df)
-summary(mod.1)
-```
-
+From a boxplot of each of the levels of `Type`, 
 `Energy` for `Type` = `"non-echolocating bats"` and `"non-echolocating birds"` 
 is significantly different than the baseline, `Type` = `"echolocating bats"`, 
 for usual values of $\alpha$. However, the plot suggests that there isn't a 
 significant difference between `"non-echolocating bats"` and 
 `"non-echolocating birds"`. We can test this as follows:
 
-```{r p1_2}
-L <- c(0, 1, -1)
-c <- 0
-beta.hat <- mod.1$coefficients
-V.hat <- vcov(mod.1)
-
-F.stat <- t(L %*% beta.hat - c) %*% 
-  solve(L %*% V.hat %*% L) %*% 
-  (L %*% beta.hat - c)
-F.stat
-1 - pf(F.stat, 1, mod.1$df.residual)
-```
+[F test for $\beta_2 = \beta_3$ for model with just `Type`---please see code 
+below]
 
 So we fail to reject the null hypothesis that $\beta_1 = \beta_2$. In other 
 words, we cannot say that the difference in `Energy` is statistically 
@@ -81,61 +53,32 @@ significant between `Type`s `"non-echolocating bats"` and
 from the baseline, we can say it is reasonable to use `Type` as a regressor. 
 We might want to try this model:
 
-```{r p1_3}
-flight.df %<>% 
-  dp$mutate(type = dp$if_else(Type != 'echolocating bats', 
-                              'non-echolocating bats/birds', 
-                              'echolocating bats'))
-mod.2 <- lm(Energy ~ type, data = flight.df)
-summary(mod.2)
-anova(mod.2, mod.1)  # should be the same as before
-```
+[Model with $\beta_2 = \beta_3$ and anova comparing this model with the first 
+mode---see code below]
 
-# Problem 2
+## Problem 2
 
-```{r p2}
-ggplot(flight.df) + 
-  geom_point(aes(x = Mass, y = Energy)) + 
-  scale_x_continuous(trans = 'log') + 
-  annotation_logticks(sides = 'b') + 
-  stat_smooth(aes(x = Mass, y = Energy), method = 'lm', se = FALSE)
-
-lin.mod <- lm(Energy ~ log(Mass), data = flight.df)
-quad.mod <- lm(Energy ~ log(Mass) + I(log(Mass) ** 2), data = flight.df)
-anova(quad.mod)
-```
+[Scatterplot of `Energy` vs `log(Mass)` and anova comparing linear vs quadratic 
+models]
 
 From the scatterplot, it appears that there is no reason to use higher order 
 terms. The ANOVA test confirms this. 
 
-```{r p2_2}
-summary(lin.mod)
-```
+[Summary of model `Energy ~ log(Mass)`]
 
-A linear model using `Mass` appears to be appropriate in this case.
+A linear model using `Mass` appears to be appropriate in this case. The $t$ 
+test for $\beta_1$ is significant for reasonable values of $\alpha$, with the 
+$p$-value below machine precision.
 
-# Problem 3
+## Problem 3
 
-```{r p3}
-ggplot(flight.df) + 
-  geom_point(aes(x = Mass, y = Energy, colour = Type)) + 
-  scale_colour_brewer(palette = 'Set1') + 
-  scale_x_continuous(trans = 'log') + 
-  annotation_logticks(sides = 'b') + 
-  stat_smooth(aes(x = Mass, y = Energy, fill = Type, colour = Type),
-              method = 'lm') +
-  scale_fill_brewer(palette = 'Set1')
-```
+[Scatterplot of `Energy` vs `log(Mass)` with points colored by `Type`]
 
 From the scatterplot, it appears that changes in `Energy` explained by `Type` 
 is pretty much all captured by `Mass`. We can test this:
 
-```{r p3_2}
-summary(flight.df)
-full.mod <- lm(Energy ~ log(Mass) * Type, data = flight.df)
-Anova(full.mod)
-anova(lin.mod, full.mod)
-```
+[Type II test for full model and anova comparing full model vs linear model 
+`Energy ~ log(Mass)`]
 
 Type II test (`Anova`):
 
@@ -152,9 +95,121 @@ Type I test (`anova`): The model `Energy ~ log(Mass)` is not significantly
 different from the full model. This is consistent with the scatterplot. So we 
 can conclude that the most appropriate model is `Energy ~ log(Mass)`. 
 
-# Problem 4
+## Problem 4
 
-## Part a
+### Part a
+
+Our final model is the linear model `Energy ~ log(Mass)`.
+
+[Scatterplot of residuals of linear model vs `Mass`]
+
+[Non-constant variance test `~ log(Mass)`]
+
+[Non-constant variance test `~ Type`]
+
+Visually, there appears to be no reason to believe that that variance isn't 
+consistent. The non-constant variance tests confirm this. 
+
+### Part b
+
+Since we have no reason to believe that the residuals are heteroskedastic, we 
+will just use the OLS estimators. 
+
+CI for $\beta_1$  $(0.740, 0.877)$
+
+# Code and outputs
+
+```{r packages_and_data}
+# packages
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+library(ggplot2)
+import::from(car, Anova, ncvTest)
+
+# plotting stuff
+theme_set(theme_bw())
+
+# read data
+flight.df <- read.table('~/dev/stats-hw/stat-s631/takehome2.txt')
+head(flight.df)
+summary(flight.df)
+```
+
+## Problem 1
+
+```{r p1}
+ggplot(flight.df) + 
+  geom_boxplot(aes(x = Type, y = Energy, group = Type, fill = Type)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  guides(fill = FALSE)
+
+mod.1 <- lm(Energy ~ Type, data = flight.df)
+summary(mod.1)
+```
+
+```{r p1_2}
+L <- c(0, 1, -1)
+c <- 0
+beta.hat <- mod.1$coefficients
+V.hat <- vcov(mod.1)
+
+F.stat <- t(L %*% beta.hat - c) %*% 
+  solve(L %*% V.hat %*% L) %*% 
+  (L %*% beta.hat - c)
+F.stat
+1 - pf(F.stat, 1, mod.1$df.residual)
+```
+
+```{r p1_3}
+flight.df %<>% 
+  dp$mutate(type = dp$if_else(Type != 'echolocating bats', 
+                              'non-echolocating bats/birds', 
+                              'echolocating bats'))
+mod.2 <- lm(Energy ~ type, data = flight.df)
+summary(mod.2)
+anova(mod.2, mod.1)  # should be the same as before
+```
+
+## Problem 2
+
+```{r p2}
+ggplot(flight.df) + 
+  geom_point(aes(x = Mass, y = Energy)) + 
+  scale_x_continuous(trans = 'log') + 
+  annotation_logticks(sides = 'b') + 
+  stat_smooth(aes(x = Mass, y = Energy), method = 'lm', se = FALSE)
+
+lin.mod <- lm(Energy ~ log(Mass), data = flight.df)
+quad.mod <- lm(Energy ~ log(Mass) + I(log(Mass) ** 2), data = flight.df)
+anova(quad.mod)
+```
+
+```{r p2_2}
+summary(lin.mod)
+```
+
+## Problem 3
+
+```{r p3}
+ggplot(flight.df) + 
+  geom_point(aes(x = Mass, y = Energy, colour = Type)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_x_continuous(trans = 'log') + 
+  annotation_logticks(sides = 'b') + 
+  stat_smooth(aes(x = Mass, y = Energy, fill = Type, colour = Type),
+              method = 'lm') +
+  scale_fill_brewer(palette = 'Set1')
+```
+
+```{r p3_2}
+full.mod <- lm(Energy ~ log(Mass) * Type, data = flight.df)
+Anova(full.mod)
+anova(lin.mod, full.mod)
+```
+
+## Problem 4
+
+### Part a
 
 ```{r p4_a}
 # quick tests for normality
@@ -176,13 +231,7 @@ ncvTest(lin.mod, data = flight.df)
 ncvTest(lin.mod, ~ Type, data = flight.df)
 ```
 
-Visually, there appears to be no reason to believe that that variance isn't 
-consistent. The non-constant variance tests confirm this. 
-
-## Part b
-
-Since we have no reason to believe that the residuals are heteroskedastic, we 
-will just use the OLS estimators. 
+### Part b
 
 ```{r p4_b}
 alpha <- .98
