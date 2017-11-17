@@ -34,6 +34,8 @@ were right above the explanations/interpretations.
 
 ## Problem 1
 
+### Part a
+
 [Boxplots---see code below]
 
 From a boxplot of each of the levels of `Type`, 
@@ -49,7 +51,11 @@ below]
 So we fail to reject the null hypothesis that $\beta_1 = \beta_2$. In other 
 words, we cannot say that the difference in `Energy` is statistically 
 significant between `Type`s `"non-echolocating bats"` and 
-`"non-echolocating birds"`. But since they are both significantly different 
+`"non-echolocating birds"`. 
+
+### Part b
+
+But since they are both significantly different 
 from the baseline, we can say it is reasonable to use `Type` as a regressor. 
 We might want to try this model:
 
@@ -58,11 +64,15 @@ mode---see code below]
 
 ## Problem 2
 
+### Part a
+
 [Scatterplot of `Energy` vs `log(Mass)` and anova comparing linear vs quadratic 
 models]
 
 From the scatterplot, it appears that there is no reason to use higher order 
 terms. The ANOVA test confirms this. 
+
+### Part b
 
 [Summary of model `Energy ~ log(Mass)`]
 
@@ -71,6 +81,8 @@ test for $\beta_1$ is significant for reasonable values of $\alpha$, with the
 $p$-value below machine precision.
 
 ## Problem 3
+
+### Part a
 
 [Scatterplot of `Energy` vs `log(Mass)` with points colored by `Type`]
 
@@ -90,6 +102,8 @@ principle), i.e., the model `Energy ~ Mass`, is not significantly different than
 the full model.
 * A model excluding the interaction term, i.e., `Energy ~ Mass + Type`, is not 
 significantly different than the full model. 
+
+### Part b
 
 Type I test (`anova`): The model `Energy ~ log(Mass)` is not significantly 
 different from the full model. This is consistent with the scatterplot. So we 
@@ -112,10 +126,13 @@ consistent. The non-constant variance tests confirm this.
 
 ### Part b
 
-Since we have no reason to believe that the residuals are heteroskedastic, we 
-will just use the OLS estimators. 
+[See code below for how these were computed]
 
-CI for $\beta_1$  $(0.740, 0.877)$
+OLS CI for $\beta_1$ : $(0.740, 0.877)$
+
+HC3 estimate CI for $\beta_1$ : $(0.744, 0.873)$
+
+\newpage
 
 # Code and outputs
 
@@ -136,6 +153,8 @@ summary(flight.df)
 ```
 
 ## Problem 1
+
+### Part a
 
 ```{r p1}
 ggplot(flight.df) + 
@@ -160,6 +179,8 @@ F.stat
 1 - pf(F.stat, 1, mod.1$df.residual)
 ```
 
+### Part b
+
 ```{r p1_3}
 flight.df %<>% 
   dp$mutate(type = dp$if_else(Type != 'echolocating bats', 
@@ -171,6 +192,8 @@ anova(mod.2, mod.1)  # should be the same as before
 ```
 
 ## Problem 2
+
+### Part a
 
 ```{r p2}
 ggplot(flight.df) + 
@@ -184,11 +207,15 @@ quad.mod <- lm(Energy ~ log(Mass) + I(log(Mass) ** 2), data = flight.df)
 anova(quad.mod)
 ```
 
+### Part b
+
 ```{r p2_2}
 summary(lin.mod)
 ```
 
 ## Problem 3
+
+### Part a
 
 ```{r p3}
 ggplot(flight.df) + 
@@ -200,6 +227,8 @@ ggplot(flight.df) +
               method = 'lm') +
   scale_fill_brewer(palette = 'Set1')
 ```
+
+### Parts a and b
 
 ```{r p3_2}
 full.mod <- lm(Energy ~ log(Mass) * Type, data = flight.df)
@@ -236,6 +265,7 @@ ncvTest(lin.mod, ~ Type, data = flight.df)
 ```{r p4_b}
 alpha <- .98
 
+# OLS CI
 mass.t <- unname(lin.mod$coefficients['log(Mass)'])
 mass.se <- summary(lin.mod)$coefficients['log(Mass)', 'Std. Error']
 t.98 <- qt(.5 + alpha / 2, lin.mod$df.residual)
@@ -245,4 +275,31 @@ c('lower' = mass.t - t.98 * mass.se,
 
 # same thing
 confint(lin.mod, 'log(Mass)', .98)
+```
+
+```{r p4_b_2}
+# model matrix
+X <- model.matrix(~ log(Mass), data = flight.df)
+
+# response
+Y <- flight.df$Energy
+
+# projection matrix
+H <- X %*% solve(t(X) %*% X) %*% t(X)
+
+# sandwich term
+S <- t(X) %*% diag(residuals(lin.mod) ** 2 / (1 - diag(H)) ** 2) %*% X
+
+# copute standard errors
+var.beta.hat <- solve(t(X) %*% X) %*% S %*% solve(t(X) %*% X)
+diag(sqrt(var.beta.hat))
+
+# equivalent
+diag(sqrt(sandwich::vcovHC(lin.mod)))
+
+# HC3 CI
+se <- diag(sqrt(var.beta.hat))['log(Mass)']
+c('lower' = mass.t - se * t.98, 
+  'estimate' = mass.t, 
+  'upper' = mass.t + se * t.98)
 ```
