@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 11'
 author: "John Koo"
-output: pdf_document
-# output: html_document
+# output: pdf_document
+output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -24,17 +24,65 @@ options(xtable.comment = FALSE,
 
 ```{r packages_etc}
 dp <- loadNamespace('dplyr')
-import::from(magrittr, `%>%`, `%<>%`)
+import::from(magrittr, 
+             `%>%`, `%<>%`)
 library(ggplot2)
 theme_set(theme_bw())
-import::from(GGally, ggpairs)
-import::from(car, Anova, boxCox, bcPower, powerTransform, invResPlot)
-import::from(effects, effect, Effect)
+import::from(GGally, 
+             ggpairs)
+import::from(car, 
+             Anova, boxCox, bcPower, 
+             powerTransform, invResPlot, 
+             invTranEstimate, invTranPlot)
+import::from(effects, 
+             effect, Effect)
 ```
 
 # Problem 1
 
 [From ALR 8.2]
+
+```{r p1_setup}
+stopping.df <- alr4::stopping
+```
+
+## Part 1
+
+```{r p1_1}
+invTranPlot(Distance ~ Speed, data = stopping.df, 
+            lambda = seq(-5, 5))
+
+invTranEstimate(stopping.df$Speed, stopping.df$Distance)
+```
+
+The optimal $\lambda$ is 1.868. However, $\lambda = 2$ is in the 95\% confidence 
+interval, and it is the only integer value in the interval. So we will use 
+$\lambda = 2$ for this problem.
+
+## Part 2
+
+```{r p1_2}
+invTranPlot(Distance ~ Speed, data = stopping.df, 
+            lambda = seq(-1, 1), optimal = FALSE)
+```
+
+From the scatterplot with fitted lines, we can see that none of these values 
+of $\lambda$ fit the data very well.
+
+## Part 3
+
+From part (1), we saw that $\lambda = 2$ is in the 95\% confidence interval 
+for maximizing the log-likelihood. We can confirm this visually:
+
+```{r p1_3}
+invTranPlot(Distance ~ Speed, data = stopping.df, lambda = 2)
+```
+
+The optimal $\lambda$ and $\lambda = 2$ produce very similar results.
+
+## Part 4
+
+
 
 # Problem 2
 
