@@ -49,15 +49,15 @@ stopping.df <- alr4::stopping
 ## Part 1
 
 ```{r p1_1}
-invTranPlot(Distance ~ Speed, data = stopping.df, 
-            lambda = seq(-5, 5))
+lin.mod <- lm(Distance ~ Speed, data = stopping.df)
 
-invTranEstimate(stopping.df$Speed, stopping.df$Distance)
+invResPlot(lin.mod, lambda = seq(-5, 5))
+boxCox(lin.mod)
 ```
 
-The optimal $\lambda$ is 1.868. However, $\lambda = 2$ is in the 95\% confidence 
+The optimal $\lambda$ is 0.485. However, $\lambda = .5$ is in the 95\% confidence 
 interval, and it is the only integer value in the interval. So we will use 
-$\lambda = 2$ for this problem.
+$\lambda = .5$ for this problem.
 
 ## Part 2
 
@@ -67,22 +67,44 @@ invTranPlot(Distance ~ Speed, data = stopping.df,
 ```
 
 From the scatterplot with fitted lines, we can see that none of these values 
-of $\lambda$ fit the data very well.
+of $\lambda$ fit the data very well. $\lambda = 0$ or $-1$ do not lie near the 
+points, and $\lambda = 1$ fails to capture the curvature, resulting in a 
+pattern in the residuals.
 
 ## Part 3
 
-From part (1), we saw that $\lambda = 2$ is in the 95\% confidence interval 
-for maximizing the log-likelihood. We can confirm this visually:
-
 ```{r p1_3}
 invTranPlot(Distance ~ Speed, data = stopping.df, lambda = 2)
+invTranEstimate(stopping.df$Speed, stopping.df$Distance)
 ```
 
-The optimal $\lambda$ and $\lambda = 2$ produce very similar results.
+The optimal $\lambda$ and $\lambda = 2$ produce very similar results. In 
+addition, 2 is in the 95\% CI for the optimal $\lambda$ (minimizing the 
+log-likelihood).
 
 ## Part 4
 
+```{r p1_4}
+hald.mod <- lm(Distance ~ Speed + I(Speed ** 2), 
+               weights = I(Speed ** 2), 
+               data = stopping.df)
+summary(hald.mod)
 
+power.mod <- lm(sqrt(Distance) ~ Speed, 
+                data = stopping.df)
+summary(power.mod)
+
+stopping.df %<>%
+  dp$mutate(hald.pred = predict(hald.mod, newdata = stopping.df), 
+            power.pred = predict(power.mod, newdata = stopping.df) ** 2)
+ggplot(stopping.df) +
+  geom_point(aes(x = Speed, y = Distance))  + 
+  geom_line(aes(x = Speed, y = hald.pred, colour = 'Hald')) + 
+  geom_line(aes(x = Speed, y = power.pred, colour = 'power transform')) + 
+  theme(legend.position = 'bottom') + 
+  labs(colour = NULL) + 
+  scale_colour_brewer(palette = 'Set1')
+```
 
 # Problem 2
 
