@@ -2,8 +2,8 @@
 title: "STAT-S631"
 subtitle: 'Assignment 11'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -36,6 +36,8 @@ import::from(car,
              invTranEstimate, invTranPlot)
 import::from(effects, 
              effect, Effect)
+import::from(miscTools, 
+             rSquared)
 ```
 
 # Problem 1
@@ -86,7 +88,7 @@ log-likelihood).
 
 ```{r p1_4}
 hald.mod <- lm(Distance ~ Speed + I(Speed ** 2), 
-               weights = I(Speed ** 2), 
+               weights = I(Speed ** -2), 
                data = stopping.df)
 summary(hald.mod)
 
@@ -96,7 +98,9 @@ summary(power.mod)
 
 stopping.df %<>%
   dp$mutate(hald.pred = predict(hald.mod, newdata = stopping.df), 
-            power.pred = predict(power.mod, newdata = stopping.df) ** 2)
+            power.pred = predict(power.mod, newdata = stopping.df) ** 2, 
+            hald.resid = Distance - hald.pred, 
+            power.resid = Distance - power.pred)
 ggplot(stopping.df) +
   geom_point(aes(x = Speed, y = Distance))  + 
   geom_line(aes(x = Speed, y = hald.pred, colour = 'Hald')) + 
@@ -104,6 +108,11 @@ ggplot(stopping.df) +
   theme(legend.position = 'bottom') + 
   labs(colour = NULL) + 
   scale_colour_brewer(palette = 'Set1')
+
+mean(stopping.df$hald.resid ** 2)
+mean(stopping.df$power.resid ** 2)
+rSquared(stopping.df$Distance, stopping.df$hald.resid)
+rSquared(stopping.df$Distance, stopping.df$power.resid)
 ```
 
 # Problem 2
