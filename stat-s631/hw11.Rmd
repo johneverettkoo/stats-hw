@@ -1,0 +1,128 @@
+---
+title: "STAT-S631"
+subtitle: 'Assignment 11'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages_etc}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+theme_set(theme_bw())
+import::from(GGally, ggpairs)
+import::from(car, Anova, boxCox, bcPower, powerTransform, invResPlot)
+import::from(effects, effect, Effect)
+```
+
+# Problem 1
+
+[From ALR 8.2]
+
+# Problem 2
+
+[From ALR 8.6]
+
+```{r p2_setup}
+wool.df <- car::Wool
+```
+
+## Part 1
+
+```{r p2_1, cache = TRUE, fig.height = 3}
+ggpairs(wool.df)
+
+summary(wool.df)
+
+wool.df %>% 
+  dp$select(len, amp, load) %>% 
+  table()
+
+dim(wool.df)
+```
+
+The values for `len`, `amp`, and `load` consist of just 3 values each. Each 
+triple is unique, which matches the number of rows of the data frame ($3^3$). The values are evenly spaced out. 
+
+## Part 2
+
+```{r p2_2, fig.width = 5, fig.height = 5}
+wool.df %<>% 
+  dp$mutate(len = as.factor(len), 
+            amp = as.factor(amp), 
+            load = as.factor(load))
+
+factor.2.mod <- lm(cycles ~ len * amp + len * load + amp * load, 
+                   data = wool.df)
+summary(factor.2.mod)
+Anova(factor.2.mod)
+plot(effect('len:amp', factor.2.mod), multiline = TRUE, ci.style = 'bars')
+```
+
+For a significance level of $\alpha = 0.05$, we reject the null hypothesis that 
+the coefficients for the `len` and `amp` interaction terms is 0. 
+
+## Part 3
+
+```{r p2_3_1}
+factor.1.mod <- lm(cycles ~ len + amp + load, data = wool.df)
+summary(factor.1.mod)
+
+anova(factor.2.mod, factor.1.mod)
+```
+
+The ANOVA test confirms the text's assertion.
+
+```{r p2_3_2}
+invResPlot(factor.1.mod)
+boxCox(factor.1.mod)
+summary(powerTransform(factor.1.mod))
+```
+
+The best value of $\lambda$ (the one that maximizes the log-likelihood) is 
+-0.1005. However, 0 is within the 95\% confidence interval, so we cannot say 
+that -0.1005 is better than 0 (for $\alpha = 0.05$). So we will select 
+$\lambda = 0$.
+
+## Part 4
+
+```{r p2_4_1}
+factor.1.log.mod <- lm(log(cycles) ~ len + amp + load, data = wool.df)
+factor.2.log.mod <- lm(log(cycles) ~ len * amp + len * load + amp * load, 
+                       data = wool.df)
+anova(factor.2.log.mod, factor.1.log.mod)
+```
+
+From the ANOVA test, we fail to reject the null hypothesis that all of the
+coefficients for the interaction terms is 0.
+
+```{r p2_4_2}
+plot(Effect(c('len', 'amp'), factor.2.log.mod, 
+            transformation = list(link = log, inverse = exp)), 
+     multiline = TRUE, 
+     ci.style = 'bars')
+plot(Effect(c('len', 'amp'), factor.2.log.mod, 
+            transformation = list(link = log, inverse = exp)), 
+     multiline = TRUE, 
+     axes = list(y = list(type = 'response', lab = 'cycles')), 
+     ci.style = 'bars')
+```
+
+The confidence interval increases with `cycles`. 
