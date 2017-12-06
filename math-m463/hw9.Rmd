@@ -1,0 +1,157 @@
+---
+title: "MATH-M463"
+subtitle: 'Homework 9'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+[Exercise 4 in 5.2]
+
+# Problem 2
+
+[Exercise 6 in 5.2]
+
+## Part a
+
+## Part b
+
+# Problem 3
+
+[Exercise 6 in 5.3]
+
+## Part a
+
+## Part b
+
+# Problem 4
+
+[Exercise 8 in 5.3]
+
+# Problem 5
+
+## Part a
+
+$$\int f(x, y) dx dy = \lambda^3 \int_0^\infty e^{-\lambda y} \int_0^y x dx dy$$
+$$= \frac{\lambda^3}{2} \int_0^\infty y^2 e^{-\lambda y} dy$$
+
+Let:  
+$u = y^2$, $du = 2y dy$  
+$v = -\frac{1}{\lambda} e^{-\lambda y}$, $dv = e^{-\lambda y} dy$
+
+Then we have:
+
+$$= \frac{\lambda^3}{2} \bigg(-\frac{y^2}{\lambda} e^{-\lambda y} \bigg|_0^\infty + 
+\frac{2}{\lambda} \int_0^\infty y e^{-\lambda y} dy \bigg)$$
+$$= \lambda^2 \int_0^\infty y e^{-\lambda y} dy$$
+
+Let:  
+$u = y$, $du = dy$  
+$v = -\frac{1}{\lambda} e^{-\lambda y}$, $dv = e^{-\lambda y} dy$
+
+Then:
+
+$$= \lambda^2 \bigg(-\frac{y}{\lambda} e^{-\lambda y} \bigg|_0^\infty + 
+\int_0^\infty \frac{1}{\lambda} e^{-\lambda y} dy \bigg)$$
+$$= \lambda \int_0^\infty e^{-\lambda y} dy$$
+$$= -e^{-\lambda y} \bigg|_0^\infty$$
+$$-(0 - 1) = \boxed{1}$$
+
+## Part b
+
+$$f_X(x)  = \int_x^\infty f(x, y) dy$$
+$$= \int_x^\infty \lambda^3 x e^{-\lambda y} dy$$
+$$= \lambda^3 x \int_x^\infty e^{-\lambda y} dy$$
+$$= \lambda^3 x \bigg(-\frac{1}{\lambda} e^{-\lambda y} \bigg|_x^\infty \bigg)$$
+$$= -\lambda^2 x (0 - e^{-\lambda x})$$
+$$= \boxed{\lambda^2 x e^{-\lambda x}}$$
+
+## Part c
+
+$$E[X] = \int_0^\infty x f_X(x) dx$$
+$$= \int_0^\infty x^2 e^{-\lambda x} dx$$
+
+Let:  
+$u = x^2$, $du = 2x dx$  
+$v = -\frac{1}{\lambda} e^{-\lambda x}$, $dv = e^{-\lambda x} dx$
+
+Then:
+
+$$= \bigg(-\frac{x^2}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
+\frac{2}{\lambda} \int_0^\infty x e^{-\lambda x} dx \bigg)$$
+$$= \frac{2}{\lambda} \int_0^\infty x e^{-\lambda x} dx$$
+
+Let:  
+$u = x$, $du = dx$  
+$v = -\frac{1}{\lambda} e^{-\lambda x}$, $dv = e^{-\lambda x} dx$
+
+Then:
+
+$$= \frac{2}{\lambda} \bigg(-\frac{x}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
+\frac{1}{\lambda} \int_0^\infty e^{-\lambda x} dx \bigg)$$
+$$= \frac{2}{\lambda^2} \int_0^\infty e^{-\lambda x} dx$$
+$$= -\frac{2}{\lambda^3} (0 - 1)$$
+$$= \boxed{\frac{2}{\lambda^3}}$$
+
+## Part d
+
+$$f_Y(y|X=x) = \frac{f(x, y)}{f_X(x)}$$
+$$= \frac{\lambda^3 x e^{-\lambda y}}{\lambda^2 x e^{-\lambda x}}$$
+$$= \boxed{\lambda e^{-\lambda (y - x)}}$$
+
+## Part e
+
+$$E[Y|X=1] = \int_1^\infty \lambda y e^{-\lambda (y-1)} dy$$
+$$= \lambda e^{\lambda} \int_1^\infty y e^{-\lambda y} dy$$
+
+Let:  
+$u = y$, $du = dy$  
+$v = -\frac{1}{\lambda} e^{-\lambda y}$, $dv = e^{-\lambda y} dy$
+
+Then
+
+$$= \lambda e^{\lambda} \bigg(-\frac{y}{\lambda} e^{-\lambda y} \bigg|_1^\infty 
++ \frac{1}{\lambda} \int_1^\infty e^{-\lambda y} dy \bigg)$$
+$$= \lambda e^{\lambda} \bigg(\frac{e^{-\lambda}}{\lambda} - 
+\frac{1}{\lambda^2} e^{-\lambda y} \bigg|_1^\infty \bigg)$$
+$$= 1 - \frac{e^{\lambda}}{\lambda} (0 - e^{-\lambda})$$
+$$= \boxed{1 + \frac{1}{\lambda}}$$
+
+# Problem 6
+
+## Part a
+
+First note that since $P(A \cup B) = P(A) + P(B) - P(AB)$, 
+$P(AB) = P(A) + P(B) - P(A \cup B) = .2 + .6 - .7 = .1$
+
+Then $P(A|B) = \frac{P(AB)}{P(B)} = \frac{.1}{.6} = \boxed{\frac{1}{6}}$
+
+## Part b
+
+$P(A) P(B) = .12 > .1 = P(AB)$, so they are $\boxed{\text{negatively dependent}}$
+
+## Part c
+
+$cov(X, Y) = P(AB) - P(A) P(B) = .1 - .12 = .02$
+
+Then note that $var(X) = E[X^2] - E[X]^2 = E[X] - E[X]^2 = P(A) - P(A)^2$
+$= .2 - .04 = .16$
+
+Similarly, $var(Y) = P(B) - P(B)^2 = .6 - .36 = .24$
+
+Then $corr(X, Y) = \frac{.02}{\sqrt{.16 \times .24}} \approx \boxed{.102}$
