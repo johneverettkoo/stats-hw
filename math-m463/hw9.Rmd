@@ -23,13 +23,43 @@ options(xtable.comment = FALSE,
 
 [Exercise 4 in 5.2]
 
+## Part a
+
+$$P(X \leq x, Y \leq y) = \int_0^x \int_0^y f(x, y) dx dy$$
+$$= \int_0^x 2 e^{-2x} dx \int_0^y 3 e^{-3y} dy$$
+$$= \boxed{(1 - e^{-2x}) (1 - e^{-3y})}$$
+
+## Part b
+
+We can see that this is just a product of two exponential distributions. 
+Therefore, $\boxed{f_X(x) = 2 e^{-2x}}$
+
+## Part c
+
+Likewise, $\boxed{f_Y(y) = 3 e^{-3y}}$
+
+## Part d
+
+$X \perp Y$ since $f(x, y) = f_X(x) f_Y(y)$
+
 # Problem 2
 
 [Exercise 6 in 5.2]
 
 ## Part a
 
+$$P(Y > 2X) = \int_{x=0}^{1/2} \int_{y=2x}^1 90 (y - x)^8 dy dx$$
+$$= \int_0^{1/2} 10 (y - x)^9 \bigg|_{y=2x}^1 dx$$
+$$= \int_0^{1/2} 10 \big( (1 - x)^9 - x^9 \big) dx$$
+$$= -(1 - x)^{10} - x^{10} \bigg|_0^{1/2}$$
+$$= -\frac{1}{2^{10}} + 1 - \frac{1}{2^{10}}$$
+$$= \boxed{1 - \frac{1}{2^9}}$$
+
 ## Part b
+
+$$f_X(x) = \int_{y=x}^1 90 (y - x)^8 dy$$
+$$= 10 (y - x)^{9} \bigg|_{y=x}^1$$
+$$= \boxed{10 (1 - x)^{9}}$$
 
 # Problem 3
 
@@ -37,7 +67,22 @@ options(xtable.comment = FALSE,
 
 ## Part a
 
+Since $X$ and $Y$ are iid standard normal, $3X + 2Y \sim \mathcal{N}(0, 3^2 + 2^2)$. 
+Then 
+
+$$P(3X + 2Y > 5) = P(\frac{3X + 2Y}{\sqrt{13}} > \frac{5}{\sqrt{13}})$$ 
+$$= \boxed{1 - \Phi(\frac{5}{\sqrt{13}}) \approx .083}$$
+
 ## Part b
+
+$$P(\min(X, Y) < 1)$$
+
+This is just the probability of the complement of the event that both $X$ and 
+$Y$ are greater than 1. We can also use the fact that $X \perp Y$.
+
+$$= 1 - P(X > 1, Y > 1)$$
+$$= 1 - P(X > 1) P(Y > 1)$$
+$$= \boxed{1 - (1 - \Phi(1))^2 \approx .975}$$
 
 # Problem 4
 
@@ -147,11 +192,11 @@ $P(A) P(B) = .12 > .1 = P(AB)$, so they are $\boxed{\text{negatively dependent}}
 
 ## Part c
 
-$cov(X, Y) = P(AB) - P(A) P(B) = .1 - .12 = .02$
+$cov(X, Y) = P(AB) - P(A) P(B) = .1 - .12 = -.02$
 
 Then note that $var(X) = E[X^2] - E[X]^2 = E[X] - E[X]^2 = P(A) - P(A)^2$
 $= .2 - .04 = .16$
 
 Similarly, $var(Y) = P(B) - P(B)^2 = .6 - .36 = .24$
 
-Then $corr(X, Y) = \frac{.02}{\sqrt{.16 \times .24}} \approx \boxed{.102}$
+Then $corr(X, Y) = \frac{-.02}{\sqrt{.16 \times .24}} \approx \boxed{-.102}$
