@@ -84,7 +84,7 @@ $$= \boxed{\lambda^2 x e^{-\lambda x}}$$
 ## Part c
 
 $$E[X] = \int_0^\infty x f_X(x) dx$$
-$$= \int_0^\infty x^2 e^{-\lambda x} dx$$
+$$= \lambda^2 \int_0^\infty x^2 e^{-\lambda x} dx$$
 
 Let:  
 $u = x^2$, $du = 2x dx$  
@@ -92,9 +92,9 @@ $v = -\frac{1}{\lambda} e^{-\lambda x}$, $dv = e^{-\lambda x} dx$
 
 Then:
 
-$$= \bigg(-\frac{x^2}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
+$$= \lambda^2 \bigg(-\frac{x^2}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
 \frac{2}{\lambda} \int_0^\infty x e^{-\lambda x} dx \bigg)$$
-$$= \frac{2}{\lambda} \int_0^\infty x e^{-\lambda x} dx$$
+$$= 2 \lambda \int_0^\infty x e^{-\lambda x} dx$$
 
 Let:  
 $u = x$, $du = dx$  
@@ -102,11 +102,11 @@ $v = -\frac{1}{\lambda} e^{-\lambda x}$, $dv = e^{-\lambda x} dx$
 
 Then:
 
-$$= \frac{2}{\lambda} \bigg(-\frac{x}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
+$$= 2 \lambda \bigg(-\frac{x}{\lambda} e^{-\lambda x} \bigg|_0^\infty + 
 \frac{1}{\lambda} \int_0^\infty e^{-\lambda x} dx \bigg)$$
-$$= \frac{2}{\lambda^2} \int_0^\infty e^{-\lambda x} dx$$
-$$= -\frac{2}{\lambda^3} (0 - 1)$$
-$$= \boxed{\frac{2}{\lambda^3}}$$
+$$= 2 \int_0^\infty e^{-\lambda x} dx$$
+$$= -\frac{2}{\lambda} (0 - 1)$$
+$$= \boxed{\frac{2}{\lambda}}$$
 
 ## Part d
 
