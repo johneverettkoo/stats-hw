@@ -1,0 +1,316 @@
+---
+title: "STAT-S631"
+subtitle: 'Final Exam'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+fontsize: 11pt 
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Statement
+
+On my honor, I have not had any form of communication about this exam with any 
+other individual (including other students, teaching assistants, instructors, 
+etc.).
+
+Signed: *John Koo, 12/11/2017*
+
+\newpage
+
+# Question 1
+
+When performing transformations, I will try to limit the extent to which I 
+transform the variables in order to make a more interpretable model. This may 
+come at the cost of model performance.
+
+Based on the scatterplot matrix (Fig \ref{fig:scatter}), we can see moderate 
+relationships between `moralIntegration` and all of the others without any 
+particularly strong linear relationship between the two continuous predictors. 
+There seems to be some relationship between `mobility` and the factor variable 
+`region`, so just one or the other may be sufficient. Based on the scatterplots 
+in the bottom row (with `moralIntegration` on the y-axis), there doesn't appear 
+to be any reason to believe that a transformation is necessary. We will test 
+this hypothesis. 
+
+First, we try power transformations on the continuous predictors with and 
+without the factor variable. In either case, $\lambda = 0$ seems appropriate for 
+`heterogeneity`, but the results disagree regarding `mobility` (see Tables \ref{tab:trans_wo_region}, \ref{tab:trans_w_region}). Upon closer inspection, we can see that they both contain $\lambda = 0$. Testing $\lambda = 0$ and $\lambda = 1$ for the transformations without `region` shows that we achieve distributions closer to multivariate normal with $\lambda = 0$ for `mobility` (see Tables \ref{tab:test_0} and \ref{tab:test_1}). So our final transformations will be log transformations for both continuous predictors. 
+
+Building a full model on these predictors, we can see that the pairwise 
+interaction terms are not significant (Table \ref{tab:full_model}). However, we 
+cannot say that they are all insignificant from just this result. For that, we 
+need a type I test. Table \ref{tab:parallel_mod} shows that we cannot reject 
+the null hypothesis that the interaction terms have zero coefficients at typical 
+levels of significance (e.g., $\alpha < 0.1$). However, this is at a cost of 
+model performance ($R^2$ decreases from ~0.8 to ~0.7).
+
+Now that the interaction terms have been deemed insignificant, we can focus on 
+the individual terms. A type II test on the parallel model shows that 
+`log(mobility)` or `region` (or both) may not be significant (Table 
+\ref{tab:parallel_mod_2}). This corresponds to our original observation from the 
+scatterplots. Fitting a model without `region` and then another model without 
+`log(mobility)` shows us that the model without `region` performs better in 
+terms of $R^2$ and MSE. Then the final model is:
+
+$$E[Y | X_1, X_2] = \beta_0 + \beta_1 \log(X_1) + \beta_2 \log(X_2)$$
+
+Where $Y$ is `moralIntegration` and the indices 1 and 2 refer to `heterogeneity` 
+and `mobility` respectively. As a final check, we can compare this reduced model 
+to the full model (Table \ref{tab:final_mod}). We can see that there is no 
+significant difference here at usual levels of $\alpha$ (e.g., $< 0.1$).
+
+Next, we can consider transformations on the response variable. A plot of 
+log-likelihood vs $\lambda$ for Box-Cox transformations shows that no 
+transformation is necessary (Fig \ref{fig:boxcox}).
+
+Finally, we can test our assumptions on the error terms by looking at the 
+residuals. From a scatterplot of $\hat{e}$ vs $\hat{y}$, we see no reason to 
+suspect that the assumption of constant variance is violated (Fig 
+\ref{fig:resid}). The tests for non-constant variance confirm this. A 
+Shapiro-Wilk test also confirms that the residuals are normally distributed 
+(also, see Q-Q plot, Fig \ref{fig:qq}). No weights are needed.
+
+At this point, polynomials will not be considered, since it appears that the 
+model behaves normally and we have no reason to believe that any assumptions are 
+broken.
+
+# Question 2
+
+* $\hat{\beta}_0$ : In the (theoretical) case where `heterogeneity` and 
+`mobility` are 1, the average `moralIntegration` is 42.204.
+* $\hat{\beta}_1$ : For a fixed value of `mobility`, one unit change in 
+`heterogeneity` on average decreases `moralIntegration` by 3.783 times the value 
+of `heterogeneity`. This is because 
+$\frac{\partial}{\partial x} A \log x = \frac{A}{x}$.
+* $\hat{\beta}_2$ : The interpretation here is the same as for $\hat{\beta}_1$. 
+For a unit increase in `mobility` and fixed `heterogeneity`, `moralIntegration` 
+decreases on average by 5.730 times the value of `mobility`. 
+
+From Question (1), we saw that there is no reason to believe that residuals are 
+not normally distributed, correlated with the regressors, or auto-correlated. We 
+also don't have evidence of non-constant variance. Since we have no reason to 
+believe that our assumptions are violated, we will not be making any changes to 
+the model (see Fig \ref{fig:resid_x} and Table \ref{tab:tukey}).
+
+# Question 3
+
+From Fig \ref{fig:iip}, we can see that no outliers were detected based on 
+Studentized residuals, with Bonferroni p-values all near 1. Based on Cook's 
+distance, the most influential rows correspond to San Diego, Rochester, Portland 
+(OR), and Houston (see Table \ref{tab:cook}). Removing these changes the 
+coefficient estimates to 40.22, -3.784, and -5.128. An $F$-test comparing the 
+new model to the old estimates shows that there is no significant difference 
+($p$-value $= 0.95$). 
+
+\newpage
+
+# Accompanying code, outputs, and visualizations
+
+```{r setup_problem}
+# packages, etc.
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+import::from(ggplot2, ggplot, 
+             geom_point, 
+             aes, 
+             theme_set, theme_bw, 
+             scale_colour_brewer, scale_x_log10, 
+             stat_smooth, 
+             labs)
+import::from(GGally, ggpairs)
+import::from(car, bcPower, boxCox, 
+             invTranPlot, invTranEstimate, invResPlot, powerTransform, 
+             ncvTest, residualPlots, influenceIndexPlot)
+import::from(xtable, xtable)
+import::from(car, Anova)
+import::from(gridExtra, grid.arrange)
+import::from(ggrepel, geom_label_repel)
+
+theme_set(theme_bw())
+```
+
+```{r load_data}
+# load data
+angell.df <- read.table('~/dev/stats-hw/stat-s631/Angell.txt') %>% 
+  dp$mutate(city = rownames(.))
+
+summary(angell.df)
+```
+
+```{r scatter, fig.cap = 'Scatterplot matrix', cache = TRUE, results = 'asis'}
+# scatterplot matrix
+angell.df %>% 
+  ggpairs(columns = c('region', 'heterogeneity', 'mobility', 
+                      'moralIntegration'), 
+          aes(colour = region))
+```
+
+```{r powertrans, results = 'asis'}
+powerTransform(cbind(heterogeneity, mobility) ~ 1, angell.df) %>% 
+  summary() %>% 
+  .$result %>% 
+  xtable(caption = 'Transformations without the factor variable', 
+         label = 'tab:trans_wo_region') %>% 
+  print()
+
+powerTransform(cbind(heterogeneity, mobility) ~ region, angell.df) %>% 
+  summary() %>% 
+  .$result %>% 
+  xtable(caption = 'Transformations with the factor variable', 
+         label = 'tab:trans_w_region') %>% 
+  print()
+
+powerTransform(cbind(heterogeneity, mobility) ~ 1, angell.df) %>% 
+  car::testTransform(c(0, 0)) %>% 
+  xtable(caption = paste('Results for transformations without the predictor', 
+                         'where both powers are 0'), 
+         label = 'tab:test_0') %>% 
+  print()
+
+powerTransform(cbind(heterogeneity, mobility) ~ 1, angell.df) %>% 
+  car::testTransform(c(0, 1)) %>% 
+  xtable(caption = paste('Results for transformations without the predictor', 
+                         'where the power for mobility is 1'), 
+         label = 'tab:test_1') %>% 
+  print()
+```
+
+```{r full_model, results = 'asis'}
+full.mod <- lm(moralIntegration ~ log(heterogeneity) * log(mobility) * region, 
+               data = angell.df)
+Anova(full.mod) %>% 
+  xtable(caption = 'Type II ANOVA on the full model', 
+         label = 'tab:full_model') %>% 
+  print()
+```
+
+```{r parallel_mod, results = 'asis'}
+parallel.mod <- lm(moralIntegration ~ log(heterogeneity) + log(mobility) + region, 
+                   data = angell.df)
+
+anova(parallel.mod, full.mod) %>% 
+  xtable(caption = 'Type I ANOVA comparing the full model and parallel model', 
+         label = 'tab:parallel_mod') %>% 
+  print()
+```
+
+```{r parallel_mod_2, results = 'asis'}
+Anova(parallel.mod) %>% 
+  xtable(caption = 'Type II ANOVA for the no-interaction model', 
+         label = 'tab:parallel_mod_2') %>% 
+  print()
+```
+
+```{r final_mod, results = 'asis'}
+final.mod <- lm(moralIntegration ~ log(heterogeneity) + log(mobility), 
+                data = angell.df)
+
+anova(final.mod, full.mod) %>% 
+  xtable(caption = 'Type I ANOVA comparing the reduced model to the full model', 
+         label = 'tab:final_mod') %>% 
+  print()
+```
+
+```{r boxcox, results = 'asis', fig.cap = 'Log-likelihood for Box-Cox transformations'}
+boxCox(final.mod)
+```
+
+```{r resid, fig.cap = 'Residuals vs predicted values'}
+ggplot() + 
+  geom_point(aes(x = fitted.values(final.mod), 
+                 y = final.mod$residuals)) + 
+  labs(x = expression(hat(y)), 
+       y = expression(hat(e))) + 
+  stat_smooth(aes(x = fitted.values(final.mod), 
+                  y = final.mod$residuals), 
+              method = 'lm', formula = y ~ poly(x, 2, raw = TRUE))
+```
+
+```{r ncv}
+ncvTest(final.mod)
+ncvTest(final.mod, ~ region)
+ncvTest(final.mod, ~ heterogeneity) 
+ncvTest(final.mod, ~ mobility)
+ncvTest(final.mod, ~ log(heterogeneity))
+ncvTest(final.mod, ~ log(mobility))
+```
+
+```{r qq, fig.cap = 'Q-Q plot of the residuals'}
+qqnorm(final.mod$residuals)
+qqline(final.mod$residuals)
+
+shapiro.test(final.mod$residuals)
+```
+
+```{r final_summary}
+summary(final.mod)
+```
+
+```{r resid_x, fig.cap = 'Residuals vs regressors', results = 'asis'}
+residualPlots(final.mod) %>% 
+  as.data.frame() %>% 
+  xtable(caption = 'Tukey tests', 
+         label = 'tab:tukey') %>% 
+  print()
+```
+
+```{r iip, fig.cap = 'Influence index plot for the final model', fig.height = 6.5}
+influenceIndexPlot(final.mod)
+```
+
+```{r cooks, results = 'asis'}
+angell.df %>%
+  dp$mutate(cook = cooks.distance(final.mod)) %>% 
+  dp$arrange(-cook) %>% 
+  head() %>% 
+  dp$rename('Cook\'s distance' = cook) %>% 
+  xtable(caption = 'Most influential rows based on Cook\'s distance', 
+         label = 'tab:cook') %>% 
+  print(include.rownames = FALSE)
+```
+
+```{r resid_label, fig.height = 4, fig.width = 8, fig.cap = 'Residual plot with labels'}
+angell.df %>% 
+  dp$mutate(resid = final.mod$residuals, 
+            yhat = fitted.values(final.mod)) %>% 
+  ggplot() + 
+  stat_smooth(aes(x = yhat, y = resid), 
+              method = 'lm', formula = y ~ poly(x, 2, raw = TRUE)) + 
+  geom_point(aes(x = yhat, y = resid)) + 
+  geom_label_repel(aes(x = yhat, y = resid, label = city)) + 
+  labs(x = expression(hat(y)), 
+       y = expression(hat(e)))
+```
+
+```{r new_model}
+influential.cities <- c('SanDiego', 'Rochester', 'PortlandOregon', 'Houston')
+
+new.mod <- angell.df %>% 
+  dp$filter(!(city %in% influential.cities)) %>% 
+  lm(moralIntegration ~ log(heterogeneity) + log(mobility), data = .)
+
+summary(new.mod)
+
+# test for significant change
+c. <- final.mod$coefficients
+b <- new.mod$coefficients
+V <- vcov(new.mod)
+L <- diag(rep(1, 3))
+q <- 3
+F.stat <- t(L %*% b - c.) %*% solve(L %*% V %*% t(L)) %*% (L %*% b - c.) / q
+1 - pf(F.stat, q, nrow(new.mod$model) - length(b))
+```
