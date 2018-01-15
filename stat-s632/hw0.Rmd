@@ -1,0 +1,86 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 0'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+Bias is defined as:
+
+$$bias(\hat{y}|x) = 
+\big(x_{1i}^T (X_1^T X_1)^{-1} X_1^T X_2^T - x_{2i}^T \big) \beta_2$$
+
+Then:
+
+$$\sum_{i=1}^n \big( bias(\hat{y}|x) \big)^2 
+= \sum \beta_2^T \big( x_{1i}^T (X_1^T X_1)^{-1} X_1^T X_2 - x_{2i}^T \big)^T
+\big( x_{1i}^T (X_1^T X_1)^{-1} X_1^T X_2 - x_{2i}^T \big) \beta_2$$
+
+$$= \sum \beta_2^T \big( X_2^T X_1 (X_1^T X_1)^{-1} x_{1i} - x_{2i} \big)
+\big(x_{1i}^T (X_1^T X_1)^{-1} X_1^T X_2 - x_{2i}^T \big) \beta_2$$
+
+If we FOIL expand the expression: 
+
+$$= \sum \beta_2^T X_2^T \big(X_1 (X_1^T X_1)^{-1} x_{1i}
+x_{1i}^T (X_1^T X_1)^{-1} X_1^T \big) X_2 \beta_2
+- 2 \sum \beta_2^T X_2^T X_1 (X_1^T X_1)^{-1} x_{1i} x_{2i}^T \beta_2 
++ \sum \beta_2^T x_{2i} x_{2i}^T \beta_2$$
+
+Then using the definition of matrix multiplication: 
+
+$$= \beta_2^T X_2^T X_1 (X_1^T X_1)^{-1} X_1^T X_1 (X_1^T X_1)^{-1} X_1^T X_2 \beta_2
+- 2 \beta_2 X_2^T X_1 (X_1^T X_1)^{-1} X_1^T X_2 \beta_2 
++ \beta_2^T X_2^T X_2 \beta_2$$
+
+The first term contains a $(X_1^T X_1)^{-1} (X_1^T X_1)$ which reduces to $I$:
+
+$$= \beta_2^T X_2^T \big( X_1 I (X_1^T X_1)^{-1} X_1^T \big) X_2 \beta_2 
+- 2 \beta_2 X_2^T \big( X_1 (X_1^T X_1)^{-1} X_1^T \big) X_2 \beta_2
++ \beta_2^T X_2^T X_2 \beta_2$$
+
+And we can recognize that $H_1 = X_1 (X_1^T X_1)^{-1} X_1^T$:
+
+$$= (X_2 \beta_2)^T H_1 (X_2 \beta_2) - 2 (X_2 \beta_2)^T H_1 (X_2 \beta_2) 
++ (X_2 \beta_2)^T I (X_2 \beta_2)$$
+
+$$= (X_2 \beta_2)^T I (X_2 \beta_2) - (X_2 \beta_2)^T H_1 (X_2 \beta_2)$$
+
+$$= (X_2 \beta_2)^T (I - H_1) (X_2 \beta_2)$$
+
+# Problem 2
+
+## Part a
+
+Recall from S631 that $(H - H_1)$ is symmetric and idempotent. 
+
+*Lemma*: If matrix $A$ is symmetric and idempotent, then it is postiive 
+semidefinite
+
+*Proof*: Let $z$ be a nonzero vector. Then since A is symmetric and idempotent,  
+$z^T A z = z^T A A z = z^T A^T A z = (Az)^T (Az)$
+
+Define $y = Az$. Then the above is $y^T y \geq 0$. Therefore, $A$ is positive 
+semidefinite.
+
+Since $(H - H_1)$ is symmetric and idempotent, it is positive semidefinite.
+
+## Part b
