@@ -75,12 +75,17 @@ Recall from S631 that $(H - H_1)$ is symmetric and idempotent.
 *Lemma*: If matrix $A$ is symmetric and idempotent, then it is postiive 
 semidefinite
 
-*Proof*: Let $z$ be a nonzero vector. Then since A is symmetric and idempotent,  
-$z^T A z = z^T A A z = z^T A^T A z = (Az)^T (Az)$
-
+*Proof*: Let $z$ be a nonzero vector. Then since $A$ is symmetric and idempotent,  
+$z^T A z = z^T A A z = z^T A^T A z = (Az)^T (Az)$.  
 Define $y = Az$. Then the above is $y^T y \geq 0$. Therefore, $A$ is positive 
 semidefinite.
 
 Since $(H - H_1)$ is symmetric and idempotent, it is positive semidefinite.
 
 ## Part b
+
+If $z = e_i$ where $e_i$ is a column vector such that the i^th^ element is 1 and 
+the rest are 0, then for any matrix $A$, $z^T A z = [A]_{ii}$. Then 
+$z^T (H - H_1) z = [H - H_1]_{ii} = h_{ii}^F - h_{ii}^R$. Since $H - H_1$ is 
+positive semidefinite, $z^T (H - H_1) z \geq 0$. Therefore, 
+$h_{ii}^F - h_{ii}^R \geq 0 \implies h_{ii}^F \geq h_{ii}^R$.
