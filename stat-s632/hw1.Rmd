@@ -266,4 +266,8 @@ aic.backward
 On the test set, the AIC using the model found via backward elimination is 
 slightly smaller than the one found using forward selection. This is consistent 
 with the findings from the training sets, suggesting we're not overfitting by 
-using the larger backward elimination model. 
+using the larger backward elimination model. Although I am not an expert on 
+baseball, the regressors included seem to make sense, as most of them are 
+performance metrics. The two factor variables show that the national league 
+pays better than the American league, and players that change teams tend to 
+make less (suggesting that underperforming players are shuffled around).
