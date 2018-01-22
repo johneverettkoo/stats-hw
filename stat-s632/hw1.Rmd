@@ -2,8 +2,8 @@
 title: "STAT-S632"
 subtitle: 'Assignment 1'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -26,6 +26,8 @@ options(xtable.comment = FALSE,
 # packages, etc.
 import::from(magrittr, `%>%`, `%<>%`)
 dp <- loadNamespace('dplyr')
+library(ggplot2)
+import::from(GGally, ggpairs)
 ```
 
 # Problem 1
@@ -34,21 +36,234 @@ dp <- loadNamespace('dplyr')
 
 ```{r p1_setup}
 # load the data
-highway.df <- alr4::Highway
+highway.df <- alr4::Highway %>% 
+  dp$mutate(sigs1 = (sigs * len + 1) / len)
 ```
 
 ## Part 1
 
 ### Forward selection
 
+```{r p1_1_forward}
+# formula for full model
+full.formula <- ~ log(len) + shld + log(adt) + 
+  log(trks) + lane + slim + 
+  lwid + itg + log(sigs1) + 
+  acpt + htype
+
+# forward selection using AIC
+forward.mod <- lm(log(rate) ~ log(len), data = highway.df) %>% 
+  step(scope = full.formula, direction = 'forward')
+summary(forward.mod)
+```
+
 ### Backward elimination
+
+```{r p1_1_backward}
+# backward elimination
+backward.mod <- step(forward.mod, scope = c(lower = ~ log(len)), 
+                     direction = 'backward')
+```
+
+## Part 2
+
+```{r p1_2}
+# model for log(rate * len) that includes lwid 
+# using all three methods
+
+part.2.forward.mod <- lm(log(rate * len) ~ lwid, data = highway.df) %>% 
+  step(scope = full.formula, direction = 'forward')
+
+part.2.backward.mod <- lm(as.formula(paste('log(rate * len)', 
+                                           paste(as.character(full.formula), 
+                                                 collapse = ' '))), 
+                          data = highway.df) %>% 
+  step(scope = c(lower = ~ lwid), direction = 'backward')
+
+part.2.both.mod <- lm(log(rate * len) ~ lwid, data = highway.df) %>% 
+  step(scope = list(lower = ~ lwid, upper = full.formula), direction = 'both')
+
+summary(part.2.forward.mod)
+summary(part.2.backward.mod)
+summary(part.2.both.mod)
+```
+
+The model found by backward elimination resulted in the lowest AIC value. It 
+also is the largest model. 
+
+All three models have `log(len)` with the same coefficient estimate, which is
+expected.
+
+The model found by backward elimination resulted in a positive coefficient 
+estimate for `lwid` while the other two found a model with a negative 
+coefficient for `lwid`. In either case, the result is not significant 
+($p > 0.5$). 
+
+## Part 3
+
+```{r p1_3}
+# model for log(rate) with offset = len
+# using all three methods
+
+part.3.forward.mod <- lm(log(rate) ~ lwid, data = highway.df, 
+                         offset = log(len)) %>% 
+  step(scope = full.formula, direction = 'forward')
+
+part.3.backward.mod <- lm(as.formula(paste('log(rate)', 
+                                           paste(as.character(full.formula), 
+                                                 collapse = ' '))), 
+                          data = highway.df, 
+                          offset = log(len)) %>% 
+  step(scope = c(lower = ~ lwid), direction = 'backward')
+
+part.3.both.mod <- lm(log(rate) ~ lwid, data = highway.df, offset = log(len)) %>% 
+  step(scope = list(lower = ~ lwid, upper = full.formula), direction = 'both')
+
+summary(part.3.forward.mod)
+summary(part.3.backward.mod)
+summary(part.3.both.mod)
+```
+
+The coefficient estimates are the same as in part 2 except for the one for 
+`log(len)`. The models created using `offset = `log(len)` also have the same 
+AIC values. 
 
 # Problem 2
 
 [From ALR 10.4]
 
+```{r p2_setup}
+bgsboys.df <- alr4::BGSboys %>% 
+  dp$select(WT2, HT2, WT9, HT9, LG9, ST9, HT18)
+summary(bgsboys.df)
+```
+```{r p2_plot, cache = TRUE, fig.width = 8, fig.height = 8}
+ggpairs(bgsboys.df)
+```
+
+Based on the plots of `HT18` vs the predictors, there doesn't seem to be any 
+reason to perform any transformations. It is worth noting that many of the 
+predictors appear to be strongly correlated. This suggests that transformations 
+are not necessary but there is strong reason to leave out some of the 
+predictors. 
+
+We'll try both forward selection and backward elimination
+
+```{r p2}
+bgsboys.forward.mod <- lm(HT18 ~ 1, data = bgsboys.df) %>% 
+  step(scope = ~ WT2 + HT2 + WT9 + HT9 + LG9 + ST9, direction = 'forward')
+
+bgsboys.backward.mod <- lm(HT18 ~ ., data = bgsboys.df) %>% 
+  step(direction = 'backward')
+
+summary(bgsboys.forward.mod)
+summary(bgsboys.backward.mod)
+
+anova(bgsboys.forward.mod, bgsboys.backward.mod)
+```
+
+Forward selection results in a simpler model `HT18 ~ HT9 + LG9` which is a 
+sub-model of the result of backward elimination (`HT18 ~ HT9 + LG9 + WT2 + HT2`). 
+An ANOVA test reveals that there's no significant difference between the two, 
+and the smaller model has a lower AIC. This suggests that the smaller model is 
+a better fit (also suggests that the larger model is overfitting rather than 
+the smaller model underfitting). 
+
 # Problem 3
+
+```{r p3_setup}
+pitchers.df <- readr::read_tsv('~/dev/stats-hw/stat-s632/BaseballPitchers.txt') %>% 
+  # might be interesting
+  dp$mutate(same.team = (team86 == team87)) %>% 
+  # also remove NA values
+  na.omit()
+summary(pitchers.df)
+```
+```{r p3_plot, cache = TRUE, fig.width = 16, fig.height = 16}
+ggpairs(pitchers.df, 
+        columns = c('W86', 'L86', 'ERA86', 'G86', 'IP86', 'SV86', 
+                    'careerW', 'careerL', 'careerG', 'careerIP', 'careerSV', 
+                    'years', 'same.team', 'salary'), 
+        mapping = aes(colour = league86))
+```
 
 ## Part a
 
+We'll try both forward selection and backward elimination. Name and team won't 
+be considered, although we'll see if the fact that they switched teams had any 
+effect. 
+
+```{r p3_a}
+full.form <- ~ W86 + L86 + ERA86 + G86 + IP86 + SV86 + 
+  careerW + careerL + careerG + careerIP + careerSV + same.team + league86
+
+pitchers.forward.mod <- lm(salary ~ 1, data = pitchers.df) %>% 
+  step(scope = full.form, direction = 'both')
+
+pitchers.backward.mod <- lm(salary ~ . - firstName - lastName - team86 - team87, 
+                            data = pitchers.df) %>% 
+  step(direction = 'backward')
+
+summary(pitchers.forward.mod)
+summary(pitchers.backward.mod)
+anova(pitchers.forward.mod, pitchers.backward.mod)
+```
+
+Although the first method could use both, in this case only forward selection 
+was used.
+
+As usual, forward selection results in a smaller model. This time, backward 
+elimination results in a smaller AIC, and an ANOVA test suggests that there is a 
+significant difference between the two models. This suggests that the model 
+found by backward elimination should be used. 
+
 ## Part b
+
+Fit the models on the training set: 
+
+```{r p3_b_1}
+# split the data
+set.seed(632)
+prop.train <- 2 / 3
+train.df <- dp$sample_frac(pitchers.df, prop.train)
+test.df <- dp$setdiff(pitchers.df, train.df)
+
+# fit models using training data
+pitchers.forward.mod <- lm(salary ~ 1, data = train.df) %>% 
+  step(scope = full.form, direction = 'both')
+pitchers.backward.mod <- lm(salary ~ . - firstName - lastName - team86 - team87, 
+                            data = train.df) %>% 
+  step(direction = 'backward')
+
+summary(pitchers.forward.mod)
+summary(pitchers.backward.mod)
+
+AIC(pitchers.forward.mod)
+AIC(pitchers.backward.mod)
+```
+
+Compute errors on test set and find AICs
+
+```{r p3_b_2}
+forward.k <- length(pitchers.forward.mod$coefficients)
+backward.k <- length(pitchers.backward.mod$coefficients)
+n <- nrow(test.df)
+
+sse.forward <- (predict(pitchers.forward.mod, 
+                        newdata = test.df) - test.df$salary) ** 2 %>% 
+  sum()
+sse.backward <- (predict(pitchers.backward.mod, 
+                         newdata = test.df) - test.df$salary) ** 2 %>% 
+  sum()
+
+aic.forward <- n * log(sse.forward / n) + 2 * forward.k
+aic.backward <- n * log(sse.backward / n) + 2 * backward.k
+
+aic.forward
+aic.backward
+```
+
+On the test set, the AIC using the model found via backward elimination is 
+slightly smaller than the one found using forward selection. This is consistent 
+with the findings from the training sets, suggesting we're not overfitting by 
+using the larger backward elimination model. 
