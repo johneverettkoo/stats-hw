@@ -1,0 +1,41 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 1'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+[From ALR 10.2]
+
+```{r p1_setup}
+highway.df <- alr4::Highway
+```
+
+# Problem 2
+
+[From ALR 10.4]
+
+# Problem 3
+
+## Part a
+
+## Part b
