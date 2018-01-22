@@ -22,13 +22,26 @@ options(xtable.comment = FALSE,
         xtable.table.placement = 'H')
 ```
 
+```{r packages_etc}
+# packages, etc.
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+```
+
 # Problem 1
 
 [From ALR 10.2]
 
 ```{r p1_setup}
+# load the data
 highway.df <- alr4::Highway
 ```
+
+## Part 1
+
+### Forward selection
+
+### Backward elimination
 
 # Problem 2
 
