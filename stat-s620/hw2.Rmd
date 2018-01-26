@@ -1,0 +1,93 @@
+---
+title: "STAT-S620"
+subtitle: 'Assignment 2'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# 1.7.7
+
+Since each box can hold any number of balls, there are $20^{12}$ possible 
+arrangements. On the other hand, if we restrict each box to at most one ball, 
+then there are only $\frac{20!}{(20 - 12)!}$ possible arrangements. Therefore, 
+the probability is 
+$\boxed{\frac{20! / 8!}{20^{12}} \approx 
+`r round(factorial(20) / factorial(8) / 20^12, 3)`}$.
+
+# 1.8.6
+
+If $A$ and $B$ sit net to each other, then there are $n - 1$ slots. On the other 
+hand, all possible seating arrangements is equal to $\binom{n}{2}$. Then the 
+probability that $A$ and $B$ sit next to each other is $\frac{n-1}{\binom{n}{2}}$ 
+$= \boxed{\frac{2}{n}}$.
+
+# 1.8.8
+
+Number of ways to seat people: $\binom{n}{k}$  
+Number of ways for $k$ people to sit all together doesn't depend on $k$ (as 
+long as $k < n$ since it's cyclic. Then we can see that there are $n$ ways 
+everyone can all sit together.
+
+Then the probability is $\boxed{\frac{n}{\binom{n}{k}}}$.
+
+# 1.8.10
+
+$\boxed{\frac{\binom{22}{8} \binom{2}{2}}{\binom{24}{10}} 
+\approx `r round(choose(22, 8) / choose(24, 10), 3)`}$
+
+# 1.8.12
+
+$P(\text{same team}) = P(\text{both on team of 10}) + 
+P(\text{both on team of 25})$  
+$= \boxed{\frac{\binom{33}{8} \binom{2}{2}}{\binom{35}{10}} + 
+\frac{\binom{33}{23} \binom{2}{2}}{\binom{35}{10}} \approx 
+`r round((choose(33, 8) + choose(33, 23)) / choose(35, 10), 3)`}$
+
+# 1.8.17
+
+By symmetry, this is just $4 \times P(\text{first player gets 4 Aces})$  
+$= \boxed{4 \frac{\binom{4}{4} \binom{48}{9}}{\binom{52}{13}} \approx 
+`r round(choose(48, 9) / choose(52, 13) * 4, 3)`}$
+
+# 1.9.8 
+
+Total ways to distribute cards: $\binom{52}{13, 13, 13, 13}$  
+Number of ways to distribute such that each player gets 3 face cards: 
+$\binom{12}{3, 3, 3, 3}$  
+Number of ways to distribute the rest: 
+$\binom{40}{10, 10, 10, 10}$
+
+Then the probability is: 
+$\boxed{\frac{\binom{12}{3, 3, 3, 3} \binom{40}{10, 10, 10, 10}}
+{\binom{52}{13, 13, 13, 13}} \approx 
+`r round(factorial(12) * factorial(40) * factorial(13) ** 4 / 
+factorial(3) ** 4 / factorial(10) ** 4 / factorial(52), 3)`}$
+
+# Not from text
+
+There are $\binom{7 + 4 - 1}{4 - 1}$ ways to distribute the 7 points to the 4 
+students. 
+
+On the other hand, let's say each student already has one point. Then there 
+are three points left over and there are still four students. Then there are 
+$\binom{3 + 4 - 1}{4 - 1}$ ways to distribute those three remaining points among 
+the four students. Therefore, the probability is:
+
+$\boxed{\frac{\binom{6}{3}}{\binom{10}{3}} = \frac{1}{6}}$
