@@ -2,8 +2,8 @@
 title: "STAT-S632"
 subtitle: 'Assignment 2'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE, 
                       fig.pos = 'H', 
                       fig.align = 'center', 
-                      fig.height = 5, 
+                      fig.height = 3, 
                       fig.width = 5)
 options(xtable.comment = FALSE, 
         xtable.table.placement = 'H')
@@ -56,12 +56,12 @@ it and a predictor.
 ### ii
 
 ```{r a_ii}
-wbca.df %<>% dp$mutate(Class = as.character(Class))
+wbca.df %<>% dp$mutate(Class = as.factor(Class))
 
 ggplot(wbca.df) + 
   geom_boxplot(aes(x = Class, group = Class, fill = Class, y = BNucl)) + 
   scale_fill_brewer(palette = 'Set1') + 
-  labs(fill = NULL)
+  guides(fill = FALSE)
 
 table(dp$filter(wbca.df, Class == '0')$BNucl)
 table(dp$filter(wbca.df, Class == '1')$BNucl)
@@ -74,11 +74,174 @@ $geq 5$, whereas most of the `BNucl` values for `Class = 1` are 1.
 
 ```{r a_iii}
 wbca.df %>% 
-  dp$mutate(Class = as.numeric(Class)) %>% 
   ggplot() + 
   geom_jitter(aes(x = BNucl, y = Class), 
-              height = .01, width = .2, alpha = .1)
+              height = .025, width = .1, alpha = .1)
 ```
 
 We can see that there is a concentration at `BNucl = 1` when `Class = 1` and 
 at `BNucl = 10` when `Class = 0`.
+
+### iv
+
+```{r a_iv}
+ggplot(wbca.df) + 
+  geom_histogram(aes(x = BNucl, fill = Class), 
+                 colour = NA, position = 'dodge', binwidth = 1) + 
+  scale_fill_brewer(palette = 'Set1')
+
+# i personally think this looks better ...
+ggplot(wbca.df) + 
+  geom_histogram(aes(x = BNucl, fill = Class), 
+                 colour = NA, position = 'identity', binwidth = 1, alpha = .75) + 
+  scale_fill_brewer(palette = 'Set1')
+```
+
+This confirms what we saw in the previous plots. For each `Class`, the 
+distribution of `BNucl` is heavily skewed to the left and to the right.
+
+## Part b
+
+```{r b}
+ggplot(wbca.df) + 
+  geom_point(aes(x = BNucl, y = Thick), alpha = .1) + 
+  facet_wrap(~ Class, labeller = 'label_both')
+
+ggplot(wbca.df) + 
+  geom_jitter(aes(x = BNucl, y = Thick), alpha = .1) + 
+  facet_wrap(~ Class, labeller = 'label_both')
+
+ggplot(wbca.df) + 
+  geom_point(aes(x = BNucl, y = Thick, colour = Class),
+             alpha = .1) + 
+  scale_colour_brewer(palette = 'Set1')
+```
+
+Both appear to provide information in classifying `Class`. `BNucl` appears to 
+provide more information.
+
+## Part c
+
+```{r c}
+full.mod <- glm(Class ~ ., data = wbca.df, family = binomial)
+summary(full.mod)
+```
+
+Residual deviance: `r round(summary(full.mod)$deviance, 3)`  
+Degrees of freedom: `r full.mod$df.residual` ($n - p + 1$)
+
+No, for that, you need the null deviance, which compares an intercept model with 
+the model in question. 
+
+## Part d
+
+From previous exploration, we saw that starting from the full model tends to 
+result in a model with lower AIC compared to starting from an intercept-only 
+model and stepping forward. This is not guaranteed, but for the sake of keeping 
+this short, we'll start from the full model. (I also tried forward selection 
+and surprise, surprise, it didn't lower the AIC as much.)
+
+```{r d}
+back.mod <- step(full.mod, direction = 'both')
+summary(back.mod)
+```
+
+## Part e
+
+```{r e}
+# put predictions in data frame
+wbca.df %<>% 
+  dp$mutate(class.phat = predict(back.mod, newdata = wbca.df, 
+                                 type = 'response'), 
+            class.pred = dp$if_else(class.phat > .5, '1', '0'))
+
+# confusion matrix
+confusion.matrix <- table(wbca.df$class.pred, wbca.df$Class)
+print(confusion.matrix)
+
+# error rate
+1 - sum(diag(confusion.matrix)) / sum(confusion.matrix)
+```
+
+Our model made 9 Type I errors and 11 Type II errors, with an overall error rate 
+of 2.9\%. 
+
+## Part f
+
+```{r f}
+# put predictions in data frame
+wbca.df %<>% 
+  dp$mutate(class.pred = dp$if_else(class.phat > .9, '1', '0'))
+
+# confusion matrix
+confusion.matrix <- table(wbca.df$class.pred, wbca.df$Class)
+print(confusion.matrix)
+
+# error rate
+1 - sum(diag(confusion.matrix)) / sum(confusion.matrix)
+```
+
+Setting the cutoff at 0.9 results in 16 Type I errors and 1 Type II error 
+(which is expected by shifting the cutoff up). 
+
+## Part g
+
+```{r g}
+plot(pROC::roc(wbca.df$Class, wbca.df$class.phat))
+pROC::roc(wbca.df$Class, wbca.df$class.phat)
+```
+
+Computing the AUC adjusts for class imbalance. If there is severe class 
+imbalance, high Type I or Type II error rates could have only a negligible 
+effect on the overall error rate. 
+
+In this case, the model performs well in separating the two classes, to the 
+extent that changing the cutoff for $\hat{p}$ does not change the error rates 
+too much. 
+
+## Part h
+
+For this, we will use stepwise model selection starting from the full model and 
+using the AIC to pick the best model. Then the AUC and error rates will be 
+measured on the test set. 
+
+```{r h}
+# reset the data
+wbca.df <- faraway::wbca %>% 
+  dp$mutate(Class = as.factor(Class))
+
+# rows to use for test data
+test.ind <- seq(3, nrow(wbca.df), 3)
+
+# split the data
+test.df <- wbca.df[test.ind, ]
+train.df <- wbca.df[-test.ind, ]
+
+# build model on test data
+final.mod <- glm(Class ~ ., data = train.df, family = binomial) %>% 
+  step(direction = 'both')
+summary(final.mod)  # not surprising that it's the same as before
+
+# predict on test set and compute metrics
+test.df %<>% 
+  dp$mutate(class.phat = predict(final.mod, newdata = test.df, 
+                                 type = 'response'), 
+            class.pred = dp$if_else(class.phat > .5, '1', '0'))
+
+# confusion matrix using cutoff of .5
+confusion.matrix <- table(test.df$class.pred, test.df$Class)
+print(confusion.matrix)
+
+# error rate using cutoff of .5
+1 - sum(diag(confusion.matrix)) / sum(confusion.matrix)
+
+# AUC
+plot(pROC::roc(test.df$Class, test.df$class.phat))
+pROC::roc(test.df$Class, test.df$class.phat)
+```
+
+We see no performance degradation. Error (using 0.5 as the cutoff for 
+$\hat{p}$), increases from 2.9% to 3.1%. The AUC increases by a negliglble 
+amount. In this case, the AIC does a good job at regularizing when using it as 
+a model selection criterion. In fact, the models from parts (d) and (h) use the 
+same regressors. 
