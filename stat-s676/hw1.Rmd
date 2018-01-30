@@ -1,0 +1,64 @@
+---
+title: "STAT-S676"
+subtitle: 'Assignment 1'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+AIC is given by $-2 \log(L(\hat{\theta}|y)) + 2K$ where $L$ is the likelihood 
+function. We are given that $Y \sim \mathcal{N}(X \beta, \sigma^2 I)$. Then 
+$\varepsilon = Y - X \beta \sim \mathcal(0, \sigma^2 I)$. Therefore, the pdf of 
+$\varepsilon$ is a multivariate normal 
+$f(\varepsilon) = \big( \frac{1}{2 \pi \sigma^2} \big)^{n/2} 
+e^{-\frac{1}{2 \sigma^2} \varepsilon^T \varepsilon}$. 
+$\varepsilon^T \varepsilon = RSS = n \hat{\sigma}^2 \approx n \sigma^2$. 
+(We sub in the estimate for the parameter.) Then we get 
+$L = \big( \frac{1}{2 \pi \sigma^2} \big)^{n/2} e^{-\frac{n}{2}}$. Plugging 
+this in for $L$, we get:
+
+$$AIC = -2 \log 
+\bigg( \Big( \frac{1}{2 \pi \sigma^2} \Big)^{n/2} e^{-\frac{n}{2}} \bigg) + 
+2K$$
+$$= -2 
+\bigg(-\frac{n}{2} \log(2 \pi) - \frac{n}{2} \log(\sigma^2) - \frac{n}{2} \bigg)
++ 2K$$
+$$= n \log(2 \pi) + n \log(\sigma^2) + n + 2K$$
+
+We can ignore the two terms $n \log(2\pi)$ and $n$ since they are fixed for some 
+particular dataset.
+
+# Problem 2
+
+# Problem 3
+
+TIC is defined by $-2 \log L + 2 tr(J(\theta) I(\theta^{-1}))$. 
+$L(\theta|y) = g(y|\theta)$
+
+# Problem 4
+
+```{r packages_etc}
+# packages, etc.
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+
+load('~/dev/stats-hw/stat-s676/diabetes2.Rdata')
+```
