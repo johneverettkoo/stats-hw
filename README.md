@@ -10,5 +10,6 @@
 
 * STAT-S620 (Statistical Theory)
 * STAT-S632 (Linear Models II)
+* STAT-S676 (Model Selection)
 
 Occasional assignments will be done by hand and won't be included here.

@@ -2,8 +2,8 @@
 title: "STAT-S676"
 subtitle: 'Assignment 1'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -21,6 +21,8 @@ knitr::opts_chunk$set(echo = TRUE,
 options(xtable.comment = FALSE, 
         xtable.table.placement = 'H')
 ```
+
+See source code here: https://github.com/johneverettkoo/stats-hw
 
 # Problem 1
 
@@ -48,17 +50,275 @@ particular dataset.
 
 # Problem 2
 
+We have the following components for $y$, $\beta$, and $\sigma^2$:
+
+$$f(y|\beta, \sigma^2) = \Big( \frac{1}{2 \pi \sigma^2} \Big)^{n/2} 
+e^{-\frac{(y - X \beta)^T (y - X \beta)}{2 \sigma^2}}$$
+
+$$f(\beta | \sigma^2) = 
+\frac{\big| X^T X \big|^{1/2}}{(2 \pi n \sigma^2)^{p/2}}
+e^{-\frac{(X \beta)^T (X \beta)}{2 n \sigma^2}}$$
+
+$$f_{\sigma^2}(\sigma^2) = 
+\Big( \frac{1}{2 \pi (\sigma^2)^3} \Big)^{1/2} 
+e^{-\frac{1}{2 \sigma^2}}$$
+
+Then
+
+$$f(y, \beta, \sigma^2) = 
+(y|\beta, \sigma^2) \times f(\beta | \sigma^2) \times f_{\sigma^2}(\sigma^2)$$
+
+And to compute the marginal for $Y$:
+
+$$f_Y(y) = \int_{\beta, \sigma^2} f(y, \beta, \sigma^2) d\beta d\sigma^2$$
+
+The strategy is to integrate out $y$ and $\beta$ by completing the square. 
+Combining the exponents, we obtain:
+
+$$\bigg(\frac{1}{2 \pi \sigma^2} \bigg)^{n/2} 
+\bigg(\frac{\Big| X^T X \Big|}{(2 \pi n \sigma^2)^{p}} \bigg)^{1/2}
+\bigg( \frac{1}{2 \pi (\sigma^2)^3} \bigg)^{1/2} 
+\exp \bigg( -\frac{1}{2 \sigma^2} 
+\Big( (y - X \beta)^T (y - X \beta) + 
+\frac{1}{n} \beta^T X^T X \beta + 1 \Big)\bigg)$$
+
+Then rearranging the terms inside the exponent:
+
+$$-\frac{1}{2 \sigma^2} \bigg(
+\big( \beta - \hat{\beta} \frac{n}{n+1} \big)^T 
+\big( X^T X (1 + \frac{1}{n}) \big) 
+\big( \beta - \hat{\beta} \frac{n}{n+1} \big) + 
+y^T \big( I - \frac{n}{n+1} H \big) y + 1
+\bigg)$$
+
+Where $\hat{\beta} = (X^T X)^{-1} X^T y$ and $H = X (X^T X)^{-1} X^T$.
+
+Then we can see that $\Sigma_{\beta} = \sigma^2 \frac{n}{n+1} (X^T X)^{-1}$. 
+Then integrating w.r.t. $\beta$, we get a factor of 
+$\big( (2 \pi)^p (\sigma^2)^p (\frac{n}{n+1})^p / \big| X^T X \big| \big)^{1/2}$, 
+which leaves us with:
+
+$$f_{Y, \sigma^2} = \bigg(\frac{1}{2 \pi \sigma^2} \bigg)^{n/2 + 1/2}
+\bigg( \frac{1}{n+1} \bigg)^{p/2}
+(\sigma^2)^{-\frac{3}{2} - \frac{n}{2}} 
+\exp \bigg(-\frac{1}{2 \sigma^2} 
+\Big(y^T \big(I - \frac{n}{n+1} H \big) y + 1 \Big) \bigg)$$
+
+Integrating out $\sigma^2$, we obtain:
+
+$$\bigg(\frac{1}{2 \pi} \bigg)^{\frac{n+1}{2}} 
+\bigg(\frac{1}{n+1} \bigg)^{p/2}
+\frac{\Gamma(\frac{n+1}{2})}
+{\Big(\frac{1}{2} y^T (I - \frac{n}{n+1}H)y + 1/2\Big)^{\frac{n+1}{2}}}$$
+
 # Problem 3
 
 TIC is defined by $-2 \log L + 2 tr(J(\theta) I(\theta^{-1}))$. 
-$L(\theta|y) = g(y|\theta)$
+$L(\theta|y) = g(y|\theta)$ where $I = \nabla_{\theta} \nabla_{\theta}^T l$ and 
+$J = (\nabla_{\theta})^T (\nabla_{\theta})$. In terms of partial derivatives, 
+this becomes:
+
+$$I = -E_{truth}\begin{bmatrix}
+  \frac{\partial^2 l}{\partial \beta \partial \beta^T} &
+  \frac{\partial^2 l}{\partial \beta \partial \sigma^2} \\
+  \frac{\partial^2 l}{\partial \sigma^2 \partial \beta^T}&
+  \frac{\partial^2 l}{\partial (\sigma^2)^2}
+\end{bmatrix}$$
+
+$$J = E_{truth}\begin{bmatrix}
+  (\partial_{\beta} l) (\partial_{\beta} l)^T &
+  (\partial_{\beta} l) (\partial_{\sigma^2} l)^T \\
+  (\partial_{\sigma^2} l) (\partial_{\beta^2} l)^T &
+  (\partial_{\sigma^2} l) (\partial_{\sigma^2} l)^T
+\end{bmatrix}$$
+
+Then computing the partial derivatives:
+
+$$\frac{\partial l}{\partial \beta} = \frac{(y - X \beta)^T X}{\sigma^2}$$
+$$\frac{\partial l}{\partial \sigma^2} = 
+-\frac{1}{2 \sigma^2} + \frac{1}{2 (\sigma^2)^2} (y - X \beta)^T (y - X \beta)$$
+$$\frac{\partial^2 l}{\partial \beta \beta^T} = -\frac{X^T X}{\sigma^2}$$
+$$\frac{\partial^2 l}{\partial \beta \sigma^2} = 
+-\frac{(y - X \beta)^T X}{(\sigma^2)^2}$$
+$$\frac{\partial^2 l}{\partial (\sigma^2)^2} = 
+\frac{1}{2 (\sigma^2)^2} - 
+\frac{1}{(\sigma^2)^3} (y - X \beta)^T (y - X \beta)$$
+
+Noting that $y \sim \mathcal{N}(\mu, \sigma^2 I)$, taking the expectations, we 
+arrive at: 
+
+$$I = \frac{1}{\sigma^2}\begin{bmatrix}
+  X^T X & 
+  \frac{X^T (\mu - X \beta)}{\sigma^2} \\
+  \frac{(\mu - X \beta)^T X}{\sigma^2} & 
+  -\frac{1}{2 \sigma^2} + \frac{\sigma^2 + 
+    (\mu - X \beta)^T (\mu - X \beta)}{(\sigma^2)^2}
+\end{bmatrix}$$
+
+Where the numerator of the second term of $[I]_{22}$ was derived as follows: 
+$(y - X \beta)^T (y - X \beta) = 
+(y - \mu + \mu - X \beta)^T (y - \mu + \mu - X \beta) = 
+(y - \mu)^T (y - \mu) + (\mu - X \beta)^T (\mu - X \beta) +
+2 (y - \mu)^T (\mu - X \beta)$. 
+Then taking the expectation of this, the first term becomes $\sigma^2$, the 
+second term stays the same, and the last term goes to 0 since $E[y] = \mu$. 
+
+In order to compute $J$, we need the following:
+
+$$[J]_{11} = 
+E \Big[ \frac{1}{(\sigma^2)^2} X^T (y - X \beta) (y - X \beta)^T X \Big]$$ 
+
+The employing the same trick as before, the middle part becomes:
+
+$$(y - \mu + \mu - X \beta) (y - \mu + \mu - X \beta)^T$$
+$$= (y - \mu) (y - \mu)^T + (y - \mu)(\mu - X \beta)^T + 
+(\mu - X \beta)(y - \mu)^T + (\mu - X \beta)(\mu - X \beta)^T$$
+
+Under the expectation, the middle two terms go to 0 since $E[y] = \mu$. The 
+first term also turns into $\sigma^2 I$. Then we get:
+
+$$[J]_{11} = \frac{1}{(\sigma^2)^2} 
+X^T (\sigma^2 I + (\mu - X \beta)(\mu - X \beta)^T) X$$
+
+For $[J]_{22}$, we compute 
+$\Big(\frac{\partial^2 l}{\partial(\sigma^2)^2}\Big)^2$ then take the expected 
+value. We can say that the odd powers go to zero under the expectation since 
+the normal is symmetric. Then we get:
+
+$$\frac{1}{4 (\sigma^2)^2} \Bigg( 
+1 - \frac{2}{\sigma^2} \big(\sigma^2 + (\mu - X \beta)^2 \big)  + 
+\frac{1}{(\sigma^2)^2} 
+  \big(3(\sigma^2)^2 + 
+  6 \sigma^2 (\mu - X \beta)^T (\mu - X \beta) + 
+  ((\mu - X \beta)^T (\mu - X \beta)^T)^2 \big)
+\Bigg)$$
+
+For the $[J]_{12} = (\frac{\partial l}{\partial \beta}) 
+(\frac{\partial l}{\partial \sigma^2})^T$ term:
+
+$$(\frac{\partial l}{\partial \beta}) (\frac{\partial l}{\partial \sigma^2})^T =
+\frac{1}{2 (\sigma^2)^2} (y - X \beta)^T X 
+\bigg(-1 + \frac{1}{\sigma^2} (y - X \beta)^T (y - X \beta) \bigg)$$
+
+Taking the expectation of this *should* yield:
+
+$$\frac{1}{2 (\sigma^2)^2} \bigg(
+(\mu - X \beta) + \frac{1}{\sigma^2} 
+(3 \sigma^2 (\mu - X \beta) + (\mu - X \beta)^T (\mu - X \beta) (\mu - X \beta)^T
+\bigg)$$
+
+$[J]_{21}$ is just the transpose of $[J]_{12}$.
 
 # Problem 4
 
-```{r packages_etc}
+From the textbook, we get the TIC for $tr(J I^{-1})$ assuming 
+$Y - X \beta \sim \mathcal{N}(0, \sigma^2 I)$:
+
+$$tr(J I^{-1}) = \frac{\sigma^2}{\hat{\sigma}^2} 
+\Bigg(K + 1 + \frac{\sigma^2}{\hat{\sigma}^2} (\frac{\gamma-1}{2} - 2)\Bigg)$$
+
+Where $\gamma = \frac{E[\varepsilon^4]}{E[\varepsilon^2]^2}$. Since we don't 
+know the parameter $\sigma^2$, we will just sub in the estimate. Then this turns 
+into:
+
+$$K + \frac{\gamma-1}{2} - 1$$
+
+Note that when we assume that the errors are normal, $\gamma = 3$, and we just 
+get back the AIC (thanks, textbook). 
+
+This is nowhere near "efficient" ...
+
+```{r p4, cache = TRUE}
 # packages, etc.
 import::from(magrittr, `%>%`, `%<>%`)
 dp <- loadNamespace('dplyr')
+import::from(purrr, flatten)
+import::from(foreach, foreach, `%dopar%`)
+library(ggplot2)
+theme_set(theme_bw())
+import::from(parallel, mclapply, detectCores)
 
+# mc stuff
+options(mc.cores = detectCores())
+
+# tic function
+# no documentation b/c lazy
+# but it takes a lm output and returns a number
+TIC <- function(linear.model) {
+  # find the log likelihood estimate
+  l <- as.numeric(logLik(linear.model))
+  
+  # number of beta parameters
+  K <- length(linear.model$coefficients)
+  
+  # gamma from data
+  g <- mean(linear.model$residuals ** 4) / 
+    mean(linear.model$residuals ** 2) ** 2
+  
+  # return TIC
+  -2 * l + 2 * (K + (g - 1) / 2) - 1
+}
+
+# get the data
 load('~/dev/stats-hw/stat-s676/diabetes2.Rdata')
+
+# "sex^2" is a linear combination of other variables
+# just going to remove it
+diabetes2 %<>% dp$select(-`sex^2`)
+
+# vector of predictors
+predictors <- diabetes2 %>% 
+  dp$select(-y) %>% 
+  colnames()
+
+# list of predictor sets
+predictor.sets <- lapply(seq(length(predictors)), function(i) {
+  combn(predictors, i, simplify = FALSE)
+}) %>% 
+  flatten()
+
+t0 <- Sys.time()
+# data frame of results
+out.df <- mclapply(predictor.sets, function(p) {
+  # subset to predictor set
+  temp.df <- diabetes2 %>%
+    dp$select(c('y', p))
+
+  # create the model
+  temp.mod <- lm(y ~ ., data = temp.df)
+
+  # compute TIC
+  tic <- TIC(temp.mod)
+
+  # compute AIC
+  aic <- AIC(temp.mod)
+
+  # compute BIC
+  bic <- BIC(temp.mod)
+
+  # combine into data frame
+  dplyr::data_frame(AIC = aic, 
+                    BIC = bic, 
+                    TIC = tic, 
+                    p = length(temp.mod$coefficients))
+}) %>%
+  dp$bind_rows()
+Sys.time() - t0
+
+# predictor set with lowest TIC
+predictor.sets[[which.min(out.df$TIC)]]
+
+# predictor set with lowest AIC
+predictor.sets[[which.min(out.df$AIC)]]
+
+# predictor set with lowest BIC
+predictor.sets[[which.min(out.df$BIC)]]
+
+# probably can't see much from this
+ggplot(out.df) + 
+  geom_point(aes(x = AIC, y = BIC, colour = p)) + 
+  viridis::scale_colour_viridis()
+ggplot(out.df) + 
+  geom_point(aes(x = AIC, y = TIC, colour = p)) + 
+  viridis::scale_colour_viridis()
 ```
