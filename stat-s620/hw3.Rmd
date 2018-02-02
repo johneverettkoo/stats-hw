@@ -69,7 +69,7 @@ $= .8 + .6 - (.8) (.6) = \boxed{`r .8 + .6 - .8 * .6`}$
 ## Part b
 
 $P(A | (A \cup B)) = \frac{P(A \cap (A \cup B))}{P(A \cup B)}$
-$= \frac{P(A)}{P(A \cup B)} = .6 / .92 \approx \boxed{`r round(.6 / .92, 3)`}$
+$= \frac{P(A)}{P(A \cup B)} = .8 / .92 \approx \boxed{`r round(.8 / .92, 3)`}$
 
 # 2.2.13
 
