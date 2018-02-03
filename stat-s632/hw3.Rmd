@@ -1,0 +1,108 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 3'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages_etc}
+# packages, etc.
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+library(ggplot2)
+import::from(GGally, ggpairs)
+theme_set(theme_bw())
+```
+
+# Exercise 3.2
+
+```{r problem_setup}
+# get the data
+turtles.df <- faraway::turtle %>% 
+  dp$mutate(turtles = male + female, 
+            prop.male = male / turtles)
+summary(turtles.df)
+```
+
+## Part a
+
+```{r a, fig.height = 3}
+# p vs temp
+ggplot(turtles.df) + 
+  geom_point(aes(x = temp, y = prop.male)) + 
+  labs(x = 'temperature [C]', y = 'proportion male')
+
+# eta vs temp
+ggplot(turtles.df) + 
+  geom_point(aes(x = temp, y = log(prop.male / (1 - prop.male)))) + 
+  labs(x = 'temperature [C]', y = expression(eta))
+```
+
+We can see that the proportion of male turtles increases with temperature. 
+However, it does not look like a logit is a good fit on these data. In 
+particular, when we transform the $p_i$s to $\eta_i$s 
+($\eta = \log \frac{p}{1-p}$), we do not get a linear relationship between 
+$\eta$ and temperature.
+
+## Part b
+
+```{r b}
+# fit the model
+binom.mod <- glm(cbind(male, female) ~ temp, 
+                 data = turtles.df, family = binomial)
+summary(binom.mod)
+
+pchisq(binom.mod$deviance, binom.mod$df.residual, lower = FALSE)
+pchisq(summary(binom.mod)$null.deviance, 
+       summary(binom.mod)$df.null, 
+       lower = FALSE)
+```
+
+The residual deviance suggests that the model is not a good fit for these data.
+
+## Part c
+
+```{r c}
+summary(turtles.df$turtles)
+```
+
+Using our rule of thumb of $m_i > 5$, we can say that the data are not sparse.
+
+## Part d
+
+```{r d}
+faraway::halfnorm(residuals(binom.mod))
+```
+
+Based on the half-normal plot, we have no reason to believe that the data 
+contain outliers.
+
+## Part e
+
+```{r e}
+ggplot(turtles.df) + 
+  geom_point(aes(x = temp, y = log((male + .5) / (turtles - male + .5)))) + 
+  labs(x = 'temperature [C]', y = 'empirical logits') + 
+  stat_smooth(aes(x = temp, y = log((male + .5) / (turtles - male + .5))), 
+              method = 'lm')
+```
+
+Plotting the empirical logits vs the temperature suggests that the relationship 
+is not linear. 
