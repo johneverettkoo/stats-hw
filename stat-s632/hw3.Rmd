@@ -2,8 +2,8 @@
 title: "STAT-S632"
 subtitle: 'Assignment 3'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -80,6 +80,7 @@ The residual deviance suggests that the model is not a good fit for these data.
 ## Part c
 
 ```{r c}
+# number of observations for each sub-sample
 summary(turtles.df$turtles)
 ```
 
@@ -88,6 +89,7 @@ Using our rule of thumb of $m_i > 5$, we can say that the data are not sparse.
 ## Part d
 
 ```{r d}
+# half normal plot
 faraway::halfnorm(residuals(binom.mod))
 ```
 
@@ -97,6 +99,7 @@ contain outliers.
 ## Part e
 
 ```{r e}
+# empirical log plot
 ggplot(turtles.df) + 
   geom_point(aes(x = temp, y = log((male + .5) / (turtles - male + .5)))) + 
   labs(x = 'temperature [C]', y = 'empirical logits') + 
@@ -105,4 +108,73 @@ ggplot(turtles.df) +
 ```
 
 Plotting the empirical logits vs the temperature suggests that the relationship 
-is not linear. 
+is not linear. It appears that a concave curve is more appropriate. A 
+transformation or higher order term might be appropriate.
+
+## Part f
+
+```{r f}
+# model with quadratic term
+quad.binom.mod <- glm(cbind(male, female) ~ temp + I(temp ** 2), 
+                      data = turtles.df, family = binomial)
+# wald tests
+summary(quad.binom.mod)
+
+# check for model fit
+pchisq(quad.binom.mod$deviance, quad.binom.mod$df.residual, lower = FALSE)
+
+# LR test
+anova(binom.mod, quad.binom.mod, test = 'Chi')
+```
+
+Using a significance level of $\alpha = 0.05$, we can say that the quadratic 
+term is significant and the model (kinda) fits the data. 
+
+## Part g
+
+```{r g}
+# sample variance
+var(turtles.df$male)
+
+# sample variance assuming binomial
+turtles.df %>% 
+  dp$group_by(temp) %>% 
+  dp$summarise(var.male = sum(male) * sum(female) / sum(turtles)) %>% 
+  dp$ungroup() %>% 
+  .$var.male %>% 
+  sum()  # assuming independence
+
+# dispersion parameter estimate
+s2 <- sum(residuals(quad.binom.mod, type = 'pearson') ** 2) / 
+  quad.binom.mod$df.residual
+
+# F tests
+drop1(quad.binom.mod, scale = s2, test = 'F')
+```
+
+Comparing the sample variance to the sample variance assuming a binomial model, 
+as well as the estimate for the dispersion parameter, suggests that there is 
+some overdispersion. 
+
+## Part h
+
+```{r h}
+# aggregated data
+agg.turtles.df <- turtles.df %>% 
+  dp$group_by(temp) %>% 
+  dp$summarise_all(sum) %>% 
+  dp$ungroup() 
+
+# model
+combin.binom.mod <- glm(cbind(male, female) ~ temp, 
+                        data = agg.turtles.df, family = binomial)
+# wald tests
+summary(combin.binom.mod)
+
+# check for model fit
+pchisq(combin.binom.mod$deviance, combin.binom.mod$df.residual, lower = FALSE)
+```
+
+As before, the residual deviance suggests that the model does not fit the data. 
+The summary outputs for both this model and the model from part (b) are 
+identical. 
