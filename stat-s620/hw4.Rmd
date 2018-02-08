@@ -1,0 +1,205 @@
+---
+title: "STAT-S620"
+subtitle: 'Assignment 4'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# 3.1.2
+
+We know that $\sum_{x = 1}^5 cx = 1$. We also know that 
+$\sum_{x=1}^5 cx = c \frac{6 \times 5}{2} = 15c$. Then 
+$\boxed{c = \frac{1}{15}}$.
+
+# 3.1.3
+
+```{r e3_1_3, fig.height = 3}
+# packages, etc.
+import::from(magrittr, `%>%`)
+dp <- loadNamespace('dplyr')
+import::from(MASS, fractions)
+import::from(xtable, xtable)
+library(ggplot2)
+theme_set(theme_bw())
+
+# create sample space
+sample.space.df <- expand.grid(x1 = seq(6), x2 = seq(6)) %>% 
+  dp$mutate(abs.diff = abs(x1 - x2))
+
+# rel freq table
+sample.space.df$abs.diff %>% 
+  {table(.) / length(.)} %>% 
+  fractions()
+
+# plot
+ggplot(sample.space.df) + 
+  geom_histogram(aes(x = abs.diff, y = ..density..), 
+                 binwidth = 1, colour = 'black', fill = 'white') + 
+  labs(x = 'X')
+```
+
+# 3.1.10
+
+## Part a
+
+$1 = \sum_{x=0}^7 c (x+1) (8-x) = c(7 \sum x - \sum x^2 + \sum 8)$
+$= c(7 \frac{(8)(7)}{2} - \frac{(7)(8)(15)}{6} + (8)(8)) = 120c$. Then 
+$c = \frac{1}{120} \implies$ 
+$\boxed{f(x) = \begin{cases} 
+  \frac{(x+1) (8-x)}{120} & x = 0, 1, 2, ..., 7 \\
+  0 & \text{otherwise}
+\end{cases}}$
+
+## Part b
+
+$P(X \geq 5) = \sum_{x=5}^7 f(x)$
+
+```{r e3_1_10_b}
+pf <- function(x) (x + 1) * (8 - x) / 120
+
+sum(pf(seq(5, 7))) %>% 
+  fractions()
+```
+
+$\boxed{P(X \geq 5) = \frac{1}{3}}$
+
+# 3.2.4
+
+## Part a
+
+$1 = \int_1^2 cx^2 dx = \frac{c}{3} x^3 \big|_1^2 = \frac{7}{3} c$. Then 
+$c = \frac{3}{7}$ and 
+$\boxed{f(x) = \begin{cases} 
+  \frac{3}{7} x^2 & x \in [1, 2] \\
+  0 & \text{otherwise}
+\end{cases}}$.
+
+```{r e3_2_4_a, fig.height = 3}
+X <- seq(1, 2, .01)
+Y <- 3 / 7 * X ** 2
+
+ggplot() + 
+  geom_line(aes(x = X, y = Y)) + 
+  ylim(0, 2) + 
+  labs(x = 'x', y = 'f(x)') + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 0)) + 
+  geom_segment(aes(x = 2, xend = 3, y = 0, yend = 0))
+```
+
+## Part b
+
+$P(X \geq 3/2) = \int_{3/2}^2 \frac{3}{7} x^2 dx = \frac{1}{7} x^3 \big|_{3/2}^2$
+$= \frac{1}{7} (8 - \frac{27}{8}) = \boxed{\frac{37}{56}}$.
+
+# 3.2.6
+
+$P(Y = 0) = \int_0^{.5} \frac{x}{8} dx = x^2 / 16 |_0^{.5} = 1/64$
+
+For $i = 1, 2, 3$, $P(Y = i) = \int_{i-.5}^{i + .5} \frac{x}{8} dx = \frac{i}{8}$
+
+$P(Y = 4) = \int_{3.5}^4 \frac{x}{8} dx = \frac{1}{16}(16 - 49/4) = 15/64$.
+
+Then $\boxed{f(y) = \begin{cases} 
+  1/64 & y = 0 \\
+  y/8 & y = 1, 2, 3 \\
+  15/64 & y = 4\\
+  0 & \text{otherwise}
+\end{cases}}$.
+
+# 3.2.8
+
+## Part a
+
+This is just the exponential distribution, so $\boxed{c = 2}$.
+
+```{r e3_2_8_a, fig.height = 3}
+X <- seq(0, 4, .01)
+Y <- 2 * exp(-2 * X)
+
+ggplot() + 
+  geom_line(aes(x = X, y = Y)) + 
+  labs(x = 'x', y = 'f(x)') + 
+  geom_segment(aes(x = 0, xend = -1, y = 0, yend = 0))
+```
+
+## Part b
+
+$P(1 < X < 2) = \int_1^2 2 e^{-2x} dx = -e^{-2x} |_1^2 =$ 
+$\boxed{e^{-2} - e^{-4} \approx `r round(exp(-2) - exp(-4), 3)`}$
+
+# 3.3.4
+
+a. .1
+b. .1 
+c. .2
+d. 0
+e. .8 - .2 = .6
+f. .6 - .2 = .4
+g. .8 - .1 = .7
+h. 0
+i. 0
+j. 0
+k. 0
+l. 0
+
+# 3.3.15
+
+$F(x) = \int_0^x 2u du = x^2$ for $x \in (0, 1)$, $F(x) = 0$ for $x \leq 0$, 
+and $F(x) = 1$ for $x \geq 1$.
+
+```{r e3_3_15, fig.height = 3}
+X <- seq(0, 1, .01)
+Y <- X ** 2 
+
+ggplot() + 
+  geom_line(aes(x = X, y = Y)) + 
+  geom_segment(aes(x = 0, xend = -1, y = 0, yend = 0)) + 
+  geom_segment(aes(x = 1, xend = 2, y = 1, yend = 1)) + 
+  labs(x = 'x', y = 'F(x)')
+```
+
+# Not from text
+
+## Part a
+
+$P(X > 1) = 1 - P(X \leq 1) = 1 - F(1) = \boxed{e^{-1}}$
+
+## Part b
+
+$\frac{d}{dx} (1 - e^{-x^2}) = 2x e^{-x^2}$. Therefore, 
+$\boxed{f(x) = \begin{cases}
+  0 & x < 0 \\
+  2x e^{-x^2} & x \geq 0
+\end{cases}}$
+
+## Part c
+
+$P(X > 1) = \int_1^\infty 2x e^{-x^2} dx$
+
+Let $u = x^2$. Then $du = 2x dx$. Then the above integral becomes 
+$\int_1^\infty e^{-u} du = \boxed{e^{-1}}$
+
+## Part d
+
+Let $p = 1 - e^{-(F^{-1}(p))^2}$. Then $\boxed{F^{-1}(p) = \sqrt{-\log(1 - p)}}$.
+
+## Part e
+
+$F^{-1}(.85) = \boxed{\sqrt{-\log(.15)} \approx `r round(sqrt(-log(.15)), 3)`}$
