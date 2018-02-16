@@ -1,0 +1,258 @@
+---
+title: "STAT-S620"
+subtitle: 'Assignment 5'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# 3.4.3
+
+## Part a
+
+```{r e3_4_3_a}
+import::from(magrittr, `%>%`)
+
+expand.grid(x = seq(-2, 2), y = seq(-2, 2)) %>% 
+  dplyr::mutate(f = abs(x + y)) %>% 
+  .$f %>% 
+  sum()
+```
+
+Therefore, $\boxed{c = 1/40}$.
+
+## Part b
+
+$f(0, -2) = 2 / 40 = \boxed{1/20}$.
+
+## Part c
+
+$P(X = 1) = \sum_y f(1, y)$
+
+```{r e3_4_3_c}
+expand.grid(x = seq(-2, 2), y = seq(-2, 2)) %>% 
+  dplyr::mutate(f = abs(x + y) / 40) %>% 
+  dplyr::filter(x == 1) %>% 
+  .$f %>% 
+  sum()
+```
+
+Therefore, $\boxed{P(X = 1) = 0.175 = 7 / 40}$.
+
+## Part d
+
+We can create a new variable $Z = |X - Y|$. Then we want $P(Z \leq 1)$.
+
+```{r e3_4_3_d}
+expand.grid(x = seq(-2, 2), y = seq(-2, 2)) %>% 
+  dplyr::mutate(z = abs(x - y)) %>% 
+  dplyr::mutate(f = abs(x + y) / 40) %>% 
+  dplyr::filter(z <= 1) %>% 
+  .$f %>% 
+  sum()
+```
+
+Therefore, $P(|X - Y| \leq 1) = \boxed{0.7 = 7 / 10}$.
+
+# 3.4.4
+
+## Part a
+
+$\int_{x = 0}^2 \int_{y = 0}^1 cy^2 dx dy = 2c \int_0^1 y^2 dy = \frac{2c}{3}$. 
+Therefore, $\boxed{c = 3/2}$.
+
+## Part b
+
+$P(X + Y > 2) = \int_{x=1}^2 dx \int_{y=2-x}^1 3/2 y^2 dy$
+$=\int_{x=1}^2 y^3/2 |_{y=2-x}^1 dx = 1/2 \int_1^2 1 - (2-x)^3dx$
+$= x/2 + (2-x)^4 / 8 \big|_1^2 = 1 - 1/2 - 1/8 = \boxed{3/8}$.
+
+## Part c
+
+$P(Y < 1/2) = \int_0^2 dx \int_0^{1/2} 3y^2/2 dy = \int_0^2 1/2 * (1/2)^3 dx$
+$= 2 / 16 = \boxed{1/8}$.
+
+## Part d
+
+$P(X \leq 1) = \int_0^1 dx \int_0^1 3y^2 / 2 dy$
+$= \int_0^1 1/2 dx = \boxed{1/2}$.
+
+## Part e
+
+$P(X = 3Y) = \boxed{0}$ since this is a continuous distribution.
+
+# 3.5.4
+
+## Part a
+
+$$f_X(x) = \int_0^{1-x^2} 15x^2/4 dy = \boxed{15 x^2 (1-x^2) / 4}$$
+
+For $f_Y$, we have to consider the minimum and maximum values of $x$. Since 
+$y \leq 1 - x^2$, we have $y \in [-\sqrt{1-y}, \sqrt{1-y}]$.
+
+$$f_Y(y) = \int_{-\sqrt{1-y}}^{\sqrt{1-y}} 15x^2/4 dx$$
+$$= \frac{5}{4} 2 (\sqrt{1-y})^3$$
+$$= \boxed{\frac{5}{2} (1-y)^{3/2}}$$
+
+## Part b
+
+$f_X(x) f_Y(y) = \frac{75}{8} (1-x^2) (1-y)^{3/2} \neq f(x, y)$. Therefore, $X$ 
+and $Y$ are not independent.
+
+# 3.5.5
+
+## Part a
+
+Since $X$ and $Y$ are independent, $P(X = x, Y = y) = P(X = x) P(Y = y) =$
+$\boxed{p_x p_y}$.
+
+## Part b
+
+Since $X$ and $Y$ are independent, $P(X = Y) = \sum_{i=0}^3 P(X = i)^2$. Then 
+this is $.1^2 + .2^2 + .4^2 + .3^2 = \boxed{.3}$.
+
+## Part c
+
+$P(X > Y) = \sum_{x>y} P(X = x) P(Y = y) =$
+$\frac{1}{2}\sum_{x \neq y} P(X = x) P(Y = y)$
+$= \frac{1}{2} \big(1 - \sum_{x = y} P(X = x, Y = y) \big)$
+$= \frac{1}{2} \big(1 - P(X = Y) \big)$
+
+We already found $P(X=Y)$ in part (b). Therefore, 
+$P(X > Y) = \frac{1}{2}(1 - .3) = \boxed{.35}$.
+
+# 3.6.8
+
+## Part a
+
+$\int_0^1 dy \int_{.8}^1 \frac{2}{5} (2x + 3y) dx =$
+$\int_0^1 \frac{2}{5}(1 - \frac{16}{25}) + \frac{6}{5} \frac{1}{5} y dy$
+$= \int_0^1 \frac{18}{125} + \frac{6}{25}y dy$
+$= \frac{18}{125} + \frac{3}{25} = \boxed{33/125}$
+
+## Part b
+
+We first need the marginal of $Y$. $f_Y(y) = \int_0^1 \frac{2}{5} (2x + 3y) dx$
+$= \frac{2}{5} + \frac{3}{5} y$ for $y \in [0, 1]$.
+
+Then $f_{X|Y}(x|y) = \frac{2x + 3y}{1 + 3y}$ for $x$ and $y$ $\in [0, 1]$. Then 
+$\boxed{f_{X|Y}(x|y=.3) = \frac{2x + .9}{1.9}}$ for $x \in [0, 1]$.
+
+## Part c
+
+We need the marginal of $X$. $f_X(x) = \int_0^1 \frac{2}{5} (2x + 3y) dy$
+$= \frac{2}{5} (2x + \frac{3}{2})$
+
+Then $f_{Y|X}(y|x) = \frac{2x + 3y}{2x + \frac{3}{2}}$, and 
+$f_{Y|X}(y|x=.3) = \frac{3y + .6}{2.1}$.
+
+Then $P(Y>.8 | X=.3) = \int_{.8}^1 \frac{3y + .6}{2.1} dy$
+$= 3/2.1 \times (1 - .8^2)/2 + .6/2.1 \times .2$
+$\approx \boxed{.314}$
+
+# 3.8.1
+
+If $Y = 1 - X^2$ for positive values of $X$, then we can say $X = \sqrt{1-Y}$.
+
+The derivative of this is $-\frac{1}{2 \sqrt{1-y}}$. Then we have:
+
+$$g(y) = 3(\sqrt{1-y})^2 \times \frac{1}{2 \sqrt{1-y}}$$
+$$= \boxed{\frac{3}{2} \sqrt{1-y}}$$
+
+(for $y \in (0, 1)$ and $g(y) = 0$ otherwise)
+
+# 3.8.8
+
+We have $x = y^2$ and $dx/dy = 2y$. Then $\boxed{g(y) = 2y e^{-y^2}}$ for 
+$y>0$ and 0 otherwise.
+
+# Not from text
+
+## Sum of binomials
+
+Let $X_1 \sim Binom(n_1, p)$ and $X_2 \sim Binom(n_2, p)$. Let $Y = X_1 + X_2$. 
+Then $P(Y = y) = \sum_x^y P(X_1 = x)  P(X_2 = y-x)$. 
+
+$$\sum_{x=0}^y P(X_1 = x) P(X_2 = y-x) = 
+\sum_x^y \binom{n_1}{x} p^x q^{n_1 - x} \binom{n_2}{y-x} p^{y-x} q^{n_2-y+x}$$
+
+$$= \sum_x^y \binom{n_1 + n_2}{y} p^y q^{n_1 + n_2 - y}$$
+
+Which is just $P(Y = y)$ for $Y \sim Binom(n_1 + n_2, p)$.
+
+## Sum of exponentials
+
+Let $X_1, X_2 \stackrel{\text{i.i.d.}}{\sim} Exp(\lambda)$, and let 
+$Y = X_1 + X_2$. Then 
+$f(y) = \int_0^y \lambda e^{-\lambda x} \lambda e^{-\lambda(y-x)} dx$
+
+$$\int_0^y \lambda e^{-\lambda x} \lambda e^{-\lambda(y-x)} dx
+= \int_0^y \lambda^2 e^{-\lambda y} dy$$
+$$= \lambda^2 y e^{-\lambda y}$$
+
+We know that $\Gamma(2) = 1$. If we substitute $\beta = 1 / \lambda$, then we 
+get:
+
+$$f(y) = \frac{1}{\Gamma(2) \beta^2} y e^{-y/\beta}$$
+
+Which is the pdf of $Y \sim Gamma(2, \beta)$.
+
+### Prove $\Gamma(n) = (n-1)!$ for $n \in \mathbb{N}$
+
+Proof by induction
+
+#### Case $n=1$
+
+$\Gamma(1) = \int_0^\infty e^{-x}dx = -(0-1) = 1$
+
+$0! = 1$
+
+Therefore, $\Gamma(1) = 0!$
+
+#### Case $n=k+1$, assuming it holds for $n=k$
+
+Assume $\Gamma(k) = (k-1)!$
+
+Consider $\Gamma(k+1)$:
+
+$$\Gamma(k+1) = \int_0^\infty x^k e^{-x} dx$$
+
+Let $u = x^k$, $du = k x^{k-1}$, $dv = e^{-x}dx$, and $v = -e^{-x}$ Then 
+
+$$\Gamma(k+1) = -x^k e^{-x} \Big|_0^\infty + k\int_0^\infty x^{k-1} e^{-x} dx$$
+
+The first term goes to 0 since $0^k = 0$ and $e^{-\infty} = 0$. So we are left 
+with:
+
+$$\Gamma(k+1) = k \int_0^\infty x^{k-1} e^{-x} dx$$
+$$= k \Gamma(k)$$
+$$= k (k-1)!$$
+$$= k!$$
+
+Therefore, $\Gamma(k+1) = k!$, and we can say that the property holds.
+
+### Show $\Gamma(1/2) = \sqrt{\pi}$
+
+$$\Gamma(1/2) = \int_0^\infty x^{-1/2} e^{-x} dx$$
+
+Let $u = x^{1/2}$. Then $du = \frac{1}{2} x^{-1/2} dx$. Then we get:
+
+$$\Gamma(1/2) = \int_0^\infty 2e^{-u^2} du$$
+$$= 2 \frac{\sqrt{\pi}}{2}$$
+$$= \sqrt{\pi}$$
