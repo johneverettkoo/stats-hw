@@ -1,0 +1,144 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 4'
+author: "John Koo"
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r packages_etc}
+# packages, etc.
+import::from(magrittr, `%>%`, `%<>%`)
+dp <- loadNamespace('dplyr')
+library(ggplot2)
+
+theme_set(theme_bw())
+```
+
+# Problem 1
+
+The optimization step for Newton-Raphson is:
+
+$$\beta^{(t+1)} = \beta^{(t)} + I^{-1}(\beta) 
+\frac{\partial \ell}{\partial \beta}$$
+
+Since we want to find the root of $\frac{\partial \ell}{\partial \beta}$.
+
+$I(\beta)$ is the Hessian matrix of $\ell$.
+
+We know that $I(\beta) = -\frac{\partial^2}{\partial \beta^2} \ell(\beta)$. 
+For Poisson regression, we have 
+
+$$\ell(\beta) = 
+\sum_i^n \Big( y_i x_i^T \beta - e^{x_i^T \beta} - \log(y_i!) \Big)$$
+
+So:
+
+$$\frac{\partial}{\partial \beta} \ell(\beta) = 
+\sum_i^n \Big( y_i x_i^T - x_i^T e^{x_i^T \beta} \Big)$$
+
+Differentiating this again with respect to $\beta$, we obtain:
+
+$$\frac{\partial^2}{\partial \beta^2} = \sum_i^n x_i x_i^T e^{x_i \beta}$$
+$$= X^T \begin{bmatrix}
+  e^{x_1^T \beta} & & & \\
+  & e^{x_2^T \beta} & & \\
+  & & \ddots  & \\
+  & & & e^{x_n^T \beta}
+\end{bmatrix} X$$
+$$= X^T D X$$
+
+We can also say:
+
+$$\frac{\partial \ell}{\partial \beta} = \sum_i y_i x_i^T -x_i^T e^{x_i^T \beta}$$
+$$= \sum_i x_i^T (y_i - e^{x_i^T \beta})$$
+$$= X^T (y - \mu)$$
+
+Where $\mu \in R^n$ and $\mu_i = e^{x_i^T \beta}$.
+
+Putting it all together, we get:
+
+$$\beta^{(t+1)} = \beta^{(t)} + (X^T D X)^{-1} X^T (y - \mu)$$
+
+And using the same trick as we did for binomial regression:
+
+$$=(X^T D X)^{-1} X^T D X \beta^{(t)} + (X^T D X)^{-1} X^T D D ^{-1} (y - \mu)$$
+$$= (X^T D X)^{-1} X^T D (X \beta^{(t)} + D^{-1} (y - \mu))$$
+
+Then we can let $z = X^T \beta^{(t)} + D^{-1} (y - \mu)$ to obtain:
+
+$$\beta^{(t+1)} = (X^T D X)^{-1} X^T D z$$
+
+# Problem 2
+
+[From ELM 5.1]
+
+## Part a
+
+```{r p2_a}
+discoveries.df <- dplyr::data_frame(
+  year = seq(1860, 1959), 
+  n.discoveries = discoveries
+)
+
+ggplot(discoveries.df) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  stat_smooth(aes(x = year, y = n.discoveries))
+
+ggplot(discoveries.df) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  stat_smooth(aes(x = year, y = n.discoveries), method = 'lm') + 
+  scale_y_log10()
+```
+
+There doesn't appear to be any definitive trend, or at least no definitive 
+linear trend. If there is a linear trend, it would be negative. 
+
+## Part b
+
+```{r p2_b}
+count.mod <- glm(n.discoveries ~ year, data = discoveries.df, 
+                 family = poisson)
+summary(count.mod)
+
+discoveries.df %<>% 
+  dp$mutate(n.pred = predict(count.mod, 
+                             newdata = discoveries.df, 
+                             type = 'response'))
+
+ggplot(discoveries.df) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  geom_line(aes(x = year, y = n.pred), colour = 'red') + 
+  labs(y = 'number of discoveries')
+
+ggplot(discoveries.df) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  geom_line(aes(x = year, y = n.pred), colour = 'red') + 
+  labs(y = 'number of discoveries') + 
+  scale_y_log10()
+
+mean(discoveries.df$n.discoveries)
+```
+
+
+
+## Part c
+
+According to the model, the average number of discoveries per year changes
+each year by a factor of `r round(exp(count.mod$coefficients[2]), 3)`.
