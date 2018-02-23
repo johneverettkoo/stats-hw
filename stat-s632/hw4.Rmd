@@ -2,8 +2,8 @@
 title: "STAT-S632"
 subtitle: 'Assignment 4'
 author: "John Koo"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 urlcolor: blue
 header-includes:
 - \usepackage{float}
@@ -24,7 +24,7 @@ options(xtable.comment = FALSE,
 
 ```{r packages_etc}
 # packages, etc.
-import::from(magrittr, `%>%`, `%<>%`)
+import::from(magrittr, `%>%`, `%<>%`, multiply_by, set_names)
 dp <- loadNamespace('dplyr')
 library(ggplot2)
 
@@ -113,12 +113,12 @@ linear trend. If there is a linear trend, it would be negative.
 ## Part b
 
 ```{r p2_b}
-count.mod <- glm(n.discoveries ~ year, data = discoveries.df, 
-                 family = poisson)
-summary(count.mod)
+constant.mod <- glm(n.discoveries ~ 1, data = discoveries.df, 
+                    family = poisson)
+summary(constant.mod)
 
 discoveries.df %<>% 
-  dp$mutate(n.pred = predict(count.mod, 
+  dp$mutate(n.pred = predict(constant.mod, 
                              newdata = discoveries.df, 
                              type = 'response'))
 
@@ -127,18 +127,104 @@ ggplot(discoveries.df) +
   geom_line(aes(x = year, y = n.pred), colour = 'red') + 
   labs(y = 'number of discoveries')
 
-ggplot(discoveries.df) + 
-  geom_point(aes(x = year, y = n.discoveries)) + 
-  geom_line(aes(x = year, y = n.pred), colour = 'red') + 
-  labs(y = 'number of discoveries') + 
-  scale_y_log10()
-
 mean(discoveries.df$n.discoveries)
+unname(exp(constant.mod$coefficients))
 ```
 
-
+We can see that the exponential of the coefficient of the intercept model is 
+equal to the average number of discoveries.
 
 ## Part c
 
-According to the model, the average number of discoveries per year changes
-each year by a factor of `r round(exp(count.mod$coefficients[2]), 3)`.
+```{r p1_c}
+pchisq(constant.mod$deviance, constant.mod$df.residual, lower.tail = FALSE)
+```
+
+Since $P(\chi^2 > 0) \approx 0$, we have evidence that the intercept model is 
+a not so great fit to these data. This suggests that additional coefficients 
+might be appropriate, i.e., there is some trend in the number of discoveries 
+over time.
+
+## Part d
+
+```{r p1_d}
+agg.disc.df <- discoveries.df %>% 
+  dp$mutate(n.discoveries = ifelse(n.discoveries >= 8, '>=8', n.discoveries), 
+            n.discoveries = factor(n.discoveries, 
+                                   levels = c(as.character(seq(0, 7)), '>=8'))) %>% 
+  dp$group_by(n.discoveries) %>% 
+  dp$summarise(freq = n()) %>% 
+  dp$ungroup()
+
+expected.freq <- c(dpois(seq(0, 7), mean(discoveries)), 
+  ppois(7, mean(discoveries), lower.tail = FALSE)) %>% 
+  multiply_by(length(discoveries)) %>% 
+  set_names(c(seq(0, 7), '>=8'))
+
+agg.disc.df %<>% dp$mutate(expected.freq)
+agg.disc.df
+
+ggplot(agg.disc.df) + 
+  geom_point(aes(x = n.discoveries, y = freq, colour = 'observed')) + 
+  geom_point(aes(x = n.discoveries, y = expected.freq, colour = 'expected')) + 
+  labs(x = 'number of discoveries', colour = NULL) + 
+  scale_colour_brewer(palette = 'Set1')
+```
+
+The two do not seem to agree. The observed seem to prefer both fewer and more 
+discoveries while the expected is a bit more evenly spread out.
+
+## Part e
+
+```{r p1_e}
+chisq <- 
+  sum((agg.disc.df$freq - agg.disc.df$expected.freq)^2 / agg.disc.df$expected.freq)
+pchisq(chisq, nrow(agg.disc.df) - 1, lower.tail = FALSE)
+```
+
+According to the $\chi^2$-test, there is *some* evidence that this isn't from a 
+Poisson distribution. 
+
+We might suspect that if we do not group the $\geq 8$, the $p$-value would 
+decrease.
+
+## Part f
+
+```{r p1_f}
+quad.mod <- glm(n.discoveries ~ year + I(year ** 2), data = discoveries.df, 
+                family = poisson)
+summary(quad.mod)
+```
+
+The Wald test shows that the quadratic term is significant (i.e., not equal to 
+0). We can also try a LR test:
+
+```{r p1_f_2}
+lin.mod <- glm(n.discoveries ~ year, data = discoveries.df, family = poisson)
+anova(quad.mod, lin.mod, test = 'Chi')
+```
+
+And the two tests agree. 
+
+## Part g
+
+```{r p1_g}
+discoveries.df %<>% 
+  dp$mutate(n.pred = predict(quad.mod, 
+                             newdata = discoveries.df, 
+                             type = 'response'))
+
+ggplot(discoveries.df) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  geom_line(aes(x = year, y = n.pred), colour = 'red') + 
+  labs(y = 'number of discoveries')
+
+ggplot(discoveries.df %>% dp$filter(n.discoveries > 0)) + 
+  geom_point(aes(x = year, y = n.discoveries)) + 
+  geom_line(aes(x = year, y = n.pred), colour = 'red') + 
+  labs(y = 'number of discoveries') + 
+  coord_trans(y = 'log10')
+```
+
+The second plot compares $X \beta$ to $x_1$, and here we should see a quadratic 
+relationship.
