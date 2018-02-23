@@ -211,114 +211,115 @@ $[J]_{21}$ is just the transpose of $[J]_{12}$.
 
 # Problem 4
 
-From the textbook, we get the TIC for $tr(J I^{-1})$ assuming 
-$Y - X \beta \sim \mathcal{N}(0, \sigma^2 I)$:
-
-$$tr(J I^{-1}) = \frac{\sigma^2}{\hat{\sigma}^2} 
-\Bigg(K + 1 + \frac{\sigma^2}{\hat{\sigma}^2} (\frac{\gamma-1}{2} - 2)\Bigg)$$
-
-Where $\gamma = \frac{E[\varepsilon^4]}{E[\varepsilon^2]^2}$. Since we don't 
-know the parameter $\sigma^2$, we will just sub in the estimate. Then this turns 
-into:
-
-$$K + \frac{\gamma-1}{2} - 1$$
-
-Note that when we assume that the errors are normal, $\gamma = 3$, and we just 
-get back the AIC (thanks, textbook). 
-
-This is nowhere near "efficient" ...
+For the sake of CPU time, I am going to omit intercept-less models. 
 
 ```{r p4, cache = TRUE}
+t0 <- Sys.time()
+
+# --- setup. --- #
+
 # packages, etc.
 import::from(magrittr, `%>%`, `%<>%`)
-dp <- loadNamespace('dplyr')
-import::from(purrr, flatten)
-import::from(foreach, foreach, `%dopar%`)
 library(ggplot2)
 theme_set(theme_bw())
+dp <- loadNamespace('dplyr')
 import::from(parallel, mclapply, detectCores)
-
-# mc stuff
-options(mc.cores = detectCores())
-
-# tic function
-# no documentation b/c lazy
-# but it takes a lm output and returns a number
-TIC <- function(linear.model) {
-  # find the log likelihood estimate
-  l <- as.numeric(logLik(linear.model))
-  
-  # number of beta parameters
-  K <- length(linear.model$coefficients)
-  
-  # gamma from data
-  g <- mean(linear.model$residuals ** 4) / 
-    mean(linear.model$residuals ** 2) ** 2
-  
-  # return TIC
-  -2 * l + 2 * (K + (g - 1) / 2) - 1
-}
+import::from(purrr, flatten)
+import::from(viridis, scale_color_viridis)
 
 # get the data
-load('~/dev/stats-hw/stat-s676/diabetes2.Rdata')
+load('~/dev/stats-hw/stat-s676/diabetes3.Rdata')
 
-# "sex^2" is a linear combination of other variables
-# just going to remove it
-diabetes2 %<>% dp$select(-`sex^2`)
-
-# vector of predictors
-predictors <- diabetes2 %>% 
+# precompute stuff
+y <- diabetes3$y
+x <- diabetes3 %>% 
   dp$select(-y) %>% 
-  colnames()
+  as.matrix()
+xt.x <- crossprod(x, x)
+xt.y <- crossprod(x, y)
+yt.y <- crossprod(y)
 
-# list of predictor sets
-predictor.sets <- lapply(seq(length(predictors)), function(i) {
-  combn(predictors, i, simplify = FALSE)
+# parameters
+tol <- 1e-12
+alpha. <- 1  # to avoid conflict with the alpha function in R
+beta. <- 1  # to avoid conflict with the beta function in R
+n <- length(y)
+p <- ncol(x)
+n.mod <- 2 ** p  # number of models
+mc.offset <- 1  # number of cores to not use
+p.names <- colnames(x)
+sample.frac <- .01  # number of rows to use for visualization
+
+# precompute some more stuff
+log.samp.const <- -n / 2 * log(2 * pi * exp(1) / n)
+log.marg.const <- lgamma((n + alpha.) / 2) - n * log(pi) - lgamma(alpha. / 2)
+
+# list of models
+mod.list <- lapply(seq(p), function(i) {
+  combn(p.names, i, simplify = FALSE)
 }) %>% 
   flatten()
 
-t0 <- Sys.time()
-# data frame of results
-out.df <- mclapply(predictor.sets, function(p) {
-  # subset to predictor set
-  temp.df <- diabetes2 %>%
-    dp$select(c('y', p))
+# set up parallel stuff
+options(mc.cores = detectCores() - mc.offset)
 
-  # create the model
-  temp.mod <- lm(y ~ ., data = temp.df)
+# group model indices for parallelization
+mod.chunks <- split(seq_along(mod.list), seq(detectCores() - mc.offset))
 
-  # compute TIC
-  tic <- TIC(temp.mod)
+# parallel computation
+out.df <- mclapply(mod.chunks, function(chunk) {
+  lapply(chunk, function(i) {
+    # which model?
+    mod.loc <- mod.list[[i]]
+    p.loc <- length(mod.loc)
 
-  # compute AIC
-  aic <- AIC(temp.mod)
+    xt.x.loc <- xt.x[mod.loc, mod.loc]
+    xt.y.loc <- xt.y[mod.loc, ]
+    eig.loc <- eigen(xt.x.loc, symmetric = TRUE)
+    logical.loc <- ((eig.loc$values / eig.loc$values[1]) > tol)
+    inv.eig.vals.loc <- ifelse(logical.loc, 1 / eig.loc$values, rep(0, p.loc))
+    rank.loc <- sum(logical.loc)
+    xt.x.loc.inv <-
+      eig.loc$vectors %*%
+      diag(inv.eig.vals.loc, p.loc, p.loc) %*%
+      t(eig.loc$vectors)
+    hat.beta.loc = crossprod(xt.x.loc.inv, xt.y.loc)
+    rst.loc <- crossprod(xt.y.loc, xt.x.loc.inv) %*% xt.y.loc
+    x.loc = matrix(x[, mod.loc], nrow = n, ncol = p.loc)
+    h <- sapply(seq(n), function(j) {
+      crossprod(x.loc[j, ], xt.x.loc.inv) %*% x.loc[j, ]
+    })
+    r <- y - x.loc %*% hat.beta.loc
 
-  # compute BIC
-  bic <- BIC(temp.mod)
+    rss.loc <- yt.y - rst.loc
+    hat.sigmasq.loc <- rss.loc / n
+    rel.rss.loc.marg <- (yt.y - rst.loc * n / (n + 1)) / beta.
+    log.samp.at.mle <- -n / 2 * log(rss.loc)
+    aic <- log.samp.at.mle * -2 + 2 * rank.loc
+    bic <- log.samp.at.mle * -2 + rank.loc * log(n)
+    tic <- log.samp.at.mle * -2 + 
+      2 * sum(r^2 * h) / hat.sigmasq.loc + 
+      0.5 * sum(r^4) / hat.sigmasq.loc^2 - 0.5
+    
+    log.marg <-
+      -rank.loc / 2 * log(n + 1) - (n + alpha.) / 2 + log(1 + rel.rss.loc.marg)
 
-  # combine into data frame
-  dplyr::data_frame(AIC = aic, 
-                    BIC = bic, 
-                    TIC = tic, 
-                    p = length(temp.mod$coefficients))
+    data.frame(i,  # keep track of the indices so we can match metrics to models
+               p = p.loc,  # maybe worth looking at number of parameters used
+               aic, bic, tic, 
+               log.samp.at.mle,
+               log.marg)
+  }) %>%
+    dp$bind_rows()
 }) %>%
   dp$bind_rows()
+
 Sys.time() - t0
 
-# predictor set with lowest TIC
-predictor.sets[[which.min(out.df$TIC)]]
+out.df %>% 
+  dp$sample_frac(sample.frac) %>% 
+  ggplot() + 
+  geom_point(aes(x = aic, y = tic, colour = p)) +
+  scale_color_viridis()
 
-# predictor set with lowest AIC
-predictor.sets[[which.min(out.df$AIC)]]
-
-# predictor set with lowest BIC
-predictor.sets[[which.min(out.df$BIC)]]
-
-# probably can't see much from this
-ggplot(out.df) + 
-  geom_point(aes(x = AIC, y = BIC, colour = p)) + 
-  viridis::scale_colour_viridis()
-ggplot(out.df) + 
-  geom_point(aes(x = AIC, y = TIC, colour = p)) + 
-  viridis::scale_colour_viridis()
 ```
