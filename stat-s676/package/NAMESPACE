@@ -1,0 +1,4 @@
+useDynLib(Stat676pack, .registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+import(RcppArmadillo, RcppGSL)
+importFrom(Rcpp, evalCpp)

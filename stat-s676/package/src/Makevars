@@ -1,0 +1,2 @@
+PKG_CXXFLAGS = -std=c++98
+PKG_LIBS = -lgsl -larmadillo $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)

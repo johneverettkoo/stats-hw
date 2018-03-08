@@ -1,0 +1,214 @@
+---
+title: "STAT-S676"
+subtitle: 'Assignment 2'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r setup2}
+library(ggplot2)
+import::from(magrittr, `%>%`, set_colnames)
+theme_set(theme_bw())
+```
+
+See source code here: https://github.com/johneverettkoo/stats-hw
+
+# Problem 1
+
+Most of this code is from Dr. Womack's file lm_mcmc.cpp (from Canvas).
+
+```{r p1_cpp}
+cpp.file <- '~/dev/stats-hw/stat-s676/package/src/lm_mcmc_horseshoe.cpp'
+writeLines(readLines(cpp.file))
+```
+
+Next, let's compile and install, and then see if it works by comparing it to R's 
+built-in `lm` function:
+
+```{r p1_build_package, cache = TRUE}
+Rcpp::compileAttributes('~/dev/stats-hw/stat-s676/package')
+devtools::install('~/dev/stats-hw/stat-s676/package')
+
+library(Stat676pack)
+
+y <- iris$Petal.Width
+X <- as.matrix(dplyr::select(iris, Petal.Length, Sepal.Width, Sepal.Length))
+summary(lm(y ~ X))
+out <- lm_mcmc_horseshoe(y, X, 10000, 676)
+summary(as.data.frame(out$beta[9001:1000, ]))
+sigma(lm(y ~ X))
+summary(out$sigma[901:1000])
+```
+
+# Problem 2
+
+```{r p2_mcmc, cache = TRUE}
+# load the data
+load('~/dev/stats-hw/stat-s676/pyrimidine.RData')
+X <- unname(as.matrix(dplyr::select(D, -y)))
+y <- D$y
+
+# build MCMC model
+out <- lm_mcmc_horseshoe(y, X, 10000, 314159)
+```
+
+We can see if any of them are significantly not 0.
+
+```{r p2_analysis, fig.height = 11, cache = TRUE}
+beta.df <- as.data.frame(out$beta) %>% 
+  set_colnames(c('intercept', colnames(D)[-ncol(D)]))
+tau.df <- as.data.frame(out$tau) %>% 
+  set_colnames(c('intercept', colnames(D)[-ncol(D)]))
+sigma_sq <- out$sigma_sq
+
+beta.df %>% 
+  # to long df
+  tidyr::gather('covariate', 'estimate', 1:27) %>% 
+  # make sure the labels are plotted in order
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c(paste0('x', seq(26, 1)), 
+                                              'intercept'))) %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = covariate, group = covariate, y = estimate)) + 
+  geom_hline(yintercept = 0, colour = 'red') + 
+  coord_flip() + 
+  labs(title = 'MCMC results')
+
+beta.df[9001:10000, ] %>%  # just the last 1000
+  tidyr::gather('covariate', 'estimate', 1:27) %>%
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c(paste0('x', seq(26, 1)), 
+                                              'intercept'))) %>% 
+  ggplot() +
+  geom_boxplot(aes(x = covariate, group = covariate, y = estimate)) +
+  geom_hline(yintercept = 0, colour = 'red') +
+  coord_flip() +
+  labs(title = 'MCMC results (last 1000 results)')
+```
+
+And we can see if each covariate found some steady-state-ish solution.
+
+```{r p2_conv, fig.height = 4, fig.width = 12, cache = TRUE}
+beta.df %>% 
+  tidyr::gather('covariate', 'estimate', 1:27) %>%
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c('intercept', 
+                                              paste0('x', seq(26)))), 
+                index = rep(seq(10000), 27)) %>% 
+  ggplot() +
+  geom_line(aes(x = index, y = estimate)) + 
+  geom_hline(yintercept = 0, colour = 'red') + 
+  facet_wrap(~ covariate, scales = 'free', nrow = 3)
+
+ggplot() + 
+  geom_line(aes(x = seq(length(sigma_sq)), y = sigma_sq)) + 
+  labs(x = 'index', y = expression(hat(sigma^2))) + 
+  coord_trans(y = 'log10')
+```
+
+It might be better to implement burn-in and thinning to account for the time it 
+takes to converge as well as ACF:
+
+```{r p2_wrapper, cache = TRUE}
+#' @title Horseshoe Gibbs sampler for linear models
+#' @description This is just a wrapper for the C++ code.
+#' @param y (numeric) An n-dimensional vector of responses
+#' @param X (numeric) An n by p dimensional matrix of inputs
+#' @param n.iter (numeric) The number of iterations to output
+#' @param burn (numeric) Number of iterations for burn-in
+#' @param thin (numeric) Thinning rate
+#' @param seed (numeric) RNG seed (defaults to system time)
+#' @return (list) The estimates for the covariates, sigma^2, and tau
+#' @export gibbs.horseshoe
+gibbs.horseshoe <- function(y, X, 
+                            n.iter = 1e3, burn = 1e2, thin = 1e2, 
+                            seed = NULL) {
+  # rng stuff
+  if (is.null(seed)) seed <- as.numeric(Sys.time())
+  
+  # pass to C++ code
+  out <- lm_mcmc_horseshoe(y, X, burn + n.iter * thin, seed)
+  
+  # take out burn-in
+  beta. <- out$beta[-seq(burn), ]
+  sigma_sq <- out$sigma_sq[-seq(burn)]
+  tau <- out$tau[-seq(burn), ]
+  
+  # thin
+  beta. <- beta.[seq(to = n.iter * thin, by = thin), ]
+  sigma_sq <- sigma_sq[seq(to = n.iter * thin, by = thin)]
+  tau <- tau[seq(to = n.iter * thin, by = thin), ]
+  
+  return(list(beta = beta., 
+              sigma_sq = sigma_sq, 
+              tau = tau))
+}
+
+out <- Stat676pack::gibbs.horseshoe(y, X, n.iter = 1e3)
+
+beta.df <- as.data.frame(out$beta) %>% 
+  set_colnames(c('intercept', colnames(D)[-ncol(D)]))
+tau.df <- as.data.frame(out$tau) %>% 
+  set_colnames(c('intercept', colnames(D)[-ncol(D)]))
+sigma_sq <- out$sigma_sq
+```
+
+```{r p2_conv2, fig.height = 4, fig.width = 12, cache = TRUE}
+beta.df %>% 
+  tidyr::gather('covariate', 'estimate', 1:27) %>%
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c('intercept', 
+                                              paste0('x', seq(26)))), 
+                index = rep(seq(1e3), 27)) %>% 
+  ggplot() +
+  geom_line(aes(x = index, y = estimate)) + 
+  geom_hline(yintercept = 0, colour = 'red') + 
+  facet_wrap(~ covariate, scales = 'free', nrow = 3)
+```
+
+We can also see how the $\tau$s are distributed:
+
+```{r p2_tau, cache = TRUE, fig.height = 11}
+tau.df %>% 
+  tidyr::gather('covariate', 'estimate', 1:27) %>%
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c(paste0('x', seq(26, 1)), 
+                                              'intercept'))) %>% 
+  ggplot() +
+  geom_boxplot(aes(x = covariate, group = covariate, y = estimate)) +
+  coord_flip() +
+  labs(title = 'MCMC result') + 
+  scale_y_log10()
+```
+
+```{r p2_tau_2, cache = TRUE, fig.width = 8}
+tau.df %>% 
+  tidyr::gather('covariate', 'estimate', 1:27) %>%
+  dplyr::mutate(covariate = factor(covariate, 
+                                   levels = c('intercept', 
+                                              paste0('x', seq(26))))) %>% 
+  dplyr::group_by(covariate) %>% 
+  dplyr::summarise_all(median) %>% 
+  dplyr::ungroup() %>% 
+  ggplot() + 
+  geom_point(aes(x = covariate, y = estimate)) + 
+  geom_path(aes(x = covariate, y = estimate)) + 
+  labs(y = expression(tau))
+```
