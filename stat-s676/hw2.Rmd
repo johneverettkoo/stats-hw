@@ -54,7 +54,7 @@ summary(lm(y ~ X))
 out <- lm_mcmc_horseshoe(y, X, 10000, 676)
 summary(as.data.frame(out$beta[9001:1000, ]))
 sigma(lm(y ~ X))
-summary(out$sigma[901:1000])
+summary(sqrt(out$sigma[9001:10000]))
 ```
 
 # Problem 2
