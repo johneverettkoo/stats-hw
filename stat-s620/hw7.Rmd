@@ -84,7 +84,7 @@ $dz = \frac{1}{\sqrt{\sigma^2}} dx$, so we are left with:
 
 $$\psi(t) = \int e^{t(\mu + \sigma z)} \frac{1}{\sqrt{2 \pi}} e^{-z^2 / 2} dz$$
 $$= \int \frac{1}{\sqrt{2 \pi}} e^{-z^2 / 2 + \sigma t z + \mu t} dz$$
-$$= \int \frac{1}{\sqrt{2 \pi}} e^{-\frac{1}{2} (z^2 - 2 \sigma t z - \mu t)} dz$$
+$$= \int \frac{1}{\sqrt{2 \pi}} e^{-\frac{1}{2} (z^2 - 2 \sigma t z - 2\mu t)} dz$$
 $$= e^{\mu t + \frac{\sigma^2 t^2}{2}} \int \frac{1}{\sqrt{2 \pi}} 
 e^{-\frac{1}{2}(z - \sigma t)^2} dz$$
 $$= e^{\mu t + \frac{\sigma^2 t^2}{2}}$$
