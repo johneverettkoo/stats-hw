@@ -125,9 +125,16 @@ We can see this is a binomial distribution. $P(R = r) = \binom{n}{i} 2^{-n}$.
 
 ## Part 3
 
-By symmetry, $E[R] = 1$.
+$\psi(t) = E[e^{tr}] = \sum_r e^{tr} \binom{n}{i} 2^{-n}$ where $r = 2^{2i - n}$. 
 
 ## Part 4
 
-Since $E[R] = 1$, the expected value of the fortune after $n$ games is always 
-the original value, $c$.
+$E[R] = \sum_{i=1}^n r \binom{n}{i} 2^{-n}$  
+$= \sum_i^n \binom{n}{i} 2^{2i - 2n}$  
+$= \sum_i^n \binom{n}{i} 4^{i-n}$  
+$= \frac{1}{4^n} \sum_i^n \binom{n}{i} 4^i$  
+$= \frac{1}{4^n} (4 + 1)^n = (\frac{5}{4})^n$
+
+## Part 5
+
+Since $E[R] = (\frac{5}{4})^n$ and $C = cR$, $E[C] = c (\frac{5}{4})^n$.
