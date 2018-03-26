@@ -134,6 +134,51 @@ test. The estimate $\hat{\gamma} > 0$, suggesting positive association. This
 suggests that as `year` increases, there is a higher probability that the 
 responder favors less involvment in the war.
 
+We can also try a different ordinal assignment. A heatmap of counts might give 
+us some idea of how we might want to do this:
+
+```{r p2b_2}
+xtabs(y ~ policy.ord + year.ord, data = uncviet.df) %>% 
+  heatmap(Rowv = NA, Colv = NA)
+xtabs(y ~ policy.ord + year.ord, data = uncviet.df) %>% 
+  mosaicplot()
+xtabs(y ~ year.ord + policy.ord, data = uncviet.df) %>% 
+  mosaicplot()
+
+policy.lookup <- list(1, 2, 2, 3)
+year.lookup <- list(1, 1, 2, 2, 3)
+
+uncviet.df %<>% 
+  dplyr::mutate(policy.ord.new = sapply(policy.ord, 
+                                        function(i) policy.lookup[[i]]),
+                year.ord.new = sapply(year.ord, 
+                                      function(i) year.lookup[[i]]))
+
+uncviet.ord.mod <- glm(y ~ policy + sex + year + 
+                         I(policy.ord.new * year.ord.new),
+                       data = uncviet.df, family = poisson)
+anova(uncviet.pois.mod, uncviet.ord.mod, test = 'Chi')
+summary(uncviet.ord.mod)$coef['I(policy.ord.new * year.ord.new)', ]
+
+policy.lookup <- list(1, 1, 1, 2)
+year.lookup <- list(1, 1, 1, 1, 3)
+
+uncviet.df %<>% 
+  dplyr::mutate(policy.ord.new = sapply(policy.ord, 
+                                        function(i) policy.lookup[[i]]),
+                year.ord.new = sapply(year.ord, 
+                                      function(i) year.lookup[[i]]))
+
+uncviet.ord.mod <- glm(y ~ policy + sex + year + 
+                         I(policy.ord.new * year.ord.new),
+                       data = uncviet.df, family = poisson)
+anova(uncviet.pois.mod, uncviet.ord.mod, test = 'Chi')
+summary(uncviet.ord.mod)$coef['I(policy.ord.new * year.ord.new)', ]
+```
+
+The ordinal assignments do not seem to be very sensitive to the actual values 
+used.
+
 # Problem 3
 
 We are given:
@@ -209,7 +254,7 @@ being in a vocational program increases.
 hsb.df %<>% 
   dplyr::mutate(ses = as.numeric(ses))  # to ordinal
 prog.mod <- multinom(prog ~ ., data = hsb.df) %>% 
-  step(direction = 'both', trace = FALSE)
+  step(direction = 'both', trace = 0)
 summary(prog.mod)
 ```
 
