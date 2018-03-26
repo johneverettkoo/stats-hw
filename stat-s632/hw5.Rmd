@@ -1,0 +1,251 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 5'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+fontsize: 9pt 
+# geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r setup2}
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+import::from(nnet, multinom)
+
+theme_set(theme_bw())
+```
+
+# Problem 1
+
+## Part a
+
+```{r p1a, fig.height = 5, fig.width = 5}
+# get the data
+melanoma.df <- faraway::melanoma
+summary(melanoma.df)
+
+# contingency table stuff
+melanoma.ct <- xtabs(count ~ tumor + site, data = melanoma.df)
+melanoma.ct
+mosaicplot(melanoma.ct, color = TRUE)
+
+# poisson model
+pois.mod <- glm(count ~ tumor + site, data = melanoma.df, family = poisson)
+summary(pois.mod)
+pchisq(pois.mod$deviance, pois.mod$df.residual, lower.tail = FALSE)
+```
+
+The Poisson model is not a good fit according to a $\chi^2$ test on the 
+deviance of the model, and this could be due to the fact that the regressors 
+`tumor` and `site` are not independent. We can see some of this in the 
+mosaic plot---frekles are much more common on heads compared to other types of 
+tumors.
+
+## Part b
+
+```{r p1b}
+melanoma.df %<>% dplyr::mutate(pois.resid = residuals(pois.mod))
+resid.ct <- xtabs(pois.resid ~ tumor + site, data = melanoma.df)
+resid.ct
+```
+
+We see large residuals for the tumor type "freckle".
+
+# Problem 2
+
+## Part a
+
+```{r p2a, fig.height = 8, fig.width = 8}
+uncviet.df <- faraway::uncviet
+summary(uncviet.df)
+
+uncviet.ct <- xtabs(y ~ policy + sex + year, data = uncviet.df)
+uncviet.ct
+summary(uncviet.ct)
+mosaicplot(uncviet.ct, color = TRUE)
+mantelhaen.test(uncviet.ct)
+```
+
+```{r p2a_2}
+uncviet.pois.mod <- glm(y ~ policy + sex + year, data = uncviet.df, 
+                        family = poisson)
+summary(uncviet.pois.mod)
+pchisq(uncviet.pois.mod$deviance, uncviet.pois.mod$df.residual, 
+       lower.tail = FALSE)
+```
+
+We have evidence from the mosaic plot, contingency tables, Mantel-Haenszel test, 
+and Poisson model that the three regressors are not independent. So we might be 
+interested in seeing how they are dependent. Visually, we can see some
+relationship between sex and policy. We can also see some relationship between 
+year and policy as well. Instead of considering the different possibilities, 
+we can just use AIC:
+
+```{r p2a_3}
+uncviet.nominal.mod <- glm(y ~ (policy + sex + year) ** 2, data = uncviet.df, 
+                   family = poisson) %>% 
+  step(direction = 'both')
+summary(uncviet.nominal.mod)
+pchisq(uncviet.nominal.mod$deviance, 
+       uncviet.nominal.mod$df.residual, 
+       lower.tail = FALSE)
+```
+
+It appears that the full model (with two-way interactions) provides the lowest 
+AIC, and a $\chi^2$ test suggests that this may be a decent fit. This implies 
+that there is full dependence (including pairwise dependence between all three 
+pairs of regressors). 
+
+## Part b
+
+```{r p2b}
+uncviet.df %<>% 
+  dplyr::mutate(policy.ord = as.numeric(factor(policy, levels = LETTERS[1:4])), 
+                year.ord = as.numeric(factor(year, levels = c('Fresh',
+                                                              'Soph', 
+                                                              'Junior', 
+                                                              'Senior', 
+                                                              'Grad'))))
+uncviet.ord.mod <- glm(y ~ policy + sex + year + I(policy.ord * year.ord),
+                       data = uncviet.df, family = poisson)
+anova(uncviet.pois.mod, uncviet.ord.mod, test = 'Chi')
+summary(uncviet.ord.mod)$coef['I(policy.ord * year.ord)', ]
+```
+
+We have evidence of association from both the $\chi^2$ test and the Wald 
+test. The estimate $\hat{\gamma} > 0$, suggesting positive association. This 
+suggests that as `year` increases, there is a higher probability that the 
+responder favors less involvment in the war.
+
+# Problem 3
+
+We are given:
+
+$$\eta_{ij} = \log \frac{p_{ij}}{p_{i1}}$$
+
+Then we get:
+
+$$e^{\eta_[ij} = \frac{p_{ij}}{p_{i1}}$$
+$$p_{i1} e^{\eta_{ij}} = p_{ij}$$
+$$p_{i1} \sum_j e^{\eta_{ij}} = \sum_j p_{ij} = 1$$
+
+We can also say that $\sum_j e^{\eta_{ij}} = \sum_{j=2} e^{\eta_{ij}} + 
+e^{\eta_{i1}}$
+
+We can also see that $\eta_{i1} = \log \frac{p_{i1}}{p_{i1}} = \log 1 = 0$, so 
+$e^{\eta_{ij}} = 1$.
+
+And finally, we can see that since $\eta_{ij} = \log \frac{p_{ij}}{p_{i1}}$, 
+$p_{i1} = \frac{p_{ij}}{e^{\eta_{ij}}}$. Putting this all together:
+
+$$p_{i1} \sum_j e^{\eta_{ij}} = 1$$
+$$\frac{p_{ij}}{e^{\eta_{ij}}} (1 + \sum_{j=2}^J e^{\eta_{ij}}) = 1$$
+$$p_{ij} = \frac{e^{\eta_{ij}}}{1 + \sum_{j=2}^J e^{\eta_{ij}}}$$
+
+# Problem 4
+
+## Part a
+
+```{r p4a}
+hsb.df <- faraway::hsb %>% 
+  dplyr::mutate(ses = factor(ses, levels = c('low', 'middle', 'high')))
+summary(hsb.df)
+
+hsb.df %>% 
+  dplyr::group_by(prog, gender) %>% 
+  dplyr::summarise(y = n()) %>% 
+  dplyr::ungroup() %>% 
+  xtabs(y ~ gender + prog, data = .) %>% 
+  prop.table(1)
+
+hsb.df %>% 
+  dplyr::group_by(prog, ses) %>% 
+  dplyr::summarise(y = n()) %>% 
+  dplyr::ungroup() %>% 
+  xtabs(y ~ ses + prog, data = .) %>% 
+  prop.table(1)
+```
+
+It appears that there is no strong association between `gender` and `prog`, but 
+there is one between `ses` and `prog`.
+
+## Part b
+
+```{r p4b}
+hsb.df %>% 
+  dplyr::mutate(read = cut_number(read, 8)) %>%
+  dplyr::group_by(prog, read) %>% 
+  dplyr::summarise(y = n()) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(proportion = y / n()) %>% 
+  ggplot() + 
+  geom_line(aes(x = read, y = proportion, group = prog, colour = prog))
+```
+
+It appears that as reading scores increase, the probability of being in an 
+academic program increases, and as reading scores decrease, the probability of 
+being in a vocational program increases.
+
+## Part c
+
+```{r p4c}
+hsb.df %<>% 
+  dplyr::mutate(ses = as.numeric(ses))  # to ordinal
+prog.mod <- multinom(prog ~ ., data = hsb.df) %>% 
+  step(direction = 'both', trace = FALSE)
+summary(prog.mod)
+```
+
+We can see that while students who have higher math and social studies scores 
+tend to go to academic programs, the opposite is the case for science scores. 
+This is not consistent with what we see in the data:
+
+```{r p4c_2}
+hsb.df %>% 
+  dplyr::mutate(science = cut_number(science, 8)) %>%
+  dplyr::group_by(prog, science) %>% 
+  dplyr::summarise(y = n()) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(proportion = y / n()) %>% 
+  ggplot() + 
+  geom_line(aes(x = science, y = proportion, group = prog, colour = prog))
+
+summary(multinom(prog ~ science, data = hsb.df))
+```
+
+However, there is some correlation between math and science scores, which is 
+probably the culprit. $\hat{\rho}_{math, science} \approx 
+`r round(cor(hsb.df$math, hsb.df$science), 3)`$. This is also probably why 
+reading scores and socioeconomic status were omitted.
+
+Interpretations:
+
+* The probability of being in a general program when being in a private 
+school and when subject scores are 0 is 
+$\frac{e^{3.854}}{1 +e^{3.854} +  e^{7.023}} \approx$ 
+$`r round(exp(3.854) / (1 + exp(7.023) + exp(3.854)), 4)`$.
+* The probability of being in a vocational program when being in a public 
+school and when all subject scores are 100 is 
+$\frac{e^{7.023 + 1.788 - 13.70 + 4.214 - 8.672}}
+{1 + e^{7.023 + 1.788 - 13.70 + 4.214 - 8.672} + 
+e^{3.854 + .6736 - 12.06 + 7.441 - 5.144}} \approx$ 
+$`r exp(7.023 + 1.788 - 13.7 + 4.214 - 8.672) / 
+(1 + exp(7.023 + 1.788 - 13.7 + 4.214 - 8.672) + 
+exp(3.854 + .674 - 12.06 + 7.441 - 5.144))`$
