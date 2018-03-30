@@ -1,0 +1,103 @@
+---
+title: "STAT-S620"
+subtitle: 'Assignment 8'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# 5.8.5
+
+$$E[X^r (1 - X)^S] = 
+\int_0^1 x^r (1 - x)^s 
+\frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha) \Gamma(\beta)}
+x^{\alpha - 1} (1 - x)^{\beta - 1} dx$$
+$$=\frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha) \Gamma(\beta)} 
+\int_0^1 x^{(\alpha + r) - 1} (1 - x)^{(\beta + s) - 1} dx$$
+$$= \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha) \Gamma(\beta)}
+\frac{\Gamma(\alpha + r) \Gamma(\beta + s)}{\Gamma(\alpha + r + \beta + s)}$$
+
+# Not from text
+
+## Problem 1
+
+We are given $f(x) = (\theta + 1) x^\theta$ for $x \in [0, 1]$. Then 
+
+$$E[X] = \int_0^1 (\theta + 1) x^{\theta + 1} dx$$
+$$= (\theta + 1) \int_0^\infty x^{\theta + 1} dx$$
+$$= \frac{\theta + 1}{\theta}$$
+
+Using the method of moments, we set $E[X] = \bar{x}$. Then 
+
+$$\bar{x} = \frac{\hat{\theta} + 1}{\hat{\theta}}$$
+$$\hat{\theta} = \frac{1}{\bar{x} - 1}$$
+
+## Problem 2
+
+If $X \sim Gamma(\alpha, \beta)$, then 
+
+$$f(x) = \frac{1}{\Gamma(\alpha) \beta^\alpha} x^{\alpha - 1} e^{-x / \beta}$$
+$$= \frac{x^{\alpha - 1}}{\Gamma(\alpha)} \exp({-\alpha \log \beta - x / \beta})$$
+
+Then we can set:
+
+* $\eta(\beta) = 1 / \beta$
+* $T(x) = -x$
+* $B(\beta) = \alpha \log \beta$
+
+## Part a
+
+We can see from $\eta(\beta)$ that $\beta \neq 0$, and from $B(\beta)$ that 
+$\beta > 0$.
+
+## Part b
+
+In order to get the canonical form, we need to replace $B(\beta)$ with 
+$A(\eta)$. Since $\eta(\beta) = 1 / \beta$, $\beta = 1 / \eta$. Then 
+$A(\eta) = \alpha \log \frac{1}{\eta} = - \alpha \log \eta$. 
+
+$E[T(X)] = E[-X]$, but we also know
+
+$$E[T(X)] = E[-X] = \frac{\partial}{\partial \eta} A(\eta)$$
+$$= \frac{\partial}{\partial \eta} (-\alpha \log \eta)$$
+$$= -\alpha / \eta$$
+
+$$= -\alpha \beta$$
+
+## Problem 3
+
+We know that $f(\theta | x) \propto f(x | \theta) f(\theta)$. We are also 
+given
+
+* $f(x | \theta) = (2 \pi \theta)^{-1/2} \exp(-\frac{(x - \mu)^2}{2 \theta})$
+* $f(\theta) = 
+\frac{\beta^\alpha}{\Gamma(\alpha)} \theta^{-(\alpha + 1)} e^{-\beta / \theta}$
+
+Then ignoring constant factors,
+
+$$f(\theta | x) \propto \theta^{-1/2} 
+\exp \bigg(-\frac{(x - \mu)^2}{2 \theta} \bigg) 
+\theta^{-\alpha - 1} \exp(-\beta / \theta)$$
+$$\propto \theta^{-(\alpha + \frac{1}{2} + 1)} 
+\exp \bigg( -\frac{\frac{(x - \mu)^2}{2} + \beta}{\theta} \bigg)$$
+
+Then we get
+
+$$\theta | x \sim 
+InvGamma \bigg(\alpha + \frac{1}{2}, \frac{(x - \mu)^2}{2} + \beta \bigg)$$
