@@ -26,6 +26,8 @@ options(xtable.comment = FALSE,
 **def** *random effect* - random variable, we try to estimate its parameters; 
 blocking factors can be viewed as random effects
 
+When we say there are random effects, we are making some sort of assumption
+
 **e.g.** Experiment to investigate the effect of several drug treatments
 
 * Patient effects are treated as random
@@ -96,7 +98,7 @@ where $X \in \mathbb{R}^{n \times p}$ is a model matrix, $\beta \in mathbb{R}^p$
 is a vector of coefficients, $\gamma \in mathbb{R}^q$ are the parameters of the 
 random effects, and $Z \in mathbb{R}^{n \times q}$ is the matrix of random 
 effects. If we further assume that $\gamma \sim \mathcal{N}(0, \sigma^2 D)$, 
-then $var(y) = var(Z \gamma) + var (\epsilon) = \sigma^2 Z D Z^T + \sigma^2 I)$, 
+then $var(y) = var(Z \gamma) + var (\epsilon) = \sigma^2 Z D Z^T + \sigma^2 I$, 
 so:
 
 $$y \sim \mathcal{N}(X \beta, \sigma^2 (I + Z D Z^T))$$
@@ -127,13 +129,32 @@ Then we maximize the likelihood based on $K^T y$.
 
 For balanced data, REML estimates are usually the same as ANOVA estimates.
 
+#### Example: Testing paper brightness by shift operator
+
+Our model is $y_{ij} + \mu + \alpha_i + \epsilon_{ij}$ where $i$ is the operator 
+and $j$ is the replicate for each operator.
+
+$y = \begin{bmatrix} y_1^T \\ \vdots \\ y_4^T \end{bmatrix}$
+where $y_i \in \mathbb{R}^5$
+
+$X = \mathbb{1} \in \mathbb{R}^{20}$ (or $5 \times 4$ dimensions)
+
+$Z = \begin{bmatrix} z_1 & & & \\ & z_2 \\ & & z_3 & \\ & & & z_4 \end{bmatrix}$ 
+where $z_i = \mathbb{1} \in \mathbb{R}^5$
+
+$\beta = \mu$
+
+$\gamma = \begin{bmatrix} \alpha_1 \\ \vdots \\ \alpha_4 \end{bmatrix}$
+
 ```{r}
 library(ggplot2)
 import::from(lme4, lmer)
+import::from(magrittr, `%>%`, `%<>%`)
 
 theme_set(theme_bw())
 
 data(pulp, package = 'faraway')
+summary(pulp)
 
 lmod <- aov(bright ~ operator, data = pulp)
 summary(lmod)
@@ -161,6 +182,98 @@ summary(smod)
 
 The between-subjects standard deviation is smaller than from the REML method, 
 but the fixed effects are unchanged.
+
+#### Example: Blocks as random effects
+
+Production of penicillin  
+Response: yield  
+Factor 1: treatment  
+Factor 2: blend (blocking variable)
+
+$y_{ij} = \mu + \alpha_i + \tau_j + \epsilon_{ij}$
+
+We treat the treatment as a fixed effect $\alpha$ and blend as a random effect 
+$\tau$
+
+```{r}
+data(penicillin, package = 'faraway')
+summary(penicillin)
+
+mixmod <- lmer(yield ~ treat + (1 | blend), data = penicillin)
+summary(mixmod)
+```
+
+#### Example: Nested model
+
+Consistency in laboratory tests
+
+Given jar of dried egg powder  
+Response: fat content  
+Factor 1: 6 labs  
+Factor 2: In each lab, 2 technicians  
+Factor 3: Each technician tests 2 samples  
+Factor 4: Each sample divided in 2
+
+$y_{ijkl} = \mu + L_i + T_{ij} + S_{ijk} + \epsilon_{ijkl}$
+
+We will treat $L$, $T$, $S$ as random effects
+
+$y = \mathbb{1} \mu \in \mathbb{R}^{48}$
+
+$X = \mathbb{1} \in \mathbb{R}^{48}$
+
+$\beta = \mu$
+
+$Z$ ... (see notes)  
+Each row corresponds to a lab, technician, and sample  
+$\in \mathbb{R}^{48 \times 42}$
+
+$\gamma \in \mathbb{R}^{42}$
+
+$D = \begin{bmatrix} 
+\sigma_L^2 I_6 & & \\ & \sigma_T^2 I_{12} & \\ & & \sigma_S^2 I_{24} 
+\end{bmatrix} \in \mathbb{R}^{42 \times 42}$
+
+#### Example: Panel study of income dynamics (PSID)
+
+Longitudinal study  
+85 heads of households
+
+```{r} 
+data(psid, package = 'faraway')
+summary(psid)
+
+# psid.mod <- lmer(log(income) ~ cyear * sex + age + educ + (cyear | person), 
+#                  data = psid)
+```
+
+Note that in this model, `cyear` is both a fixed effect and a random effect
+
+$y$ is income
+
+$x_i = \begin{bmatrix} 
+1 & cyear_i & sex_i & (cyear \times sex)_i & age_i & educ_i 
+\end{bmatrix}$ and 
+$X = \begin{bmatrix} x_1^T \\ \vdots \\ x_n^T \end{bmatrix}$
+
+$\beta \in \mathbb{R}^6$
+
+$Z = \begin{bmatrix} z_1 & & \\ & \ddots & \\ & & z_{85} \end{bmatrix}$ where 
+
+$z_i = \begin{bmatrix} \mathbb{1} & v_i \end{bmatrix}$ and $v_i$ is a vector of 
+years for each person. Note that the dimensionality of $v_i$ varies since the 
+number of years of data varies from person to person. 
+$z_i \in \mathbb{R}^{y \times 2}$ where $y$ is the number of years of data for 
+person $i$.
+
+$\gamma = \begin{bmatrix} 
+\gamma_{01} \\ \gamma_{11} \\ \gamma_{02} \\ \gamma_{12} \\ \vdots \\ 
+\gamma_{0, 85} \\ \gamma_{1, 85} \end{bmatrix}$
+
+$D = \begin{bmatrix} 
+\sigma_1^2 & \sigma_{12} \\ \sigma_{12} & \sigma_2^2 \end{bmatrix}$ and 
+$\tilde{D} = diag(D) \in \mathbb{R}^{170 \times 170}$, note that R gives 
+$\rho_{12}$ rather than $\sigma_{12}$
 
 ## Inference
 
