@@ -1,0 +1,263 @@
+---
+title: "STAT-S632"
+subtitle: 'Random Effects'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+**def** *fixed effect* - unknown constant that we try to estimate from the data
+
+**def** *random effect* - random variable, we try to estimate its parameters; 
+blocking factors can be viewed as random effects
+
+**e.g.** Experiment to investigate the effect of several drug treatments
+
+* Patient effects are treated as random
+* Interested in the population, not individual patients
+
+**def** *mixed effects* model has both fixed and random effects
+
+**e.g.** ANOVA $y_{ijk} = \mu + \tau_i + \nu_j + \epsilon_{ijk}$,  
+where $\mu$ and $\tau_i$ are fixed effects, $\epsilon_{ijk}$ is the error, and 
+$\nu_j$ are the random effects, and 
+$\epsilon_{ijk} \stackrel{iid}{\sim} \mathcal{N}(0, \sigma^2)$, 
+$\nu_j \stackrel{iid}{\sim} \mathcal{N}(0, \sigma_\nu^2)$. One possible approach 
+might be to estimate $\tau_i$ and test $H_1$ : $\tau_i \neq 0$ $\forall i$. We 
+can also estimate $\sigma_\nu^2$ and test $H_1$ : $\sigma_\nu^2 \neq 0$. We 
+need to estimate and test several fixed effects while we only estimate and test 
+a single random effect parameter.
+
+# Estimation
+
+**e.g.** One-way ANOVA with a factor at $a$ levels
+
+$$y_{ij} = \mu + \alpha_i + \epsilon_{ij}$$
+
+for $i = 1, ..., a$ and $j = 1, ..., n$, $E[\alpha] = E[\epsilon] = 0$, 
+$var(\alpha) = \sigma_\alpha^2$, $var(\epsilon) = \sigma_\epsilon^2$. Then we 
+can define a correlation coefficient:
+
+$$\rho = \frac{\sigma_\alpha^2}{\sigma_\alpha^2 + \sigma_\epsilon^2}$$
+
+$\rho$ is the *intraclass correlation coefficient (ICC). When there is no 
+variation between the levels of $\alpha$, $\sigma_\alpha^2 = 0$, so 
+$\rho = 0$. When the variation between levels is much larger than the variation 
+within levels, $\rho \rightarrow 1$.
+
+Assume $n$ observations per level (equally distributed). Then 
+
+$$\sum_i^a \sum_j^n (y_{ij} - \bar{y}_{\cdot \cdot})^2 = 
+\sum_i^a \sum_j^n (y_{ij} - \bar{y}_{i \cdot})^2 + 
+\sum_i^a \sum_j^n (\bar{y}_{i \cdot} - \bar{y}_{\cdot \cdot})^2$$
+
+... or SST (sum of squares total) = SSE (sum of squared errors) + SSA (sum of 
+squares due to $\alpha$). If we divide SSE by its degrees of freedom, we obtain 
+the MSE, and if we divide SSA by its degrees of freedom, we obtain the MSA. It 
+can be shown that $E[SSE] = a (n-1) \sigma_\epsilon^2$ and 
+$E[SSA] = (a-1) (n \sigma_\alpha^2 + \sigma_\epsilon^2)$. This suggests that 
+we use the estimators $\hat{\sigma}_\epsilon^2 = \frac{SSE}{a (n-1)} = MSE$ and 
+$\hat{\sigma}_\alpha^2 \frac{SSA / (a-1) - \hat{\sigma}_\epsilon^2}{n}$ 
+$= \frac{MSA - MSE}{n}$. This has a few disadvantages:
+
+* The estimates can be negative
+* While the estimates are unique when the data are balanced across the levels, 
+this is not necessarily the case for uneven data
+* Can result in complicated algebraic calculations
+
+Instead, perhaps a maximum likelihood estimation method would be better. For 
+this, we need to assume some distribution for the errors and random effects 
+(e.g., normal). 
+
+For a fixed effect model with normal errors, 
+$y \sim \mathcal{N}(X \beta, \sigma^2 I)$. So for a random effects model, we 
+can use:
+
+$$y = X \beta + Z \gamma + \epsilon$$
+
+$$y | \gamma \sim \mathcal{N}(X \beta + Z \gamma, \sigma^2 I)$$
+
+where $X \in \mathbb{R}^{n \times p}$ is a model matrix, $\beta \in mathbb{R}^p$ 
+is a vector of coefficients, $\gamma \in mathbb{R}^q$ are the parameters of the 
+random effects, and $Z \in mathbb{R}^{n \times q}$ is the matrix of random 
+effects. If we further assume that $\gamma \sim \mathcal{N}(0, \sigma^2 D)$, 
+then $var(y) = var(Z \gamma) + var (\epsilon) = \sigma^2 Z D Z^T + \sigma^2 I)$, 
+so:
+
+$$y \sim \mathcal{N}(X \beta, \sigma^2 (I + Z D Z^T))$$
+So if we know $D$, then we can use a GLM to estimate $\beta$. But we often have 
+to estimate $D$.
+
+If we let $V + I Z D Z^T$, then the joint density for the response is:
+
+$$(2 \pi)^{n/2} |\sigma^2 V|^{1/2} 
+\exp \bigg(-\frac{1}{2 \sigma^2} (y - X \beta)^T V^{-1} (y - X \beta) \bigg)$$
+
+Then the log-likelihood is:
+
+$$\ell(\beta, \sigma, D | y) = -\frac{n}{2} \log 2 \pi 
+- \frac{1}{2} \log |\sigma^2 V| 
+-\frac{1}{2 \sigma^2} (y - X \beta)^T V^{-1} (y - X \beta)$$
+
+This can be difficult to optimize, and MLEs can be biased.
+
+**def** *restricted maximum likelihood* (REML) estimators - find all 
+independent combinations of the response $k$ such that $k^T X = 0$, then 
+construct matrix $K = \begin{bmatrix} k_1 & \cdots & k_r \end{bmatrix}$ the $k$s 
+as columns. This should result in:
+
+$$K^T y \sim \mathcal{N}(0, K^T V K)$$
+
+Then we maximize the likelihood based on $K^T y$.
+
+For balanced data, REML estimates are usually the same as ANOVA estimates.
+
+```{r}
+library(ggplot2)
+import::from(lme4, lmer)
+
+theme_set(theme_bw())
+
+data(pulp, package = 'faraway')
+
+lmod <- aov(bright ~ operator, data = pulp)
+summary(lmod)
+
+ggplot(pulp) + 
+  geom_point(aes(x = operator, y = bright), alpha = .3)
+
+coef(lmod)
+
+mmod <- lmer(bright ~ 1 + (1 | operator), data = pulp)
+summary(mmod)
+```
+
+In `mmod`, the fixed effect is just the intercept, and the random effect, 
+represented by `(1 | operator)`, which indicates that the random effect is 
+constant within each group. `lmer` uses REML by default, so the estimates 
+are as expected. $\hat{\sigma}_\alpha^2 \approx (0.447-0.106)/5 \approx 0.0681$ 
+and $\hat{\sigma}^2 \approx 0.1063$ (compare to `aov`---this is because the 
+design is balanced with 5 per level). Compare this to:
+
+```{r}
+smod <- lmer(bright ~ 1 + (1 | operator), data = pulp, REML = FALSE)
+summary(smod)
+```
+
+The between-subjects standard deviation is smaller than from the REML method, 
+but the fixed effects are unchanged.
+
+## Inference
+
+We can specify two models, and put in $H_0$ the one that doesn't contain a 
+specified component (or specified components), and $H_1$ is the mmodel that 
+contains the component(s). Then we can use the likelihood ratio test statistic 
+
+$$2 (\ell(\hat{\beta}_1, \hat{\sigma}_1, \hat{D}_1 | y) - 
+\ell(\hat{\beta}_0, \hat{\sigma}_0, \hat{D}_0 | Y))$$
+
+This means we have to use MLE rather than the REML estimation. 
+
+The test statistic is approximately $\chi^2$-distributed with degrees of freedom 
+equal to the the difference in the dimensions of the two parameter spaces. But 
+this depends on some assumptions:
+
+* The parameters under the null are not on the bound of any parameter space. 
+So we cannot test $H_0$ : $\hat{\sigma}^2 - 0$. If this assumption is not met, 
+then the $p$-values will be larger than they sohuld be. On the other hand, when 
+testing fixed effects, we sometimes get $p$-values that are smaller than they 
+should be. 
+
+Another method of hypothesis testing is based on the sums of squares found in 
+the ANOVA decompositions. But this requires a good amount more of computation or 
+algebra and cannot be used for unbalanced data. Called the *expected mean 
+squares* method.
+
+We can try the $F$-test for the fixed effects, which is done in the `nlme` 
+package. But in this case, the degrees of freedom cannot be known easily, and 
+we cannot say that the null distribution follows the $F$-distribution in this 
+case. This is also less reliable when we have unbalanced data.
+
+We can use a bootstrapping method to estimate the $p$-value. If we assume 
+normality for the errors and the random effects, thi is called the *parametric 
+bootstrap*. 
+
+We can define an AIC for this problem:
+
+$$AIC = -2 \times \max \{\ell | y \} + 2p$$
+
+which can be used for model selection.
+
+```{r}
+# null model
+nullmod <- lm(bright ~ 1, data = pulp)
+
+lrtstat <- as.numeric(2 * (logLik(smod) - logLik(nullmod)))
+p.value <- pchisq(lrtstat, 1, lower = FALSE)
+c(lrtstat, p.value)
+```
+
+But there is some additional uncertainty in this result due to the $\chi^2$ 
+distribution assumption, which may not be true.
+
+```{r, cache = TRUE}
+N <- 1000
+
+y <- simulate(nullmod)
+
+lrstat <- numeric(N)
+
+for (i in seq(N)) {
+  y <- unlist(simulate(nullmod))
+  bnull <- lm(y ~ 1)
+  balt <- lmer(y ~ 1 + (1 | operator), data = pulp, REML = FALSE)
+  lrstat[i] <- as.numeric(2 * (logLik(balt) - logLik(bnull)))
+}
+
+mean(lrstat < 0.00001)
+
+mean(lrstat > 2.5684)  # estimated p-value
+
+sqrt(.019 * .981 / N)  # estimated standard error
+```
+
+A large proportion of the likelihood ratios are 0, so we can say that the 
+null and alternative models give the same result. We can also see that the 
+likelihood ratio test statistic is not $\chi^2$ distributed. 
+
+We can use a package for this:
+
+```{r, cache = TRUE}
+library(RLRsim)
+
+exactLRT(smod, nullmod)
+exactRLRT(mmod)
+lme4::VarCorr(mmod)
+
+bsd <- numeric(N)
+for (i in seq(N)) {
+  y <- unlist(simulate(mmod))
+  bmod <- lme4::refit(mmod, y)
+  bsd[i] <- as.data.frame(lme4::VarCorr(bmod))$sdcor[1]
+}
+```
+
+```{r, cache = TRUE}
+quantile(bsd, c(.025, .975))
+confint(mmod, method = 'boot')
+```
