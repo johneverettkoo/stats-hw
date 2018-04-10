@@ -1,0 +1,308 @@
+---
+title: 'Model Selection'
+date: '2018-01-09'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+Let $\theta$ be a parameter and $\tilde{\theta}$ be the estimator of $\theta$. 
+The estimator depends on data, so $\tilde{\theta}$ is a random variable. (The 
+parameter $\theta$ is fixed.) Then $\tilde{\theta}$ has a p.d.f., 
+$f(\tilde{\theta})$
+
+If $\tilde{\theta}$ is an unbiased estimator of $\theta$, then 
+$E[\tilde{\theta}] - \theta = 0$. 
+
+**def** *bias* - $E[\tilde{\theta}] - \theta$
+
+**def** *mean square error* (MSE) - $E[(\tilde{\theta} - \theta)^2]$
+
+**cor** $MSE(\tilde{\theta}) = E[\tilde{\theta}^2]$ 
+$- E[\tilde{\theta}]^2 + (E[\tilde{\theta}] - \theta)^2$
+$= var(\tilde{\theta}) + bias(\tilde{\theta})^2$
+
+Bias-variance tradeoff
+
+**thm** Given $q = y^T A y$, where $y \sim \mathcal{N}(\mu, V)$, 
+$E[q] = tr(AV) + \mu^T A \mu$
+
+**e.g.** 
+
+Given partitioned model matrix $X = [X_1 | X_2] \in \mathbb{R}^{n \times p+1}$
+
+* $X_1$ contains $p+1-q$ columns
+* $X_2$ contains $q$ columns
+
+Models to consider:
+
+* Full model: $E[Y|X] = X_1 \beta_1 + X_2 \beta_2$
+* Reduced model: $E[Y|X] = X_1 \beta_1$
+
+Underfitting: What happens when the true model is the full model but we fit 
+the reduced model?
+
+* Coefficient estimator $\hat{\beta}_1$
+* $E[\hat{\beta_1} | X] = (X_1^T X_1)^{-1} X_1^T E[Y|X]$  
+$= (X_1^T X_1)^{-1} X_1^T (X_1 \beta_1 + X_2 \beta_2)$  
+$= \beta_1 + (X_1^T X_1)^{-1} X_1^T X_2 \beta_2$  
+$= \beta_1$ + bias
+
+* Let there be a new obseration $x^* = [x_1^* | x_2^*]^T$  
+Then $E[\hat{y}|x^*] = E[(x_1^*)^T \hat{\beta}_1 | X]$  
+$= (x_1^*)^T (\beta_1 + (X_1^T X_1)^{-1} X_1^T X_2 \beta_2)$  
+But under the true model it should be $x_1^* \beta_1 + x_2^* \beta_2$  
+$bias(\hat{y} | x^*) = ((x_1^*)^T (X_1^T X_1)^{-1} X_1^T X_2 - (x_2^*)^T) \beta_2$
+
+* Let $x_i^T$ be the i^th^ row of X (in-sample prediction)  
+then $bias(\hat{y} | x_i) = (x_{i, 1}^T (X_1^T X_1)^{-1} X_1^T X_2 - x_{i, 2}^T) \beta_2$
+
+* Note that bias goes to 0 if $\beta_2 = 0$ (i.e., reduced model is equivalent 
+to full model or is correct)
+
+* $E[\hat{\sigma}_R^2 | X] = tr(\frac{I-H}{n - p - 1+q} \sigma^2 I) + 
+(X_1 \beta_1 + X_2 \beta_2)^T \frac{I-H}{n - p - 1+q} (X_1 \beta_1 + X_2 \beta_2)$  
+$= \frac{\sigma^2}{n-p-1+q} tr(I - H_1) + 
+(X_2 \beta_2)^T \frac{I-H_1}{n-p-1+q} (X_2 \beta_2)$  
+$= \sigma^2 + (X_2 \beta_2)^T \frac{I-H_1}{n-p-1+q} (X_2 \beta_2)$  
+So $\hat{\sigma}_R^2$ is biased.
+
+Overfitting: What happens when the true model is the reduced model but we fit 
+the full model?
+
+* $E[\hat{\sigma}_F^2|X] = tr(\frac{I-H}{n-p-1} \sigma^2 I) + 
+(X_1 \beta_1)^T \frac{I-H}{n-p-1} X_1 \beta_1$  
+$= \sigma^2$  
+So the variance estimator is unbiased  
+and $E[\hat{\sigma}_R^2 | X] = \sigma^2$ (duh)
+
+* Recall $\frac{\hat{\sigma}_F^2}{\sigma^2} \sim \frac{\chi^2_{n-p-1}}{n-p-1}$
+
+* $var(\hat{\sigma}_F^2) = \frac{2 \sigma^4}{n-p-1}$  
+$var(\hat{\sigma}_R^2) = \frac{2 \sigma^4}{n-p-1+q}$  
+So the full model has higher variance  
+So overfitting results in unbiased estimates with higher variance
+
+Summary: If you omit predictors, you end up with bias, but if you use extraneous 
+predictors, you end up extra variance.
+
+Mean square error (MSE) for $\hat{y}$
+
+* Two ideas
+    * parameter $E[Y | X = x^*]$
+    * new response $y^*$
+
+* Can write $MSE(\hat{y} | x^*) = var(\hat{y}|x^*) + bias(\hat{y}|x^*)^2$
+
+* Model selection - set of techniques used to obtain the "best" model 
+    * need definition of "best" - criterion used to choost amongst models
+    * different criteria can be used to choose different models
+        1. Adjusted $R^2$
+            * see definition below
+        2. Prediction sum of squares (PRESS)
+            * given data $\{(y_1, x_1), ..., (y_n, x_n)\}$
+            * ordinary residual $\hat{e}_i = y_i - \hat{y}_i$
+            * $e = Y - \hat{Y} = (I-H) Y$
+            * note that $\hat{y}_i$ depends on $y_i$ since $\hat{Y} = HY$
+            * $\hat{y}_i = \sum_k h_{jk} y_k$
+            * let $Y_{-i}$ and $X_{-i}$ be the data without the i^th^ observation
+            * $\hat{\beta}_{-i} = (X_{-i}^T X_{-i})^{-1} X_{-i} Y_{-i}$
+            * $\hat{y}_{i, -i} = x_i^T \hat{\beta}_{-i}$
+            * see definition below
+        3. Mallow's $C_p$
+            * $p$ is number of parameters for the particular model
+            * $\sum_i \frac{MSE(\hat{y}|x_i)}{\sigma^2} = 
+            \sum_i \frac{var(\hat{y}|x_i) + bias(\hat{y}|x_i)^2}{\sigma^2}$
+            * $\sum_i \frac{bias(\hat{y}|x_i)^2}{\sigma^2} = 
+            \frac{E[\hat{\sigma}^2|X] - \sigma^2}{\sigma^2} (n-p)$
+            * $\sum_i \frac{var(\hat{y}|x_i)}{\sigma^2} = \sum_i h_{ii} + tr(H) = p$
+            * so $\sum_i \frac{MSE(\hat{y}|x_i)}{\sigma^2} = 
+            p + \frac{E[\hat{\sigma}^2|X] - \sigma^2}{\sigma^2} (n-p)$
+            * see definition below
+        4. AIC 
+            * see definition below
+            * Also BIC
+
+**def** Adjsted $R^2$
+
+$$\bar{R}^2 = 1 - \frac{RSS / (n-p-1)}{SYY / (n-1)} = 
+1 - \frac{\hat{\sigma}^2}{SYY/(n-1)}$$
+
+* $R^2$ always decreases as more regressors are added - even unnecessary ones 
+* $\bar{R}^2 \sim R^2$ for large $n$, regardless of $p$ 
+* $\bar{R}^2$ is proportional to $\hat{\sigma}^2$
+* Using $\bar{R}^2$ to select the model is equivalent to using $\hat{\sigma}^2$
+
+* $\hat{\sigma}^2 = \frac{1}{n-p-1} \sum (y_i - \hat{y}_i)^2$
+    * in-sample estimate (i.e., on training data)
+    
+**def** $PRESS = \sum_i (y_i - \hat{y}_{i, -i})^2 = \sum_i \hat{e}_{i, -i}^2$
+
+* Also an estimator for MSE
+* Can be shown that $\hat{e}_{i, -i} = \frac{\hat{e}_i}{1 - h_{ii}}$
+    * no need to fit $n$ models---just one model on all the data
+    
+**def** 
+$C_p = p + \frac{\hat{\sigma}^2 - \hat{\sigma}_F^2}{\hat{\sigma}_F^2}(n-p)$
+
+**def** Akaike Information Criterion (AIC)
+
+* Let $\hat{\theta}$ be the maximum likelihood for parameter 
+$\theta = (\sigma^2, \beta)$
+* The maximized log-likelihood is given by
+$\lambda(\tilde{\theta}) = \sum_i \log P_{\tilde{\theta}}(y_i)$
+
+* The AIC is defined by:
+
+$$AIC = -2 \lambda(\tilde{\theta}) + 2p$$
+
+* For a linear regression model, AIC can be expressed as:
+
+$$AIC = n \log \bigg(\frac{RSS_p}{n} \bigg) + 2p$$
+
+* Tradeoff between RSS and $p$
+
+* Bayesian Information Criterion (BIC) for model with $p$ parameters:
+
+$$BIC = -2 \lambda(\tilde{\theta}) + \log(n) p$$
+
+* BIC for linear model:
+
+$$BIC = n \log \bigg(\frac{RSS_p}{n} \bigg) + \log(n)p$$
+
+For $n > e^2$, BIC penalizes having more parameters more than AIC
+
+## R Demo
+
+### Adjusted $R^2$ and PRESS
+
+```{r}
+library(alr4)
+library(leaps)
+
+data1 <- read.csv('/media/johnkoo/MOAR STUFFS/s632/roof_sales.csv', 
+                  stringsAsFactors = FALSE)
+summary(data1)
+
+m1 <- lm(y ~ x1 + x2 + x3 + x4, data = data1)
+summary(m1)
+
+Anova(m1)
+
+X <- model.matrix(y ~ -1 + x1 + x2 + x3 + x4, data = data1)
+y <- data1$y
+sets <- leaps(X, y)
+R2.vec <- leaps(X, y, method = 'r2')$r2
+adjR2.vec <- leaps(X, y, method = 'adjr2')$adjr2
+
+mod1 <- cbind(sets$which, R2.vec, rank(R2.vec), adjR2.vec, rank(adjR2.vec))
+mod1
+
+yhat.m1 <- c(predict(m1))
+e.m1 <- c(resid(m1))
+PRESS.1 <- resid(m1) / (1 - hatvalues(m1))
+
+cbind(y, yhat.m1, e.m1, PRESS.1)
+
+m23 <- lm(y ~ x2 + x3, data = data1)
+m123 <- lm(y ~ x1 + x2 + x3, data = data1)
+PRESS.2 <- (y - predict(m23)) / (1 - hatvalues(m23))
+PRESS.3 <- (y - predict(m123)) / (1 - hatvalues(m123))
+cbind(resid(m23), PRESS.2, resid(m123), PRESS.3)
+
+c(sum(PRESS.1^2),
+  sum(PRESS.2^2),
+  sum(PRESS.3^2),
+  sum(abs(PRESS.1)),
+  sum(abs(PRESS.2)),
+  sum(abs(PRESS.3)))
+
+PRESS <- rep(0,15)
+PRESS.abs <- rep(0,15)
+for(i in 1:15) {
+  X1 <- cbind(1, X[, sets$which[i, ]])
+  H <- X1 %*% solve(t(X1) %*% X1) %*% t(X1)
+  y.hat <- H %*% y
+  hat.diag <- diag(H)
+  press.aux <- (y - y.hat) / (1 - hat.diag)
+  PRESS[i] <- sum(press.aux^2)
+  PRESS.abs[i] <- sum(abs(press.aux))
+}
+mod2 <- cbind(sets$which, adjR2.vec, PRESS, PRESS.abs)
+mod2
+```
+
+### $C_p$
+
+```{r}
+m23 <- lm(y ~ x2 + x3, data1)
+dim(model.matrix(m23))
+n <- nrow(model.matrix(m23))
+p <- ncol(model.matrix(m23))
+p.prime <- ncol(model.matrix(m1))
+s2.full <- sigma(m1) ** 2
+s2.red <- sigma(m23) ** 2
+Cp <- p + (s2.red - s2.full) * (n - p) / s2.full
+Cp
+
+Cp.vec <- leaps(X, y, method = 'Cp')$Cp
+mod3 <- cbind(mod2, Cp.vec)
+mod3
+```
+
+### AIC and BIC
+
+```{r}
+sigma(m1)
+n <- nrow(data1)
+p <- length(coef(m1))
+RSS.m1 <- sum(resid(m1)^2)
+aic <- n * log(RSS.m1 / n) + 2 * p
+c(p, aic)
+extractAIC(m1)
+
+AIC(m1)
+
+m0 <- lm(y ~ 1, data1)
+
+extractAIC(m1) - extractAIC(m0)
+AIC(m1) - AIC(m0)
+
+bic <- n * log(RSS.m1 / n) + log(n) * p
+c(p, bic)
+extractAIC(m1, k = log(n))
+
+
+aic.vec <- rep(0, 15)
+bic.vec <- rep(0, 15)
+
+for (i in 1:15) {
+  X1 <- cbind(X[, sets$which[i, ]])
+  mi <- lm(y ~ X1)
+  aic.vec[i] <- extractAIC(mi)[2]
+  bic.vec[i] <- extractAIC(mi, k = log(n))[2]
+}
+mod4 <- cbind(adjR2.vec,
+              PRESS,
+              Cp.vec,
+              aic.vec,
+              bic.vec)
+mod4
+
+cbind(sets$which, apply(mod4, 2, rank))
+```

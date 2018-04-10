@@ -1,0 +1,250 @@
+---
+title: 'Contingency Tables'
+date: '2018-02-27'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+## One-inflated Poisson (not contingency tables)
+
+Suppose $X \sim Poisson(\mu)$ with pmf $f_X(y)$ for $y \in \mathbb{N}_0$ 
+which is just the pmf for the Poisson.
+
+Suppose $Z$ is 1 due to some structural phenomonenon. Then 
+$Z \sim Bernoulli(p)$ where success denotes $Z=1$. This has pmf $f_Z(y)$ 
+$= p^y (1-p)^{1-y}$.
+
+Then let $Y ~$ 1-inflated Poisson with pmf $f_Y(y)$. 
+
+Then $f_Y(0) = f_X(0) = e^{-\mu}$.
+
+But $f_Y(1) = \phi (1 - f_X(0)) + (1 - \phi) f_X(1)$ where $\phi$ is the 
+probability that $Z = 1$ and $(1 - \phi) = P(Z =0)$.
+
+Then $f_Y(y) = (1 - \phi) f_X(y)$ for $y = 2, 3, 4, ...$.
+
+For implementation, use package `VGAM`.
+
+# Contingency tables
+
+Model in the form of `y ~ x1 + x2`
+
+Let $y$ be a count and $x_i$ be factors. Then we can use the Poisson model. 
+From this model, we can compute the deviance, which is a $\chi^2$ test 
+statistic with $n-p$ degrees of freedom. If the $p$-value for this is small, 
+then we have evidence to reject $H_0$ that the $x_i$s are independent.
+
+Another way to look at this is via additive models.
+
+## Additive models
+
+$$\log \mu = \gamma + \alpha_i + \beta_j$$
+
+Where $\gamma$ is the intercept, $i = 1, ..., I$, and $j = 1, .., J$. $\alpha$ 
+and $\beta$ are ordinal variables
+
+## Example (for contingency tables)
+
+Model: $\eta = \beta_0 + \beta_1 U_2 + \beta_2 V_2$
+
+```{r}
+library(faraway)
+
+y <- c(320, 14, 80, 36)
+particle <- gl(2, 1, 4, labels = c('no', 'yes'))
+quality <- gl(2, 2, labels = c('good', 'bad'))
+wafer = data.frame(y, particle, quality)
+wafer
+
+ov <- xtabs(y ~ quality + particle)
+ov
+
+m1 <- glm(y ~ quality + particle, poisson)
+summary(m1)
+```
+
+Checking for independence
+
+* $H_0$ : particle and quality are independent
+* $H_1$ : particle and quality are dependent
+
+Based on the deviance, we reject $H_0$.
+
+```{r}
+m2 <- glm(y ~ particle * quality, poisson)
+deviance(m2)
+drop1(m1, test = 'Chi')
+```
+
+This is a saturated model.
+
+```{r}
+t(model.matrix(m1)) %*% y
+
+pp <- prop.table(xtabs(y ~ particle))
+pp
+
+qp <- prop.table(xtabs(y ~ quality))
+qp
+
+fv <- outer(qp, pp) * 450
+fv
+
+.8889 * .7422 * 450
+
+2 * sum(ov * log(ov / fv))  # deviance
+
+sum((ov - fv) ** 2 / fv)  # pearson chi-sq statistic
+
+prop.test(ov)
+
+# do the same thing with binomial model
+m <- matrix(y, nrow = 2)
+m
+m3 <- glm(m ~ 1, family = binomial)
+summary(m3)
+deviance(m3)
+```
+
+The binomial model is $\log \frac{p}{1-p} = \beta_0$
+
+Fisher test:
+
+```{r}
+fisher.test(ov)
+```
+
+Useful for sparse data
+
+Better than the deviance, but becomes complicated for tables larger than 
+$2 \times 2$
+
+Large two-way tables
+
+```{r}
+data(haireye)
+haireye
+
+ct <- xtabs(y ~ hair + eye, haireye)
+ct
+summary(ct)
+dotchart(ct)
+mosaicplot(ct, color=TRUE, main=NULL, las=1)
+```
+
+## Correspondence analysis and singular value decomposition
+
+For factors with more than two levels
+
+Graphical analysis
+
+```{r}
+m4 <- glm(y ~ hair + eye, family = poisson, haireye)
+summary(m4)
+z <- xtabs(residuals(m4, type = 'pearson') ~ hair + eye, haireye)
+svdz <- svd(z, nu = 2, nv = 2)
+svdz
+
+leftsv <- svdz$u %*% diag(sqrt(svdz$d[1:2]))
+rightsv <- svdz$v %*% diag(sqrt(svdz$d[1:2]))
+ll <- 1.1* max(abs(rightsv),abs(leftsv))
+plot(rbind(leftsv, rightsv),
+     asp=1,
+     xlim=c(-ll, ll), ylim=c(-ll, ll), 
+     xlab="SV1", ylab="SV2",
+     type="n")
+abline(h=0, v=0)
+text(leftsv, dimnames(z)[[1]])
+text(rightsv, dimnames(z)[[2]])
+```
+
+Then we can see that `blue` and `BLONDE` are positively associated, `BLACK` and 
+`blue` are negatively associated, and `BROWN` has relatively little association 
+with any of the eye colors.
+
+If two catgegories of the same variable type are close to each other, there is 
+some evidence that they could be merged into one category (e.g., `hazel` and 
+`green`).
+
+## Ordinal Variables
+
+Start with two ariables that are ordinal---we can assign scores
+
+Rows: $u_1 \leq u_2 \leq \cdots \leq u_I$  
+Columns: $v_1 \leq \cdots \leq v_J$
+
+Introduce values in the model to obtain a more powerful tool to test 
+association
+
+The model: linear-by-linear association model
+
+$$\log(E[Y_{ij}]) = \log \mu_{ij} = \log (np_{ij}) = 
+\log n + \alpha_i + \beta_j + \gamma u_i v_j$$
+
+$\gamma$ acts like a correlation coefficient
+
+```{r}
+data(nes96)
+xtabs(~ PID + educ, nes96)
+partyed <- as.data.frame.table(xtabs(~ PID + educ, nes96))
+partyed
+m8 <- glm(Freq ~ PID + educ, partyed, family = poisson)
+pchisq(m8$deviance, m8$df.residual, lower.tail = FALSE)
+```
+
+So when we treat the two regressors as nominal variables, we do not see any 
+relationship between them.
+
+On the other hand, if we do treat them as ordinal variables:
+
+```{r}
+partyed$oPID <- unclass(partyed$PID)
+partyed$oeduc <- unclass(partyed$educ)
+m9 <- glm(Freq ~ PID + educ + I(oPID * oeduc), partyed, family = poisson)
+summary(m9)
+anova(m8, m9, test = 'Chi')
+```
+
+We have evidence that the additional term does make a significant difference. 
+
+We can also see that in this model, $\hat{\gamma} = 0.0287$, which is positive.
+
+```{r}
+apid <- c(1, 2, 5, 6, 7, 10, 11)
+aedu <- c(1, 1, 1, 2, 2, 3, 3)
+m9a <- glm(Freq ~ PID + educ + I(apid[oPID] * aedu[oeduc]), 
+           partyed, family = poisson)
+anova(m8, m9a)
+round(xtabs(predict(m9, type = 'response') ~ PID + educ, partyed), 3)
+```
+
+The residuals are not uniform, which provides evidence that the model might not 
+be correctly specified.
+
+Column-effects model:
+
+```{r}
+cmod <- glm(Freq ~ PID + educ + educ:oPID, partyed, family = poisson)
+anova(m8, cmod, test = 'Chi')
+summary(cmod)
+
+aedu <- c(rep(1, 2), rep(2, 5))
+m10 <- glm(Freq ~ PID + educ + I(oPID * aedu[oeduc]), partyed, family = poisson)
+summary(m10)
+```

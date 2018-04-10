@@ -1,0 +1,221 @@
+---
+title: 'Count Regression'
+date: '2018-02-20'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Poisson regression
+
+$$Y \sim Poisson(\mu)$$
+
+$$P(Y = y) = \frac{e^{-\mu} \mu^{-y}}{y!}$$
+
+Binomial or logistic case but where $p \approx 0$ (but we have a large number of 
+trials per observation to compensate, i.e. $n \rightarrow \infty$).
+
+$y \in \mathbb{N}_0$, no restriction or maximum value on $y$
+
+Note that $E[Y] = var(Y) = \mu$
+
+$Y$ approaches normal distribution as $\mu \rightarrow \infty$
+
+When $p$ is small, $\log \frac{p}{1-p} = \log p - \log (1-p)$ and 
+$\log (1 - p) \approx \log 1 = 0$. Then we are left with $\log p$.
+
+Poisson regression can be appropriate when we do not know the nummber of trials 
+(which means binomial regression is not possible) but we do know the frequency 
+of occurrence. 
+
+$$\eta_i = x_i^T \beta$$
+
+Which is the same as before. However, now the link function is
+
+$$\log \mu_i = \eta_i$$
+
+In other words
+
+$$\mu_i = e^{x_i^T \beta}$$
+
+### R demo
+
+```{r}
+library(faraway)
+
+# Interested in all variables but Endemics (2nd variable)
+gala <- gala[, -2]
+
+
+modl <- lm(Species ~ ., gala)
+plot(modl, 1)
+modt <- lm(sqrt(Species) ~ .,  gala)
+plot(modt, 1)
+
+summary(modt)
+modp = glm(Species ~ ., family=poisson, gala)
+summary(modp)
+
+halfnorm(residuals(modp))
+
+plot(log(fitted(modp)), log((gala$Species - fitted(modp))^2))
+abline(0, 1)
+
+# dispersion parameter
+dp <- sum(residuals(modp, type = 'pearson') ** 2) / modp$df.res
+summary(modp, dispersion = dp)
+modd <- glm(Species ~ ., family = quasipoisson, data = gala)
+summary(modd)
+drop1(modd, test = 'F')
+```
+
+# Rate models
+
+Consider two models: 
+
+* OLS model (possibly with transformations and interaction terms) 
+$E[y|X] = X \beta$; in this example $y$ is the log of the response and we have 
+two regressors, the log of a continuous predictor and a categorical predictor, 
+along with interaction terms. Then $y_i \sim 
+\mathcal{N}(x_i^T \beta, \sigma^2 I)$. This makes an assumption on the 
+distribution of $y_i$s. Once we have a lot of transformations and interactions, 
+we start losing interpretability.
+* $y \sim Poisson(\mu)$ where $y$ is an untransformed response. Since we do not 
+transform the response, this should be easier to interpret. Here we are 
+essentially saying that $\log(y|X)$ is linear, where again, $y$ is 
+untransformed. But $y$ needs to be some sort of rate. We can enforce this by 
+setting $y$ to a count and including an offset for the total in the model. In 
+practice, you may need to check this in the data.
+
+```{r}
+library(faraway)
+
+summary(dicentric)
+dicentric$doseamt <- as.factor(dicentric$doseamt)
+
+ols.mod <- lm(log(ca / cells) ~ log(doserate) * doseamt, data = dicentric)
+summary(ols.mod)
+
+pois.mod <- glm(ca ~ offset(log(cells)) + log(doserate) * doseamt, 
+                family = poisson, data = dicentric)
+summary(pois.mod)
+```
+
+# Negative binomial 
+
+If we determine the Poisson model is not appropriate (e.g., due to 
+overdisperson)---need to increase dispersion
+
+$\theta$ parameter---corresponds to $\hat{k}$ parameter in text
+
+```{r}
+library(MASS)
+
+summary(solder)
+
+pois.mod <- glm(skips ~ ., data = solder, family = poisson)
+summary(pois.mod)
+
+neg.binom.mod <- glm.nb(skips ~ ., data = solder)
+summary(neg.binom.mod)
+```
+
+# Zero-inflated models
+
+Use when there are too many zeroes for a Poisson model (the number of *zeroes* 
+is *inflated*)
+
+## Hurdle
+
+$P(Y = 0) = f_1(0)$  
+$P(Y = j) = \frac{1 - f_1(0)}{1 - f_2(0)} f_2(j)$
+
+Basically some distribution for whether something happens or not, then another 
+distribution for how much of it happens once it does happen (so once it crosses 
+a "hurdle")
+
+We model: 
+
+* $f_1$ as a binary response (with logit link function)
+* $f_2$ as Poisson
+
+Motivation behind the ratio $\frac{1 - f_1(0)}{1 - f_2(0)}$:
+
+$\sum_{j=0}^\infty P(Y = j) = 1$  
+Then $f_1(0) + \sum_{j=1}^\infty P(Y = j) = 1$  
+Then $f_1(0) + \sum_{j=1}^\infty \frac{1 - f_1(0)}{1 - f_2(0)} = 1$
+
+```{r}
+library(pscl)
+
+m1 <- glm(art ~ ., data = bioChemists, family = poisson)
+summary(m1)
+
+m2 <- hurdle(art ~ ., data = bioChemists)
+summary(m2)
+```
+
+## Zero Inflation
+
+$P(Y = 0) = \phi + (1 - \phi) f(0)$  
+$P(Y = j) = (1 - \phi) f(j)$ for $j > 0$
+
+Where $\phi$ is the proportion that will always be zero
+
+$f$ is the pmf for $Poisson(\mu)$
+
+```{r}
+m3 <- zeroinfl(art ~ ., data = bioChemists)
+summary(m3)
+
+plot(fitted(m2), fitted(m3), xlab = 'hurdle', ylab = 'zero-inflated Poisson')
+abline(0, 1)
+
+plot(log(fitted(m2)), log(fitted(m3)), 
+     xlab = 'hurdle', ylab = 'zero-inflated Poisson')
+abline(0, 1)
+
+m4 <- zeroinfl(art ~ fem + kid5 + ment | ment, data = bioChemists)
+summary(m4)
+
+pchisq(2 * (m3$loglik - m4$loglik), 6, lower.tail = FALSE)
+
+exp(coef(m4))
+
+predict(m3, 
+        newdata = data.frame(fem = 'Men', mar = 'Single', 
+                             kid5 = 0, ment = 6, phd = 0), 
+        type = 'prob')
+```
+
+### Interpretation
+
+In `m4`, we get:
+
+* If you are already writing a paper, then $\hat{\mu} = e^{X \hat{\beta}}$ where 
+the $\hat{\beta}$ come from the Poisson model. Then for each additional paper 
+from the mentor, on average the expected number of publications increases by 
+1.8\%. 
+* The probability that you have not published anything decreases by $1 - .881$. 
+So for each additional paper your mentor produces, the odds of not having 
+published reduces by around 12\%. 
+
+# Considerations for the exam
+
+* Transformations?
+* Can disregard negative binomial models

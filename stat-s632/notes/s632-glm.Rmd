@@ -1,0 +1,119 @@
+---
+title: 'Generalized Linear Models'
+date: '2018-03-22'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+In a GLM, the pmf/pdf of $Y$ comes from the exponential dispersion family of 
+distributions.
+
+$$f(y_i | \theta_i, \phi) = \exp \bigg(
+\frac{y_i \theta_i - b(\theta_i)}{a(\phi)} + c(y_i, \phi)
+\bigg)$$
+
+$\theta_i$ - canonical parameter (analogue of location)  
+$\phi$ - dispersion parameter (analogue of scale) 
+
+A distribution that can be written in this form belongs in the exponential 
+dispersion family.
+
+**e.g.**
+
+* If $a(\phi) = 1$ and $c(y_i, \phi) = c(y_i)$, then $f$ is in the family of 
+natural exponential distributions
+* If $a(\phi) = \phi$ or $a(\phi) = \phi / w_i$ (where $w_i$ is known), and 
+$\phi > 0$, e.g., $y_i$ is the mean of $n_i$ observations with $w_i = n_i$
+
+# Midterm review
+
+## Multinomial logistic regression
+
+Interpreting coefficients of multinomial logistic regression
+
+* $\log \frac{p_{ij}}{p_{i1}} = \beta_0 + \beta_1 x_1 + \cdots$ for the $j$^th^ 
+level
+* For each additional unit increase in $x_k$ (keeping others constant), 
+$\log \frac{p_{ij}}{p_{i1}}$ increases by $\beta_k$
+* So the odds ratio changes by $e^{\beta_k} - 1$
+* Note that we are comparing to some baseline level of the response
+
+## Exponential family
+
+Regularity conditions
+
+  * $E[\frac{\partial \ell_i}{\partial \theta_i}] = 0$
+  * $-E[\frac{\partial^2 \ell_i}{\partial \theta_i^2}] = 
+  E[\frac{\partial \ell_i}{\partial \theta_i}]^2$
+  
+Then we can obtain
+
+* $E[Y_i] = b'(\theta_i)$
+* $var(Y_i) = a(\phi) b''(\theta_i)$
+
+**e.g.** Let $Y_i \sim Poisson(\mu_i)$ for $i = 1, ..., n$. Then 
+
+$$P(Y_i = y_i) = f(y_i | \mu_i) = \frac{e^{\mu_i} \mu_i^{y_i}}{y_i!}$$
+$$= \exp(y_i \log \mu_i - \mu_i - \log y_i!)$$
+
+Then let 
+
+* $\theta_i = \log \mu_i$
+* $b(\theta_i) = e^{\theta_i}$
+* $\phi = 1$, $a(\phi) = 1$
+* $c(y_i, \phi) = -\log y_i!$
+
+So $E[Y_i] = e^{\theta_i} = e^{\log \mu_i} = \mu_i$, and $var(Y_i) = \mu_i$
+
+**e.g.** Let $Y_i \sim \mathcal{N}(\mu_i, \sigma^2)$. Then 
+
+$$f(y_i | \mu_i, \sigma^2) =
+(2 \pi \sigma^2)^{-1/2} \exp \big(-\frac{(y_i - \mu_i)^2}{2 \sigma^2} \big)$$
+$$=\exp \bigg(
+-\frac{y_i^2}{2 \sigma^2} + \frac{1}{\sigma^2} (y_i \mu_i - \frac{1}{2} \mu_i^2)
+- \frac{1}{2} \log 2 \pi \sigma^2 \bigg)$$
+$$= \exp \bigg(
+\frac{y_i \mu_i - \frac{1}{2} \mu_i^2}{\sigma^2} - \frac{y_i^2}{2 \sigma^2} 
+- \frac{1}{2} \log 2 \pi \sigma^2
+\bigg)$$
+
+Then we can let:
+
+* $\theta_i = \mu_i$
+* $\phi = \sigma$
+* $b(\theta_i) = \frac{1}{2} \mu_i^2$
+* $a(\phi) = \phi^2$
+* $c(y_i, \phi) = -\frac{y_i^2}{2 \phi^2} - \frac{1}{2} \log 2 \pi \phi^2$
+
+Then $E[Y_i] = \theta_i = \mu_i$ and $var(Y_i) = \phi^2 = \sigma^2$
+
+## Hurdle model
+
+$f_Y(0) = f_X(0)$  
+$f_Y(y) = \frac{1 - f_X(0)}{1 - f_Z(0)} f_Z(y)$ for $y \neq 0$
+
+Where $X$ is Bernoulli and $Z$ is Poisson
+
+Then $\sum_{i=0}^\infty f_Z(i) = 1 = f_Z(0) + \sum_{i=1}^\infty f_Z(i)$, so 
+$\sum_{i=1}^\infty f_Z(i) = 1 - f_Z(0)$. Then
+
+$$\sum_{i=0}^\infty f_Y(i) = f_Y(0) + \sum_{i=1}^\infty f_Y(0)$$
+$$= f_X(0) + \frac{1 - f_X(0)}{1 - f_Z(0)} \sum_{i=1}^\infty f_Z(y)$$
+$$= f_X(0) + \frac{1 - f_X(0)}{1 - f_Z(0)} (1 - f_Z(0))$$
+$$= f_X(0) + 1 - f_X(0) = 1$$

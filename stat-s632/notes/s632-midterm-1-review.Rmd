@@ -1,0 +1,50 @@
+---
+title: 'Midterm Review'
+date: '2018-02-12'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+## Model selection
+
+### PRESS
+
+$$PRESS = \sum_i^n (y_i - \hat{y}_{i, -i})^2= \sum_i \hat{e}_{i, -i}^2$$
+
+## Logistic and binomial regression
+
+### Likelihood and log-likelihood
+
+#### Binomial case
+
+$$L(\hat{p}|Y) = \prod_i^n \binom{m_i}{y_i} p_i^{y_i} (1-p_i)^{m_i - y_i}$$
+
+$$l = \log L = 
+\sum_i \log \binom{m_i}{y_i} + y_i \log p_i + (m_i - y_i) \log (1 - p_i)$$
+
+#### Logistic case
+
+$$l = \sum_i y_i \log \frac{p_i}{1 - p_i} + \log(1 - p_i)$$
+$$= \sum_i y_i \eta_i - \log(1 + e^{\eta_i})$$
+
+$\hat{y}_i = E[Y | p_i = \hat{p}_i] = m_i \hat{p}_i =$
+$m_i \frac{e^{\hat{\eta}_i}}{1 + e^{\hat{\eta}_i}}$
+
+### Overdispersion
+

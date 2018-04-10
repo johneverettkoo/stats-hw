@@ -1,0 +1,81 @@
+---
+title: 'Multinomial Logistic Regression'
+date: '2018-03-20'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+Let $Y_i$ be a random variable with a finite number of categories 
+$j = 1, ..., J$. $P(Y_i = j) = p_{ij}$.
+
+Case: Grouped data: $Y_{ij}$ is the number of observations in category $j$. Then 
+$n_i = \sum_j Y_{ij}$.
+
+Case: Ungrouped data: $n_i = 1$
+
+$Y_{ij} | n_i$ follows a nultinomial distribution
+
+$$P(Y_{i1} = y_{i1}, ..., Y_{iJ} = y_{iJ}) = 
+\frac{n_i!}{y_{i1}! \cdots y_{iJ}!} p_{i1}^{y_{i1}} \cdots p_{iJ}^{y_{iJ}}$$
+
+How to model:
+
+* multinomial logit (e.g., for nomial data)
+* proportional-odds (e.g., for ordinal data)
+
+## Nominal data
+
+Link function:
+
+$$\eta_{ij} = x_i^T \beta_j = \log \frac{p_{ij}}{p_{i1}}$$
+
+Where $\beta_j$s are vectors
+
+Furthermore, $\sum_j^J p_{ij} = 1$. Then $p_{i1} = 1 - \sum_{j=2}^J p_{ij}$.
+
+So we can rewrite:
+
+$$P_{ij} = \frac{e^{\eta_{ij}}}{1 + \sum_{k=2}^J e^{\eta_{ik}}}$$
+
+for $j = 2, ..., J$
+
+Note that $\eta_{ij} = \log \frac{p_{ij}}{p_{i1}}$, so 
+$\sum_j^J p_{ij} = \sum_j^J e^{\eta_{ij}} p_{i1}$
+
+# Proportional odds model
+
+## Ordinal multinomial responses
+
+Given link function $g(\gamma_{ij}) = \theta_j - x_i^T \beta$ where $\theta_j$ 
+is an intercept term, individual $i$ have ordinal responses $y_i$, and 
+$p_{ij} = P(Y_i = j)$ for $j = 1, ..., J-1$. Define $\gamma_{ij} = P(Y_i \leq j)$. 
+We can see that $\gamma_{iJ} = 1$.
+
+The proportional odds model is given by:
+
+$$\gamma_j(x_i) = P(Y_i \leq j | x_i)$$
+
+Then we get:
+
+$$\log \frac{\gamma_j(x_i)}{1 - \gamma_j(x_i)} = \theta_j - \beta^T x_i$$
+
+$\theta_j$ changes for different values of $j$ (i.e., different values of 
+$y_i$).
+
+Modeling in R: `MASS::polr`

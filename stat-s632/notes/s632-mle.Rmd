@@ -1,0 +1,220 @@
+---
+title: 'Maximum Likelihood Estimators'
+date: '2018-02-15'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Binary response case
+
+$$l(\beta) = \sum_i \log P(Y_i = 1)$$
+$$= \sum_i y_i \log p_i + (1 - y_i) \log(1 - p_i)$$
+
+where
+
+$$p_i = \frac{e^{x_i^T \beta}}{1 + e^{x_i^T \beta}} = 
+\frac{1}{1 + e^{-x_i^T \beta}}$$
+
+Then ...
+
+$$l(\beta) = \sum_i y_i \log\frac{p_i}{1 - p_i} - \log(1 - p_i)$$
+
+Note that $\log(1 - p_i) = \log(1 - \frac{1}{1 + e^{-x_i^t \beta}})$
+$= -\log (e^{x_i^t \beta} + 1)$
+
+Then 
+
+$$l (\beta) = \sum_i y_i x_i^T \beta - \log(1 + e^{-x_i^T \beta})$$
+
+Then taking the derivative
+
+$$\frac{\partial l}{\partial \beta} = 
+\sum_i (y_i - 1 + \frac{e^{-x_i^T \beta}}{1 + e^{-x_i^T \beta}}) x_i$$
+$$= \sum_i (y_i - \frac{1}{1 + e^{-x_i^T \beta}}) x_i$$
+$$=\sum_i (y_i - p_i) x_i$$
+
+In order to maximize $l$, set the derivative to 0:
+
+$$0 = \sum_i (y_i - p_i) x_i = X^T (Y - \hat{p})$$
+
+No closed form solution :(
+
+But this is convex and the gradient is nice :)
+
+## Optimization via Newton-Raphson
+
+### Overiew of Newton-Raphson method
+
+How to find root of $f(x)$?
+
+Start at some point $x_0$ and find $f(x_0)$ and $\frac{d}{dx} f(x_0)$. Then 
+$x_1$ is the root of the tangent line at $f(x_0)$. Then given $x_i$, 
+find $x_{i+1}$ in a similar fashion.
+
+$$x_{i+1} = x_i - \frac{f(x_i)}{f'(x_i)}$$
+
+### Multidimensional case
+
+$$\beta^{(t+1)} = \beta^{(t)} + I^{-1}(\beta^{(t)}) X^T (Y - \hat{p})$$
+
+where $I(\beta)$ is the *information matrix*:
+
+$$I(\beta) = -\frac{\partial^2 l(\beta)}{\partial \beta_a \partial \beta_b}$$
+
+* $I \in \mathbb{R}^{p+1 \times p+1}$
+* $a$ and $b$ : $0, 1, 2, ..., p$
+
+$$\frac{\partial l}{\partial \beta_a} = 
+\sum_i^n ((y_i - 1) x_{ia} - 
+\frac{\exp(-x_i^T \beta)}{1 + \exp(-x_i^T \beta)}x_{ia})$$
+
+$$\frac{\partial^2 l}{\partial \beta_a \partial \beta_b} =
+\sum_i \frac{\partial}{\partial \beta_b} (y_i - p_i) x_{ia}$$
+$$= -\sum_i x_{ia} x_{ib} p_i (1 - p_i)$$
+
+$I$ reduces to:
+
+$$I(\beta) = X^T D X$$
+
+Where $D$ is a diagonal matrix with entries $p_i (1 - p_i)$. 
+$D \in \mathbb{R}^{x \times n}$
+
+Plugging this into the optimization step:
+
+$$\beta^{(t+1)} = \beta^{(t)} + (X^T D X)^{-1} X^T (Y - p)$$
+
+Where $D$ and $p$ are based on $\beta^{(t)}$
+
+We can factorize this:
+
+$$\beta^{(t+1)} = (X^T D X)^{-1} (X^T X D)\beta^{(t)} + 
+(X^T D X)^{-1} X^T D D^{-1}(Y - p)$$
+$$= (X^T D X)^{-1} D (X \beta^{(t)} + D^{-1} (Y - p))$$
+
+Let $z = X \beta^{(t)} + D^{-1} (Y - p)$. Then 
+
+$$z_i = \log \frac{p_i}{1 - p_i} + \frac{y_i - p_i}{p_i(1 - p_i)}$$
+
+Then
+
+$$\beta^{(t+1)} = (X^T D X)^{-1} X^T D z$$
+
+Which looks like weighted least squares
+
+Also called "iterative reweighted least squares for Newton-Raphson iteration"
+
+Implications
+
+* $var(\hat{\beta}) =$
+
+### R Demo
+
+```{r}
+f0 <- function(x) 4 - exp(-x)
+f1 <- function(x) exp(-x)
+
+x0 <- 0
+x1 <- x0 - f0(x0) / f1(x0)
+
+x <- seq(-3, 0, length = 1000)
+plot(x, f0(x), type = 'l')
+abline(0, 0)
+abline(f0(x0), f1(x0))
+points(x1, 0)
+
+i.count <- 1
+print(c(i.count, x1))
+
+eps <- 1e-6
+while (abs(x1 - x0) > eps) {
+  x0 <- x1
+  abline(f0(x1) - f1(x1) * x1, f1(x1), col = i.count)
+  points(x1, 0, col = i.count - 1)
+  # Sys.sleep(5)
+  x1 <- x0 - f0(x0) / f1(x0)
+  i.count <- i.count + 1
+  print(c(i.count, x1))
+}
+
+library(faraway)
+data(wcgs)
+
+X <- model.matrix(chd ~ height + cigs, wcgs)
+y <- as.numeric(wcgs$chd) - 1
+
+beta.t <- rep(0, 3)
+phat <- exp(X %*% beta.t) / (1 + exp(X %*% beta.t))
+beta.t1 <- beta.t + 
+  solve(t(X) %*% diag(c(phat * (1 - phat))) %*% X) %*% 
+  t(X) %*% (y - phat)
+
+i.count <- 1
+print(c(i.count, beta.t1))
+
+while (sum((beta.t1 - beta.t) ** 2) > eps) {
+  beta.t <- beta.t1
+  phat <- exp(X %*% beta.t) / (1 + exp(X %*% beta.t))
+  beta.t1 <- beta.t + 
+    solve(t(X) %*% diag(c(phat * (1 - phat))) %*% X) %*% 
+    t(X) %*% (y - phat)
+  i.count <- i.count + 1
+  print(c(i.count, beta.t1))
+}
+
+m1 <- glm(y ~ height + cigs, data = wcgs, family = binomial)
+summary(m1)
+
+varbeta <- solve(t(X) %*% diag(c(phat * (1 - phat))) %*% X)
+varbeta
+sqrt(diag(varbeta))
+summary(m1)$coef
+
+# Log-likelihood and Deviance 
+
+ll.1 <- sum(y * X %*% beta.t1 - log(1 + exp(X %*% beta.t1)))
+Deviance.1 <- -2 * ll.1
+Deviance.1
+
+p0 <- mean(y)
+p0
+ll.0 <- sum(y * log(p0) + (1 - y) * log(1 - p0))
+Deviance.0 <- -2 * ll.0
+Deviance.0
+
+summary(m1)
+
+# Saturated Model
+y1 <- y[y == 1]
+y0 <- y[y == 0]
+L.S <- prod(y1) * prod(1 - y0)
+ll.s <- sum(log(y1)) + sum(log(1 - y0))
+L.S
+ll.s
+```
+
+$$L(\hat{\beta}) = \prod_i^n \binom{m_i}{y_i} p_i^{y_i} (1-p_i)^{m_i - y_i}$$
+
+For a saturated model, $\hat{p}_i = y_i / m_i$ for all possible $i$
+
+Then 
+
+$$L_S = \prod_i^n \binom{m_i}{y_i} (y_i/m_i)^{y_i} (1 - y_i/m_i)^{m_i - y_i}$$
+
+Note that unlike the logistic case, this is not equal to 1. But it's still the 
+highest possible value for $L$ given the data.

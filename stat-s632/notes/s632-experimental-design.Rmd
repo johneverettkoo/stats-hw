@@ -1,0 +1,165 @@
+---
+title: "STAT-S632"
+subtitle: 'Experimental Design'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Two factors with no replication
+
+The model is:
+
+$$y_{ij} = \mu + \alpha_i + \beta_j + (\alpha \beta)_{ij} + \epsilon_{ij}$$
+
+where $i = 1, ..., I$ and $j = 1, ..., J$
+
+$\alpha$ is the effect of the first factor at level $i$ and $\beta$ is the 
+effect of the second factor at level $j$.
+
+R example:
+
+```{r}
+# library(faraway)
+library(ggplot2)
+library(car)
+
+theme_set(theme_bw())
+
+data(composite, package = 'faraway')
+
+ggplot(composite) + 
+  geom_line(aes(x = laser, y = strength, group = tape, colour = tape))
+
+ggplot(composite) + 
+  geom_line(aes(x = tape, y = strength, group = laser, colour = laser))
+
+lmod <- lm(strength ~ laser + tape + laser:tape, data = composite)
+summary(lmod)
+
+lmod <- lm(strength ~ laser + tape, data = composite)
+summary(lmod)
+```
+
+## Randomized block design
+
+Given ...
+
+* one treatment factor $\tau$ with $t$ levels
+* one blocking factor $\beta$ with $r$ levels
+* one observation on each treatment in each block
+* limited ability to determine interactions between treatment and group 
+(e.g., not enough observations)
+
+The model is:
+
+$$y_{ij} = \mu + \tau_i + \beta_j + \epsilon_{ij}$$
+
+where $i = 1, ..., t$ and $j = 1, ..., r$
+
+$\mu$ is the overall mean, $\tau_i$ is the treatment effect, and $\beta$ is 
+the blocking effect
+
+Can check for treatment effects and blocking effects (but not interactions)
+
+Blocking effects are a feature of experimental units---cannot regain degrees of 
+freedom if blocking is not significant
+
+```{r}
+data(oatvar, package = 'faraway')
+summary(oatvar)
+xtabs(yield ~ variety + block, oatvar)
+
+ggplot(oatvar) + 
+  geom_line(aes(x = block, y = yield, group = variety, colour = variety)) + 
+  scale_colour_brewer(palette = 'Set1')
+
+ggplot(oatvar) + 
+  geom_line(aes(x = variety, y = yield, group = block, colour = block)) + 
+  scale_colour_brewer(palette = 'Set1')
+
+lmod <- lm(yield ~ block + variety, data = oatvar)
+summary(lmod)
+anova(lmod)
+anova(lm(yield ~ block, data = oatvar))
+plot(lmod)
+```
+
+Comparison between complete randomized design (CRD) and randomized complete 
+block design (RCBD):
+
+Because `block` is significant, a model with blocking would be preferred
+
+Can also consider efficiency
+
+$\hat{\sigma}^2_{CRD}$ vs $\hat{\sigma}^2_{CRBD}$
+
+```{r}
+lmcrd <- lm(yield ~ variety, data = oatvar)
+anova(lmcrd, lmod)
+
+summary(lmcrd)$sig
+summary(lmod)$sig
+
+(summary(lmcrd)$sig / summary(lmod)$sig) ** 2
+```
+
+$\sim 66\%$ more observations are needed in CRD to get the same level of 
+precision compared to CRBD
+
+## Latin squares
+
+Type of fractional factorial design for two blocking variables
+
+Example: Compare 4 materials (which are our treatments): `A`, `B`, `C`, `D`, 
+block 1: 4 positions `1`, `2`, `3`, `4`, block 2: 4 runs `1`, `2`, `3`, `4`, 
+response: wear (weight of material worn)
+
+```{r}
+data(abrasion, package = 'faraway')
+summary(abrasion)
+
+xtabs(wear ~ run + position, data = abrasion)
+matrix(abrasion$material, 4, 4, byrow = TRUE)
+```
+
+Note that each treatment is assigned to each block only once
+
+The model:
+
+$$y_{ijk} = \mu + \tau_i + \beta_j + \gamma_k + \epsilon_{ijk}$$
+
+$i, j, k$ all have same number of levels $1, ..., t$, but not all appear in the 
+data
+
+* Latin square can be more efficient than RCBD
+* block sizes (levels) should be equal to treatments (levels)
+* can be used to compare three treatment factors
+* cannot estimate interactions
+
+```{r}
+ggplot(abrasion) + 
+  geom_line(aes(x = run, y = wear, colour = position, group = material))
+
+ggplot(abrasion) + 
+  geom_line(aes(x = position, y = wear, colour = run, group = material))
+
+lmod <- lm(wear ~ material + run + position, data = abrasion)
+summary(lmod)
+drop1(lmod, test = 'F')
+```

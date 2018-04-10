@@ -1,0 +1,166 @@
+---
+title: 'Logistic Regression'
+date: '2018-01-23'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Binary responses 
+
+```{r}
+library(faraway)
+data(wcgs)
+summary(wcgs)
+```
+
+Response is `chd`, coronary heart disease (yes or no)
+
+Goal: 
+
+* Model relationship between response and predictors
+* Predict response (binary---success or failure)
+* Model probability of success or failure
+* $P(Y_i = 1) = p_i$
+* Model $p_i = x_i^T \beta$ does not work 
+
+Try:
+
+* $\eta_i = x_i^t \beta$
+* $\eta_i$ uses a linear predictor---need to transform to $(0, 1)$
+* $\eta_i = g(p_i)$ where $p_i = P(Y_i = 1)$
+    * $g$ needs to be monotone
+    * $0 \leq g^{-1}(\eta) \leq 1$
+* logit function $\eta = log(\frac{p}{1-p})$
+* inverse logit $p_i = \frac{e^\eta}{1 + e^\eta} = \frac{1}{1 + e^{-\eta}}$
+
+```{r echo = FALSE, fig.height = 3}
+library(ggplot2)
+theme_set(theme_bw())
+import::from(magrittr, `%>%`)
+
+dplyr::data_frame(p = seq(.01, .99, .01)) %>% 
+  dplyr::mutate(eta = log(p / (1 - p))) %>% 
+  ggplot() + 
+  geom_line(aes(x = eta, y = p)) + 
+  guides(fill = FALSE)
+```
+
+### Maximum likelihood estimator
+
+**def** *likelihood*
+
+$$L(\beta) = \prod_i^n P(Y_i = 1)$$
+
+And by Bernoulli:
+
+$$P(Y_i = 1) = p_i^{y_i} (1 - p_i)^{1 - y_i}$$
+
+Note that
+
+* $y_i = 1 \implies P(Y_i = 1) = p_i$
+* $y_i = 0 \implies P(Y_i = 0) = 1 - p_i$
+
+Then 
+
+$$\log(L(\beta)) = l(\beta) = \sum_i^n \log(p_i^{y_i} (1 - p_i)^{1 - y_i})$$
+$$l(\beta) = \sum_i \big( y_i \log p_i + (1 - y_i) \log(1 - p_i) \big)$$
+
+$$= \sum_i \big( y_i \log(\frac{p_i}{1 - p_i}) + \log(1 - p_i) \big)$$
+$$= \sum_i y_i \eta_i - \log(e^{\eta_i} + 1)$$
+
+So we want to maximize $l(\beta)$ to otain the MLE of $\beta$
+
+```{r, fig.height = 4}
+ggplot(wcgs, aes(x=height, fill=chd)) + 
+  geom_histogram(binwidth=1, alpha = .3, position = 'identity') + 
+  scale_fill_brewer(palette = 'Set1')
+
+ggplot(wcgs, aes(x=cigs, fill=chd)) + 
+  geom_histogram(position="identity", binwidth=5, alpha = .3, 
+                 aes(y=..density..)) + 
+  scale_fill_brewer(palette = 'Set1')
+
+lmod <- glm(chd ~ height + cigs, family = binomial, wcgs)
+summary(lmod)
+```
+
+The model is:
+
+$$\log \big( \frac{p}{1-p} \big) = \beta_0 + x_1 \beta_1 + x_2 \beta_2$$
+
+**def** $\frac{p}{1-p}$ is the *odds ratio*
+
+So we assume that the log odds ratio is a linear function of our predictors.
+
+i.e. $\text{odds} = e^{\beta_0 + x_1 \beta_1 + x_2 \beta_2}$
+
+So if $x_1$ increases by 1, on average, the log of the odds ratio increases by 
+$\beta_1$ (or odss ratio increases by a factor of $\exp(\beta_1)$)
+
+If $\beta_1 \approx 0$, then $\beta_1 \approx e^{\beta_1} - 1$
+
+```{r}
+wcgs$y <- ifelse(wcgs$chd == "no",0,1)
+beta <- coef(lmod)
+plot(jitter(y,0.1) ~ jitter(height), wcgs, xlab="Height", ylab="Heart Disease",pch=".")
+curve(ilogit(beta[1] + beta[2]*x + beta[3]*0),add=TRUE)
+curve(ilogit(beta[1] + beta[2]*x + beta[3]*20),add=TRUE,lty=2)
+plot(jitter(y,0.1) ~ jitter(cigs), wcgs, xlab="Cigarette Use", ylab="Heart Disease",pch=".")
+curve(ilogit(beta[1] + beta[2]*60 + beta[3]*x),add=TRUE)
+curve(ilogit(beta[1] + beta[2]*78 + beta[3]*x),add=TRUE,lty=2)
+
+exp(beta)
+
+# 
+exp(beta[3]*20)
+```
+
+**def** *Likelihood ratio statistic*
+
+log-ratio of the larger model and smaller model
+
+$$2 \log \frac{L_L}{L_S}$$
+
+For deviance, the larger model is a saturated model. $\hat{p}_i = y_i$ for each $i = 1, 2, ..., n$
+
+If $y_i = 1$ then $L_L(\beta) = 1$ or $l_L = 0$. Then the likelihood ratio 
+statistic is $-2 \log L_S$ (i.e. *residual deviance*)
+
+Another example: Perfect separation
+
+```{r}
+iris.df <- iris %>% 
+  dplyr::filter(Species != 'virginica') %>% 
+  dplyr::select(Sepal.Width, Sepal.Length, Species)
+
+ggplot(iris.df) + 
+  geom_point(aes(x = Sepal.Width, y = Sepal.Length, colour = Species)) + 
+  scale_colour_brewer(palette = 'Set1')
+
+iris.mod <- glm(Species ~ Sepal.Width + Sepal.Length, data = iris.df, 
+                family = binomial)
+summary(iris.mod)
+plot(pROC::roc(iris.df$Species, predict(iris.mod, type = 'response')))
+
+library(brglm)
+
+br.mod <- brglm(Species ~ Sepal.Width + Sepal.Length, data = iris.df, 
+                family = binomial)
+summary(br.mod)
+```

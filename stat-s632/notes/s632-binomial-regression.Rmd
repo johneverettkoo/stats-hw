@@ -1,0 +1,198 @@
+---
+title: 'Binomial Regression'
+date: '2018-02-01'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+## The model
+
+$$Y_i \sim Binom(m_i, p_i)$$
+
+$$P(Y_i= y_i) = \binom{m_i}{y_i}p_i^{y_i} (1 - p_i)^{m_i - y_i}$$
+
+Then $E[Y_i] = m_i p_i$ and $var(Y_i) = m_i p_i (1 - p_i)$.
+
+Assumes independence.
+
+Then the likelihood is
+
+$$L(p|y) = \binom{m}{y} p^y (1-p)^{m-y}$$
+
+which is maximized at
+
+$$\hat{p} = \frac{y}{m}$$
+
+This is the maximum likelihood estimator.
+
+For all the data:
+
+$$L(p|y) = \prod_i \binom{m_i}{y_i} p_i^{y_i} (1 - p_i)^{m_i - p_i}$$
+
+But what if we hae additional information ($X$)?
+
+Introduce link function $\eta$
+
+Want to model $p_i$, which is the same as in the logistic regression case:
+
+$$\eta_i = x_i^T \beta$$
+
+$$\eta_i = \log \Big( \frac{p_i}{1 - p_i} \Big)$$
+
+(Note that $\eta_i$ are the log odds.)
+
+Then the log-likelihood is:
+
+$$l(\beta) = \sum_i \Bigg( 
+  y_i \eta_i - m_i \log(1 + e_i^{\eta_i}) + \log \binom{m_i}{y_i}
+\Bigg)$$
+
+This is maximized at 
+
+$$\hat{p}_i = \frac{\exp(\hat{\eta}_i)}{\exp(\hat{\eta}_i) + 1}$$
+
+And $p = \begin{bmatrix} p_1 & p_2 & ... & p_n \end{bmatrix}^T$
+
+## Deviance
+
+Defined as: 
+
+$$D(y|\hat{p}_{mod}) = -2 (l_{mod} - l_s)$$
+
+Furthermore: 
+
+$$-2(l_0 - l_A) = -2(l_0 - l_s) + 2(l_A - l_s)$$
+$$= D(y|\hat{p}_A) - D(y|\hat{p}_0)$$
+
+Which is just the difference of the deviances for the two models.
+
+This just follows a $\chi^2$ distribution.
+
+### R demo
+
+```{r}
+library(faraway)
+library(ggplot2)
+
+lmod <- glm(cbind(male, female) ~ temp, data = turtle, family = binomial)
+summary(lmod)
+
+# check model fit
+pchisq(deviance(lmod), df.residual(lmod), lower.tail = FALSE)
+```
+
+```{r}
+lmod <- glm(cbind(male, female) ~ temp, data = turtle, family = binomial)
+summary(lmod)
+
+lmod2 <- glm(cbind(male, female) ~ temp + I(temp ** 2), 
+             data = turtle, family = binomial)
+summary(lmod2)
+
+pchisq(lmod2$null.deviance, lmod2$df.null, lower.tail = FALSE)
+pchisq(lmod2$deviance, lmod2$df.residual, lower.tail = FALSE)
+pchisq(lmod2$null.deviance - lmod2$deviance, 
+       lmod2$df.null - lmod2$df.residual, 
+       lower.tail = FALSE)
+pchisq(lmod$deviance - lmod2$deviance, 
+       lmod$df.residual - lmod2$df.residual, 
+       lower.tail = FALSE)
+anova(lmod, lmod2, test = 'Chisq')
+```
+
+When we have a quadratic term, then we have to consider
+
+$$\frac{\partial}{\partial x} \log \frac{p}{1-p} = \beta_1 + 2 \beta_2 x$$
+
+This represents the change in the log odds. Then the change in the odds ratio is
+
+$$e^{\beta_1} + e^{2 \beta_2 x}$$ 
+
+When $\Delta x = 1$.
+
+Alternatively, consider 
+
+$$\beta_0 + \beta_1 (x+1) + \beta_2 (x+1)^2$$
+$$= \beta_0 + \beta_1 x + \beta_2 x^2 + \beta_1 + 2 \beta_2 x + \beta_2$$
+
+So the log odds ratio changes by $\beta_1 + 2 \beta_2 x + \beta_2$.
+
+## Likelihood ratio test (LR)
+
+### Case for 1 parameter
+
+$H_0$ : $\beta = \beta_0$  
+$H_A$ : $\beta \neq \beta_0$
+
+Let $l_0 = \log(L(\beta_0))$, the maximized log-likelihood given a restricted 
+$\beta$  
+Let $l_A = \max_{\beta} \log(L(\beta))$
+
+Then the LR test statistic is
+
+$$-2 \log \bigg(\frac{L_0}{L_A} \bigg) = -2 (\log L_0 - \log L_A)
+= -2 (l_0 - l_A)$$
+
+Under regularity conditions, goes to $\chi^2_1$ as $n \rightarrow \infty$
+
+### Case for multiple parameters
+
+$H_0$ : $\beta_0 = 0$  
+$H_A$ : $\beta_0 \neq 0$
+
+Where $\beta = [\beta_0, \beta_1]$, $\beta_0$ and $\beta_1$ are sub-vectors
+
+Let $l_0 = \log L_0$ and $l_A = \log L_A$ where $L_A$ is the maximum under 
+$\beta$ while $L_0$ is the maximum under $\beta$ holding $\beta_0 = 0$. 
+
+Then the test statistic is the same and goes to a $\chi^2$ distribution as 
+$n \rightarrow \infty$
+
+Degrees of freedom equal to the dimensionality of $\beta_0$
+
+Let $L_s$ be the saturated model, i.e., the model that estimates each response 
+by the corresponding observed value. $\hat{p_i} = y_i / m_i$. Then $L_s = 1$ and 
+the degrees of freedom = 0. $l_s = \log L_s = 0$.
+
+## Wald test
+
+### Case for 1 parameter
+
+$H_0$ : $\beta = \beta_0$  
+$H_A$ : $\beta \neq \beta_0$
+
+Then the Wald test statistic is
+
+$$z = \frac{\hat{\beta} - \beta_0}{se (\hat{\beta})}$$
+
+And this is normally distributed under $H_0$, and the square of this is 
+$Chi^2_1$ distributed under $H_0$
+
+### Case for multiple parameters
+
+$H_0$ : $\beta_0 = 0$ where $\beta_0$ is a subvector of $\beta$
+
+$$z^2 = \hat{\beta}_0^T (\hat{var}(\hat{\beta}_0))^{-1} \hat{\beta}_0$$
+
+This is $\chi^2$ distributed under $H_0$ with $\dim \beta_0$ degrees of freedom.
+
+The LR and Wald tests are equivalent asymptotically $n \rightarrow \infty$. 
+However, the Wald test depends on the scale for the parameterization, and it 
+does not work when an estimate or the value of the parameter under $H_0$ is on 
+the boundary of the parameter space (i.e., $p_0 = 0$ or $\hat{p} = 0$).
