@@ -105,27 +105,34 @@ $$y \sim \mathcal{N}(X \beta, \sigma^2 (I + Z D Z^T))$$
 So if we know $D$, then we can use a GLM to estimate $\beta$. But we often have 
 to estimate $D$.
 
-If we let $V + I Z D Z^T$, then the joint density for the response is:
+If we let $V = I + Z D Z^T$, then the joint density for the response is:
 
-$$(2 \pi)^{n/2} |\sigma^2 V|^{1/2} 
+$$(2 \pi)^{-n/2} |\sigma^2 V|^{-1/2} 
 \exp \bigg(-\frac{1}{2 \sigma^2} (y - X \beta)^T V^{-1} (y - X \beta) \bigg)$$
 
 Then the log-likelihood is:
 
-$$\ell(\beta, \sigma, D | y) = -\frac{n}{2} \log 2 \pi 
+$$\ell(\beta, \sigma^2, D | y) = -\frac{n}{2} \log 2 \pi 
 - \frac{1}{2} \log |\sigma^2 V| 
 -\frac{1}{2 \sigma^2} (y - X \beta)^T V^{-1} (y - X \beta)$$
 
-This can be difficult to optimize, and MLEs can be biased.
+This can be difficult to optimize depending on how complex $D$ is (e.g., if 
+there are many random effects), maxima may be on the boundaries of the domain
+(e.g., $\sigma^2 = 0$), and MLEs are often biased (e.g., 
+$E[\hat{\sigma}_{MLE}^2] \neq \sigma^2$).
 
 **def** *restricted maximum likelihood* (REML) estimators - find all 
 independent combinations of the response $k$ such that $k^T X = 0$, then 
-construct matrix $K = \begin{bmatrix} k_1 & \cdots & k_r \end{bmatrix}$ the $k$s 
-as columns. This should result in:
+construct matrix $K = \begin{bmatrix} k_1 & \cdots & k_r \end{bmatrix}$ s.t. the
+$k$s are linearly independent columns. This should result in:
 
 $$K^T y \sim \mathcal{N}(0, K^T V K)$$
 
-Then we maximize the likelihood based on $K^T y$.
+since $K^T X \beta = (K^T X) \beta = 0 \beta = 0$. Then we maximize the 
+likelihood based on $K^T y$:
+
+1. Use MLE to estimate $\sigma^2$ and $V$ (and $D$)
+2. Use estimated variances to estimate $\hat{\beta}$
 
 For balanced data, REML estimates are usually the same as ANOVA estimates.
 
@@ -145,6 +152,14 @@ where $z_i = \mathbb{1} \in \mathbb{R}^5$
 $\beta = \mu$
 
 $\gamma = \begin{bmatrix} \alpha_1 \\ \vdots \\ \alpha_4 \end{bmatrix}$
+
+$D = \begin{bmatrix} 
+  \sigma_\alpha^2 \\ 
+  & \sigma_\alpha^2 \\ 
+  & & \sigma_\alpha^2 \\ 
+  & & & \sigma_\alpha^2 \\ 
+  & & & & \sigma_\alpha^2
+\end{bmatrix}$
 
 ```{r}
 library(ggplot2)
@@ -166,6 +181,8 @@ coef(lmod)
 
 mmod <- lmer(bright ~ 1 + (1 | operator), data = pulp)
 summary(mmod)
+
+lme4::ranef(mmod)$operator  # estimates for alphas
 ```
 
 In `mmod`, the fixed effect is just the intercept, and the random effect, 
@@ -173,7 +190,19 @@ represented by `(1 | operator)`, which indicates that the random effect is
 constant within each group. `lmer` uses REML by default, so the estimates 
 are as expected. $\hat{\sigma}_\alpha^2 \approx (0.447-0.106)/5 \approx 0.0681$ 
 and $\hat{\sigma}^2 \approx 0.1063$ (compare to `aov`---this is because the 
-design is balanced with 5 per level). Compare this to:
+design is balanced with 5 per level). And finally, for this model, 
+$\hat{\beta} = \hat{\mu} \approx 60.4$.
+
+If we are interested in $\hat{\alpha}_i$ ($i = 1, 2, 3, 4$), we can obtain 
+our predicted random effects by using MLE: 
+$\hat{\alpha} = D Z^T V^{-1} (y - X \beta)$.
+
+Predicted random effects are proportional but smaller than their fixed effects 
+counterparts.
+
+Random effects are also called shrinkage estimates.
+
+Compare this to:
 
 ```{r}
 smod <- lmer(bright ~ 1 + (1 | operator), data = pulp, REML = FALSE)
@@ -278,8 +307,9 @@ $\rho_{12}$ rather than $\sigma_{12}$
 ## Inference
 
 We can specify two models, and put in $H_0$ the one that doesn't contain a 
-specified component (or specified components), and $H_1$ is the mmodel that 
-contains the component(s). Then we can use the likelihood ratio test statistic 
+specified component (or specified components), and $H_1$ is the model that 
+contains the component(s). In other words, this is the classical full model vs
+reduced model comparison. Then we can use the likelihood ratio test statistic: 
 
 $$2 (\ell(\hat{\beta}_1, \hat{\sigma}_1, \hat{D}_1 | y) - 
 \ell(\hat{\beta}_0, \hat{\sigma}_0, \hat{D}_0 | Y))$$
@@ -304,17 +334,21 @@ squares* method.
 We can try the $F$-test for the fixed effects, which is done in the `nlme` 
 package. But in this case, the degrees of freedom cannot be known easily, and 
 we cannot say that the null distribution follows the $F$-distribution in this 
-case. This is also less reliable when we have unbalanced data.
+case. This is also less reliable when we have unbalanced data. This is also 
+called the Kenward-Rogers (KR) method. 
 
 We can use a bootstrapping method to estimate the $p$-value. If we assume 
 normality for the errors and the random effects, thi is called the *parametric 
-bootstrap*. 
+bootstrap*. This is done by simulating the data under the null hypothesis using 
+the fitted parameter estimates many times. 
 
-We can define an AIC for this problem:
+We can also define an AIC for this problem:
 
 $$AIC = -2 \times \max \{\ell | y \} + 2p$$
 
 which can be used for model selection.
+
+R example for parametric bootstrapping:
 
 ```{r}
 # null model
@@ -326,7 +360,7 @@ c(lrtstat, p.value)
 ```
 
 But there is some additional uncertainty in this result due to the $\chi^2$ 
-distribution assumption, which may not be true.
+distribution assumption, which may not be true. Instead, we should try: 
 
 ```{r, cache = TRUE}
 N <- 1000
@@ -349,9 +383,10 @@ mean(lrstat > 2.5684)  # estimated p-value
 sqrt(.019 * .981 / N)  # estimated standard error
 ```
 
-A large proportion of the likelihood ratios are 0, so we can say that the 
-null and alternative models give the same result. We can also see that the 
-likelihood ratio test statistic is not $\chi^2$ distributed. 
+A large proportion of the likelihood ratios are $\approx 0$, so we might say that 
+the null and alternative models give the same result. We can also see that the 
+likelihood ratio test statistic is not $\chi^2$ distributed. But our $p$-value 
+is very small, suggesting that we should reject $H_0$.
 
 We can use a package for this:
 
@@ -373,4 +408,16 @@ for (i in seq(N)) {
 ```{r, cache = TRUE}
 quantile(bsd, c(.025, .975))
 confint(mmod, method = 'boot')
+```
+
+## Prediction
+
+Prediction for new operator: $\hat{y}^* = \hat{\mu}$. This is because 
+$E[\alpha] = 0$
+
+Prediction for new observation with a known predictor: 
+$\hat{y}^* = \hat{\mu} + \hat{\alpha}_i$
+
+```{r}
+lme4::fixef(mmod) + lme4::ranef(mmod)$operator
 ```
