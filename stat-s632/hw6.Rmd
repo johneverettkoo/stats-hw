@@ -1,0 +1,193 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 6'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+fontsize: 9pt 
+# geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r setup2}
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+import::from(lme4, lmer, VarCorr, ranef)
+import::from(RLRsim, exactRLRT)
+
+theme_set(theme_bw())
+```
+
+# Problem 1
+
+```{r p1_setup}
+denim.df <- faraway::denim
+summary(denim.df)
+```
+
+## Part a
+
+```{r p1_a}
+ggplot(denim.df) + 
+  geom_violin(aes(x = supplier, y = waste, fill = supplier)) + 
+  geom_point(aes(x = supplier, y = waste), alpha = .3) + 
+  scale_fill_brewer(palette = 'Set1') + 
+  guides(fill = FALSE)
+```
+
+## Part b
+
+```{r p1_b}
+fixed.mod <- lm(waste ~ supplier, data = denim.df)
+summary(fixed.mod)
+drop1(fixed.mod, test = 'F')
+```
+
+`supplier` is not significant.
+
+## Part c
+
+```{r p1_c}
+rand.eff.mod <- lmer(waste ~ 1 + (1 | supplier), data = denim.df)
+summary(rand.eff.mod)
+```
+
+$\beta = \mu \in \mathbb{R}^1$
+
+$X \in \mathbb{R}^{95}$ (`nrow(denim.df)`)
+
+$y, \epsilon \in \mathbb{R}^{95}$ as well
+
+$\gamma \in \mathbb{R}^5$, or the number of levels of `supplier`
+
+$Z = \begin{bmatrix}
+  z_1 \\ & z_2 \\ & & z_3 \\ & & & z_4 \\ & & & & z_5 
+\end{bmatrix}$ where $\dim(z_i) = |\{x : x = \alpha_i\}|$, or the number of 
+elements in level $i$. So $Z \in \mathbb{R}^{95 \times 5}$.
+
+## Part d
+
+### Parametric bootstrapping
+
+```{r p1_d_bootstrap, cache = TRUE}
+confint(rand.eff.mod, method = 'boot')
+```
+
+Since the lower bound of the interval is 0, we cannot say that the variance 
+of `supplier` is significant.
+
+### Likelihood ratio test
+
+```{r p1_d_aic}
+exactRLRT(rand.eff.mod)
+```
+
+We get a rather large $p$-value, indicating lack of significance.
+
+## Part e
+
+```{r p1_e}
+ranef(rand.eff.mod)
+
+lattice::dotplot(ranef(rand.eff.mod, condVar = TRUE))
+```
+
+# Problem 2
+
+```{r p2_setup}
+breaking.df <- faraway::breaking
+summary(breaking.df)
+```
+
+## Part a
+
+```{r p2_a}
+ggplot(breaking.df, 
+       aes(y = y, x = operator, colour = day, shape = supplier)) + 
+  geom_point() + 
+  scale_colour_brewer(palette = 'Set1')
+```
+
+```{r p2_a_2, fig.width = 16}
+ggplot(breaking.df, 
+       aes(y = y, x = operator, colour = day)) + 
+  geom_point() + 
+  scale_colour_brewer(palette = 'Set1') + 
+  facet_wrap(~ supplier, labeller = 'label_both', nrow = 1)
+
+ggplot(breaking.df, 
+       aes(y = y, x = operator, colour = supplier)) + 
+  geom_point() + 
+  scale_colour_brewer(palette = 'Set1') + 
+  facet_wrap(~ day, labeller = 'label_both', nrow = 1)
+```
+
+There appears to be a suggestion of differences among suppliers but not among 
+operators or days.
+
+## Part b
+
+$X \in \mathbb{R}^{16 \times 4}$ (16 rows $\times$ 4 factor levels)
+
+$\beta \in \mathbb{R}^4$ (4 factor levels)
+
+$y, \epsilon \in \mathbb{R}^{16}$ (16 rows)
+
+$\gamma \in \mathbb{R}^7$ (1 intercept + $(3-1)$ from factor 1 + $(3-1)$ from 
+factor 2)
+
+$Z \in \mathbb{R}^{16 \times 7}$, or the number of rows $\times$ $\dim(\gamma)$
+
+## Part c
+
+```{r p2_c}
+fixed.mod <- lm(y ~ day + operator + supplier, data = breaking.df)
+summary(fixed.mod)
+drop1(fixed.mod, test = 'F')
+
+anova(fixed.mod, lm(y ~ supplier, data = breaking.df))
+fixed.mod <- lm(y ~ supplier, data = breaking.df)
+summary(fixed.mod)
+```
+
+It appears that `supplier` is the only significant covariate.
+
+## Part d
+
+```{r p2_d}
+mixed.mod <- lmer(y ~ supplier + (1 | operator) + (1 | day), data = breaking.df)
+summary(mixed.mod)
+```
+
+The experiment was conducted to select a supplier, so it is the effect of 
+interest. 
+
+Supplier C has the highest breaking point, as we saw in the fixed effect model 
+and the plots.
+
+## Part e
+
+```{r p2_e}
+mixed.op.mod <- lmer(y ~ supplier + (1 | operator), data = breaking.df)
+mixed.day.mod <- lmer(y ~ supplier + (1 | day), data = breaking.df)
+
+exactRLRT(mixed.op.mod, mixed.mod, mixed.day.mod)
+exactRLRT(mixed.day.mod, mixed.mod, mixed.op.mod)
+```
+
+Neither are significant.
