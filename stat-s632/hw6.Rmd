@@ -89,15 +89,20 @@ confint(rand.eff.mod, method = 'boot')
 ```
 
 Since the lower bound of the interval is 0, we cannot say that the variance 
-of `supplier` is significant.
+of `supplier` is significant. We can also see this from the $p$-value.
 
-### Likelihood ratio test
-
-```{r p1_d_aic}
+```{r p1_d_boostrap_2}
 exactRLRT(rand.eff.mod)
 ```
 
-We get a rather large $p$-value, indicating lack of significance.
+### LR test
+
+```{r p1_d_lr}
+mle.mod <- lmer(waste ~ 1 + (1 | supplier), data = denim.df, REML = FALSE)
+pchisq(2 * (logLik(mle.mod) - logLik(fixed.mod)), 1, lower.tail = FALSE)
+```
+
+We get a $p$-value of 1.
 
 ## Part e
 
