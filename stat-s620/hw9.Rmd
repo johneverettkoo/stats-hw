@@ -1,0 +1,206 @@
+---
+title: "STAT-S620"
+subtitle: 'Assignment 9'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 5)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# MLE for binomial distribution
+
+## Part a
+
+$X \sim Binom(n, p)$, so $L(p|x) = \binom{n}{x} p^x (1-p)^{n-x}$. Then 
+$\ell(p|x) = \log \binom{n}{x} + x \log p + (n-x) \log (1-p)$ and 
+$\ell'(p|x) = \frac{x}{p} - \frac{n-x}{1-p} = 0$
+$\implies x (1-p) = p (n-x)$ 
+$\implies \boxed{\hat{p} = \frac{x}{n}}$
+
+## Part b
+
+$X_1, ..., X_m \stackrel{iid}{\sim} Binom(n, p)$. Then 
+$L(p) = \prod_{i=1}^m \binom{n}{x_i} p^{x_i} (1-p)^{n - x_i}$ and 
+$\ell(p) = \sum_i^m \bigg(
+  \log \binom{n}{x_i} + x_i \log p + (n - x_i) \log (1-p)
+\bigg)$. Then 
+$\ell'(p) = \frac{1}{p} \sum_i x_i - \frac{1}{1-p} \sum_i (n - x_i) = 0$
+$\implies (1 - p) \sum_i x_i = p \sum_i n - p \sum_i x$
+$\implies \sum_i x_i = p n m$
+$\implies \boxed{\hat{p} = \frac{\bar{x}}{n}}$
+
+# Second question
+
+## Part a
+
+$\mu_1 = E[X] = \int_0^1 (\theta + 1) x^{\theta + 1} dx$
+$= \frac{\theta + 1}{\theta + 2}$
+
+Then if we set $\bar{X} = \frac{\theta + 1}{\theta + 2}$ 
+$\implies (\bar{X} - 1) \theta = 1 - 2 \bar{X}$
+$\implies \boxed{\hat{\theta} = \frac{1 - 2 \bar{X}}{\bar{X} - 1}}$.
+
+## Part b
+
+Let $X_1, ... X_n \stackrel{iid}{\sim} f(x) = (\theta + 1) x^\theta$. Then 
+$L(\theta) = \prod_i^n (\theta + 1) x_i^\theta$ 
+$\implies \ell(\theta) = \sum_i^n \log (\theta + 1) + \theta \log x_i$ 
+$= n \log (\theta + 1) + \theta \sum_i^n \log x_i$. Then 
+$\ell'(\theta) = \frac{n}{\theta + 1} + \sum_i x_i = 0$
+$\implies -\bar{x} (\theta + 1) = 1$
+$\implies \hat{\theta} = -1 - \frac{1}{\bar{x}} = \frac{-\bar{x} - 1}{\bar{x}}$. 
+But $\theta > -1$, so this does not work. Furthermore, we can see that 
+$\ell(\theta)$ is actually an increasing function, so the maximum is at 
+$\theta \rightarrow \infty$. 
+
+# 5.7.4
+
+$f(x) = \frac{1}{\Gamma(\alpha) \beta^\alpha} x^{\alpha - 1} \exp (-x / \beta)$, 
+then $f'(x) = 
+  \frac{1}{\Gamma(\alpha) \beta^\alpha} e^{-x/\beta} x^{\alpha - 2}
+  (\alpha - 1 - \frac{x}{\beta}) = 0$. Then solving for $x$, we get $x = 0$ or 
+$x = \beta (\alpha - 1)$. The latter solution only works when $\alpha \geq 1$ 
+since $x \geq 0$. Furthermore, from our $f'(x)$, we can see that the 
+coefficient, exponential, and $x^{\alpha - 2}$ terms are all positive, so if 
+$\alpha < 1$, $f'(x) < 0$. In that case, the only solution is $x = 0$. 
+
+# 7.4.4
+
+From a previous example, our estimator for $\theta | X$ is 
+$\frac{\alpha + \sum_i X_i}{\alpha + \beta + n}$. 
+
+$$\frac{\alpha + \sum_i X_i}{\alpha + \beta + n}$$
+$$= \frac{\alpha}{\alpha + \beta + n} + \frac{\sum_i X_i}{\alpha + \beta + n}$$
+$$= \frac{(\alpha + \beta) \mu_0}{\alpha + \beta + n} + 
+\frac{n \bar{X}_n}{\alpha + \beta + n}$$
+$$= \frac{n}{\alpha + \beta + n} \bar{X}_n + 
+\bigg(1 - \frac{n}{\alpha + \beta + n} \bigg) \mu_0$$
+
+Then if we let $\gamma_n = \frac{n}{\alpha + \beta + n}$, we get:
+
+$$\gamma_n \bar{X}_n + (1 - \gamma_n) \mu_0$$
+
+Furthermore, $\lim_{n \rightarrow \infty} \frac{n}{\alpha + \beta + n} = 
+\frac{1}{\alpha / n + \beta / n + 1} = 1$.
+
+# 7.4.5
+
+Let $Y = \sum_i X_i$ Then:
+
+$Y | \theta \sim Poisson(n \theta)$  
+$\theta \sim Gamma(\alpha, \beta)$
+
+Then:
+
+$$f(\theta | y) \propto f(y | \theta) f(\theta)$$
+$$\propto \frac{e^{-n \theta} (n \theta)^y}{y!} 
+\frac{1}{\Gamma(\alpha) \beta^\alpha} \theta^{\alpha - 1} e^{-\theta / \beta}$$
+$$\propto \theta^{y + \alpha - 1} e^{-(n + 1 / \beta) \theta}$$
+
+Then $\theta | Y \sim Gamma \big(y + \alpha, \frac{\beta}{n \beta + 1} \big)$ 
+$\implies E[\theta | Y] = (y + \alpha) \frac{n \beta + 1}{\beta}$
+$= (13 + 3) \frac{1}{ \cdot 1 + 1} = \boxed{8 / 3}$
+
+# 7.5.5
+
+## Part a
+
+$L(\theta) = \prod_i^n \frac{e^{-\theta} \theta^{x_i}}{x_i !}$. Then 
+$\ell(\theta) = \sum_i^n \big( -\theta + x_i \log \theta - \log x_i ! \big)$ 
+$= -n \theta + n \bar{x} \log \theta - \sum_i^n \log x_i !$. Then 
+$\ell'(\theta) = -n + \frac{n \bar{x}}{\theta} = 0$
+$\implies \boxed{\hat{\theta} = \bar{x}}$
+
+## Part b
+
+If every $x_i$ is 0, then $\bar{x} = 0$ and we get $\ell'(\theta) = -n = 0$, 
+but $n > 0$, which is a contradiction.
+
+# 7.5.9
+
+$L(\theta) = \prod_i^n \theta x_i^{\theta - 1}$, and 
+$\ell(\theta) = n \log \theta + \sum_i^n (\theta - 1) \log x_i$. Then 
+$\ell'(\theta) = \frac{n}{\theta} + \sum_i \log x_i = 0$
+$\implies \boxed{\hat{\theta} = -\frac{n}{\sum_i^n \log x_i}}$
+
+# 7.6.3
+
+$X_1, ..., X_n \stackrel{iid}{\sim} Exp(\beta)$. Then 
+$L(\beta) = \prod_i^n \beta e^{-\beta x_i}$ and 
+$\ell(\beta) = n \log \beta - \beta \sum_i^n x_i$
+$\implies \ell'(\beta) = \frac{n}{\beta} - n \bar{x} = 0$
+$\implies \hat{\beta} = \frac{1}{\bar{x}}$.
+
+Next, we plug this into our pdf and find the median, which is the value $m$ 
+such that $1/2 = \int_0^m f(x) dx$:
+
+$$1/2 = \int_0^m \beta e^{-\beta x} dx$$
+$$= 1 - e^{-\beta m}$$
+$$\implies -\beta m = -\log 2$$
+$$\implies m = \frac{\log 2}{\beta}$$
+And if we plug in $\hat{\beta}$, we get $\boxed{\hat{m} = \bar{x} \log 2}$.
+
+
+# 7.6.8
+
+We are given $X_1, ..., X_n \stackrel{iid}{\sim} Gamma(\alpha, 1)$. Then 
+$L(\alpha) = \prod_i^n \frac{1}{\Gamma(\alpha)} x_i^{\alpha- 1} e^{-x_i}$ and 
+$\ell(\alpha) =
+-n \log \Gamma(\alpha) + (\alpha - 1) \sum_i \log x_i - \sum_i x_i$. Then 
+$\ell'(\alpha) = -\frac{n \Gamma'(\alpha)}{\Gamma(\alpha)} + \sum_i \log x_i =0$
+$\implies \boxed{
+  \frac{\Gamma'(\alpha)}{\Gamma(\alpha)} = \frac{1}{n} \sum_i^n \log x_i
+}$.
+
+# 7.6.9
+
+We have $L(\alpha, \beta) = 
+  \prod_i^n \frac{1}{\Gamma(\alpha) \beta^\alpha} 
+  x_i^{\alpha - 1} e^{-x_i / \beta}$. Then 
+$\ell(\alpha, \beta) = -n \log \Gamma(\alpha) - n \alpha \log \beta + 
+  (\alpha - 1) \sum_i \log x_i - \beta^{-1} \sum_i x_i$. 
+  
+$\partial_\beta \ell = -\frac{n \alpha}{\beta} + \beta^{-2} \sum_i x_i = 0$
+$\implies n \alpha \beta = \sum_i x_i$
+$\implies \boxed{\alpha \beta = \bar{x}}$
+
+# 7.6.10
+
+We have $L(\alpha, \beta) = \prod_i^n
+  \frac{1}{B(\alpha, \beta)} x_i^{\alpha - 1} (1 - x_i)^{\beta - 1}$ and 
+$\ell(\alpha, \beta) = 
+  -n \log B(\alpha, \beta) + 
+  (\alpha - 1) \sum_i x_i + (\beta - 1) \sum_i \log (1 - x_i)$. We can then 
+rewrite this as $\ell(\alpha, \beta) = 
+  n \log \Gamma(\alpha + \beta) - 
+  n \log \Gamma(\alpha) - n \log \Gamma(\beta) + 
+  (\alpha - 1) \sum_i \log x_i + (\beta - 1) \sum_i \log (1 - x_i)$. Then 
+  
+$\partial_\alpha \ell = 
+  \frac{n \Gamma'(\alpha + \beta)}{\Gamma(\alpha + \beta)} - 
+  \frac{n \Gamma'(\alpha)}{\Gamma(\alpha)} + \sum_i \log x_i = 0$ and 
+$\partial_\beta \ell = 
+  \frac{n \Gamma'(\alpha + \beta)}{\Gamma(\alpha + \beta)} - 
+  \frac{n \Gamma'(\beta)}{\Gamma(\beta)} + \sum_i \log (1 - x_i) = 0$. 
+Subtracting the top from the bottom, we get: 
+$\frac{n \Gamma'(\alpha)}{\Gamma(\alpha)} - 
+  \frac{n \Gamma'(\beta)}{\Gamma(\beta)} + \sum_i \log \frac{1 - x_i}{x_i} = 0$ 
+$\implies \boxed{
+  \frac{\Gamma'(\alpha)}{\Gamma(\alpha)} - 
+  \frac{\Gamma'(\beta)}{\Gamma(\beta)} = 
+  \frac{1}{n} \sum_i \log \frac{x_i}{1 - x_i}}$
