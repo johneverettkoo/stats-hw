@@ -272,8 +272,11 @@ Longitudinal study
 data(psid, package = 'faraway')
 summary(psid)
 
-# psid.mod <- lmer(log(income) ~ cyear * sex + age + educ + (cyear | person), 
-#                  data = psid)
+psid$cyear <- psid$year - 78
+
+psid.mod <- lmer(log(income) ~ cyear * sex + age + educ + (cyear | person),
+                 data = psid)
+summary(psid.mod)
 ```
 
 Note that in this model, `cyear` is both a fixed effect and a random effect
