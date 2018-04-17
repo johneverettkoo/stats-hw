@@ -1,0 +1,73 @@
+---
+title: "STAT-S632"
+subtitle: 'Longitudinal Data'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+**def** *longitudinal study* - Repeated measurements over time, also called a 
+"panel study"; sometimes interested in how covariates change over time (or if 
+they don't); fixed effect - function of covariates; random effect - variation 
+among individuals
+
+Given individual responses $y_i \in \mathbb{R}^{n_i}$ and random effects 
+$\gamma_i$, we can model this as:
+
+$$y_i | \gamma_i \sim \mathcal{N}(X_i \beta + Z_i \gamma_i, \sigma^2 \Lambda_i)$$
+
+If we assume $\gamma_i \sim \mathcal{N}(X_i \beta, \Sigma_i)$, then we get:
+
+$$y_i \sim \mathcal{N}(X_i \beta, \Sigma_i)$$
+
+where $\Sigma_i = \sigma^2 (\Lambda_i + Z_i D Z_i^T)$.
+
+If there are $M$ individuals, we can put all of this together as follows:
+
+$$y = \begin{bmatrix} y_1 \\ y_2 \\ \vdots \\ y_M \end{bmatrix}$$
+$$X = \begin{bmatrix} X_1 \\ X_2 \\ \vdots \\ X_M \end{bmatrix}$$
+$$\gamma = \begin{bmatrix} 
+  \gamma_1 \\ \gamma_2 \\ \vdots \\ \gamma_M 
+\end{bmatrix}$$
+$$\tilde{D} = diag(D, ..., D)$$
+$$Z = diag(Z_1, ..., Z_m)$$
+$$\Sigma = diag(\Sigma_1, ..., \Sigma_M)$$
+$$\Lambda = diag(\Lambda_1, ..., \Lambda_M)$$
+
+Then we can write the whole model as:
+
+$$y \sim \mathcal{N}(X \beta, \Sigma)$$
+$$\Sigma = \sigma^2 (\Lambda + Z \tilde{D} Z^T)$$
+
+## Example: PSID
+
+```{r}
+library(ggplot2)
+import::from(magrittr, `%>%`, `%<>%`)
+
+theme_set(theme_bw())
+
+data(psid, package = 'faraway')
+summary(psid)
+
+psid20 <- dplyr::filter(psid, person <= 20)
+
+ggplot(psid20, aes(x = year, y = income)) + 
+  geom_line() + 
+  facet_wrap(~ person)
+```

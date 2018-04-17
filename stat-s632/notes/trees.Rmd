@@ -1,0 +1,101 @@
+---
+title: "STAT-S632"
+subtitle: 'Tree Models'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Regression Trees
+
+Recusrive partitioning algorithm:
+
+1. Consider all partitions of size 2 for each predictor. We have at most 
+$(n - 1) p$ of them (if all $p$ predictors are continuous).
+2. For each partition, take the mean of the response in that partition. Compute 
+$RSS(partition) = RSS(part_1) + RSS(part_2)$. Choose the one that minimizes 
+this. 
+3. Subpartition the partitions in a recursive manner.
+
+For an ordinal predictor with $L$ levels, there are at moast $L - 1$ possible 
+splits. For a categorical and unordered factor, there are $2^{L-1} - 1$ possible 
+splits. We might want a strategy for limiting the number of possibilities.
+
+We might want to treat missigness as an additional factor
+
+```{r, fig.width = 13, fig.height = 8}
+library(rpart)
+library(ggplot2)
+import::from(magrittr, `%>%`, `%<>%`)
+library(rpart.plot)
+
+theme_set(theme_bw())
+
+data(ozone, package = 'faraway')
+summary(ozone)
+
+tmod <- rpart(O3 ~ ., ozone)
+tmod
+
+plot(tmod)
+text(tmod)
+
+plot(tmod, compress = TRUE, uniform = TRUE, branch = .4)
+text(tmod)
+```
+
+```{r}
+ozone %>% 
+  dplyr::mutate(fitted = predict(tmod), 
+                resid = residuals(tmod)) %>% 
+  ggplot() + 
+  geom_point(aes(x = fitted, y = resid), alpha = .2) + 
+  geom_abline(slope = 0, colour = 'red')
+```
+
+```{r fig.width = 5}
+qqnorm(residuals(tmod))
+qqline(residuals(tmod))
+```
+
+# Tree pruning
+
+Question: When do we stop partitioning?
+
+*Greedy strategy* - keep partitioning until $RSS \leq \epsilon$---how to set 
+$\epsilon$?
+
+Issue: RSS and deviance improve as model complexity increases---need to penalize 
+large models
+
+One strategy - leave-one-out CV $\sum_j^n (y_i - f_{-j}(x_j))^2$
+
+Cross validation can be expensive. Instead can try a penalized loss function
+$CC(Tree) = 
+  \sum_{i \in \text{terminal nodes}} 
+    RSS_i + \lambda \times (\text{# terminal nodes})$
+
+```{r}
+tmod <- rpart(O3 ~ ., data = ozone, cp = .001)
+printcp(tmod)
+plotcp(tmod)
+rpart.plot(tmod, type = 3)
+
+tmodr <- prune.rpart(tmod, .0154)
+1 - var(residuals(tmodr)) / var(ozone$O3)
+```
