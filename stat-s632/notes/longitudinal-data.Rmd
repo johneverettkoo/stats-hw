@@ -59,6 +59,8 @@ $$\Sigma = \sigma^2 (\Lambda + Z \tilde{D} Z^T)$$
 ```{r}
 library(ggplot2)
 import::from(magrittr, `%>%`, `%<>%`)
+library(lme4)
+library(RLRsim)
 
 theme_set(theme_bw())
 
@@ -70,4 +72,135 @@ psid20 <- dplyr::filter(psid, person <= 20)
 ggplot(psid20, aes(x = year, y = income)) + 
   geom_line() + 
   facet_wrap(~ person)
+
+ggplot(psid20, aes(x = year, y = income, group = person)) + 
+  geom_line() + 
+  scale_y_log10() + 
+  facet_wrap(~ sex)
+
+ggplot(psid20, aes(x = year, y = income, group = person, colour = sex)) + 
+  geom_line() + 
+  scale_y_log10() + 
+  scale_colour_brewer(palette = 'Set1')
 ```
+
+## Multi-level (hierarchical) models 
+
+$y$ is the math score in third year.
+
+Issue: Students are not independent 
+
+```{r}
+data(jsp, package = 'faraway')
+jspr <- dplyr::filter(jsp, year == 2)
+summary(jspr)
+
+ggplot(jspr) + 
+  geom_point(aes(x = raven, y = math), alpha = .1)
+
+ggplot(jspr) + 
+  geom_boxplot(aes(x = social, y = math))
+
+glin <- lm(math ~ raven * gender * social, data = jspr)
+summary(glin)
+car::Anova(glin)
+glin <- lm(math ~ raven + social, data = jspr)
+summary(glin)
+
+mmod <- lmer(math ~ raven * social * gender + (1 | school) + (1 | school:class), 
+             data = jspr)
+mmodr <- lmer(math ~ raven * social + (1 | school) + (1 | school:class), 
+              data = jspr)
+pbkrtest::KRmodcomp(mmod, mmodr)  # this is wrong when REML = TRUE
+
+all3 <- lmer(math ~ raven * social * gender + (1 | school) + (1 | school:class),
+             data = jspr, REML = FALSE)
+all2 <- update(all3, . ~ . - raven:social:gender)
+notrs <- update(all2, . ~ . - raven:social)
+notrg <- update(all2, . ~ . - raven:gender)
+notsg <- update(all2, . ~ . - social:gender)
+onlyrs <- update(all2, . ~ . - social:gender - raven:gender)
+all1 <- update(all2, . ~ . - social:gender - raven:gender - social:raven)
+nogen <- update(all1, . ~ . - gender)
+anova(all3, all2, notrs, notrg, notsg, onlyrs, all1, nogen)
+# the chi-squared tests don't make sense in this case
+
+# choosing model with lowest AIC
+jspr$craven <- jspr$raven - mean(jspr$raven)
+mmod <- lmer(math ~ craven * social + (1 | school) + (1 | school:class),
+            data = jspr)
+summary(mmod)
+```
+
+Interpretations
+
+* `social4`: when you move `social` from 1 to 4, on average the math score drops 
+by $-1.967$ (given a fixed level of `craven = 0`).
+* `craven`: If `craven` increases by 1, for a given social class, the average 
+increase in the math score is $.6058$.
+
+```{r, cache = TRUE}
+diagd <- fortify(mmod)
+head(diagd)
+
+ggplot(diagd) + 
+  stat_qq(aes(sample = .resid))
+
+# suggests nonconstant variance
+ggplot(diagd) + 
+  geom_point(aes(x = .fitted, y = .resid), alpha = .2) + 
+  geom_abline(slope = 0, colour = 'red')
+
+qqnorm(ranef(mmod)$school[[1]])
+qqnorm(ranef(mmod)$`school:class`[[1]])
+```
+
+Notes on the residual plot
+
+* Nonconstant variance
+* Math scores are capped at 40
+
+```{r}
+adjscores <- ranef(mmod)$school[[1]]
+rawscores <- coef(lm(math ~ school - 1, data = jspr))
+rawscores <- rawscores - mean(rawscores)
+plot(rawscores, adjscores)
+sint <- c(9, 14, 29)
+text(rawscores[sint], adjscores[sint] + .2, c(9, 15, 30))
+```
+
+We can see schools 9 and 15 tend to have below-average math scores.
+
+```{r, cache = TRUE}
+mmodc <- lmer(math ~ craven * social + (1 | school:class),
+              data = jspr)
+mmods <- lmer(math ~ craven * social + (1 | school),
+              data = jspr)
+exactRLRT(mmodc, mmod, mmods)
+exactRLRT(mmods, mmod, mmodc)
+schraven <- lm(raven ~ school, jspr)$fit
+mmodc <- lmer(math ~ craven * social + schraven * social + 
+                (1 | school) + (1 | school:class),
+              data = jspr)
+pbkrtest::KRmodcomp(mmod, mmodc)
+```
+
+* The first test is for the `class` effect  
+$H_0$ : $\sigma_c^2 = 0$; $H_1$ : $\sigma_c^2 > 0$
+* The second test is for the `school` effect  
+$H_1$ : $\sigma_s^2 > 0$
+
+Based on these results, we should use `mmods`
+
+```{r}
+summary(mmods)
+```
+
+Interpretations of random effects:
+
+* `school` in conjunction with residuals: consider the (estimated) ratio 
+$\frac{\sigma_s^2}{\sigma_s^2 + \sigma_\epsilon^2}$---this is the interclass
+correlation coefficient and shows that the random effect is important and the 
+error is negligible. On the other hand, if we get something closer to 0, then 
+that shows that the random effect isn't as important (which should result in
+similar fixed effects as a regular linear regression model)
