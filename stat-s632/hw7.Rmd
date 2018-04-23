@@ -1,0 +1,136 @@
+---
+title: "STAT-S632"
+subtitle: 'Assignment 7'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+fontsize: 9pt 
+# geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1
+
+```{r p1_setup}
+library(ggplot2)
+import::from(magrittr, `%>%`)
+library(lme4)
+import::from(pbkrtest, KRmodcomp)
+
+theme_set(theme_bw())
+
+rat.test.df <- faraway::ratdrink
+summary(rat.test.df)
+```
+
+## Part a
+
+```{r p1_a}
+ggplot(rat.test.df) + 
+  geom_line(aes(x = weeks, y = wt, group = subject, colour = treat)) + 
+  scale_colour_brewer(palette = 'Set1')
+
+ggplot(rat.test.df) + 
+  geom_point(aes(x = weeks, y = wt, group = subject, colour = treat)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_fill_brewer(palette = 'Set1') + 
+  stat_smooth(aes(x = weeks, y = wt, colour = treat, fill = treat))
+```
+
+```{r p1_a_2, fig.width = 12}
+ggplot(rat.test.df) + 
+  geom_line(aes(x = weeks, y = wt, group = subject)) + 
+  facet_wrap(~treat)
+```
+
+Weight increases over time, but it appears that the rats treated with thlouracil 
+gained less weight.
+
+## Part b
+
+```{r p1_b}
+mixed.mod <- lmer(wt ~ weeks * treat + (weeks | subject), data = rat.test.df)
+summary(mixed.mod)
+```
+
+* Intercept - The average weight at week 0 for the baseline (control) group
+* `weeks:thiouracil` - On average, each week the rats in the thiouracil group 
+gained 9.4 units less in weight compared to the baseline (control) group.
+* $\hat{\sigma}_{intercept}$ - Since this is greater than 
+$\hat{\sigma}_\epsilon$, the subject effect is not negligible. We can also 
+compute the ICC, which is $\approx 0.632$. 
+
+## Part c
+
+The $D$ matrix has the form $diag(d, d, ..., d)$ where each of the 27 (one for 
+each subject) $d$s is a $2 \times 2$ variance-covariance matrix of the form 
+$d = \begin{bmatrix} 
+  \sigma_1^2 & \sigma_{12} \\ \sigma_{12} & \sigma_2^2
+\end{bmatrix}$. So $D \in \mathbb{R}^{54 \times 54}$.
+
+## Part d
+
+```{r p1_d}
+week.mod <- lmer(wt ~ weeks + (weeks | subject), data = rat.test.df)
+KRmodcomp(mixed.mod, week.mod)
+```
+
+The treatment effect is significant, but we can also see whether the interaction 
+term is.
+
+```{r p1_d_2}
+no.inter.mod <- lmer(wt ~ weeks + treat + (weeks | subject), 
+                     data = rat.test.df)
+KRmodcomp(mixed.mod, no.inter.mod)
+```
+
+And we can see that the interaction term is also significant.
+
+## Part e
+
+```{r p1_e, fig.width = 4}
+diag.df <- ggplot2::fortify(mixed.mod)
+summary(diag.df)
+
+ggplot(diag.df) +
+  stat_qq(aes(sample = .resid))
+
+qqnorm(ranef(mixed.mod)$subject$`(Intercept)`)
+qqnorm(ranef(mixed.mod)$subject$weeks)
+```
+
+```{r p1_e_2}
+ggplot(diag.df) + 
+  geom_point(aes(x = .fitted, y = .resid), alpha = .2) + 
+  geom_abline(slope = 0, colour = 'red')
+```
+
+We don't have too much evidence of non-normality or heteroscedacity of the 
+residuals. There also isn't much evidence that the random effects are not 
+normally distributed. We also don't see any outliers.
+
+## Part f
+
+```{r p1_f, cache = TRUE}
+confint(mixed.mod, method = 'boot')
+```
+
+Based on the confidence intervals, the random effects are significant. However, 
+looking at the fixed effects, we can see that since both the marginal and 
+interaction terms for `thyroxine` have confidence intervals that contain 0, 
+they may not differ significantly from the control group. 
