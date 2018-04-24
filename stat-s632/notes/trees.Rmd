@@ -21,6 +21,29 @@ options(xtable.comment = FALSE,
         xtable.table.placement = 'H')
 ```
 
+```{r setup_2}
+library(rpart)
+library(ggplot2)
+import::from(magrittr, `%>%`, `%<>%`)
+library(rpart.plot)
+import::from(randomForest, randomForest)
+
+theme_set(theme_bw())
+```
+
+Before, we discussed OLS, GLS, and mixed models. These are "model based 
+approaches". We fored some model to be fit to the data, and then we checked to 
+see if the data actually is an appropriate fit to such a model (diagnostics and 
+model selection). Then we came up with some interpretations of model parameters, 
+predictions, and estimations (model inference). 
+
+Next, we look at "algorithm-based approahces". This involves devising some 
+method (AKA an algorithm) that produces appropriate results. Now we don't have 
+model parameters to be estimated. Instead, we are only concerned with 
+predictions. In some cases, we can obtain some interpretations based on the 
+results, which are largely restricted to coming up with a relationship between 
+a predictor or a group of predictors and the response.
+
 # Regression Trees
 
 Recusrive partitioning algorithm:
@@ -32,6 +55,19 @@ $RSS(partition) = RSS(part_1) + RSS(part_2)$. Choose the one that minimizes
 this. 
 3. Subpartition the partitions in a recursive manner.
 
+Then once we obtain the final partitioning, we can say that the predicted 
+response for each partition is the average response in that partition (and we 
+can also obtain summary statistics for each partition).
+
+```{r, echo = FALSE}
+# ggplot(iris) + 
+#   geom_point(aes(x = Petal.Length, y = Petal.Width, colour = Species)) + 
+#   labs(x = expression(x[1]), y = expression(x[2])) + 
+#   guides(colour = FALSE) + 
+#   geom_vline(xintercept = 2.45) + 
+#   geom_segment(x = 2.45, xend = 8, y = 1.75, yend = 1.75)
+```
+
 For an ordinal predictor with $L$ levels, there are at moast $L - 1$ possible 
 splits. For a categorical and unordered factor, there are $2^{L-1} - 1$ possible 
 splits. We might want a strategy for limiting the number of possibilities.
@@ -39,13 +75,6 @@ splits. We might want a strategy for limiting the number of possibilities.
 We might want to treat missigness as an additional factor
 
 ```{r, fig.width = 13, fig.height = 8}
-library(rpart)
-library(ggplot2)
-import::from(magrittr, `%>%`, `%<>%`)
-library(rpart.plot)
-
-theme_set(theme_bw())
-
 data(ozone, package = 'faraway')
 summary(ozone)
 
@@ -59,43 +88,104 @@ plot(tmod, compress = TRUE, uniform = TRUE, branch = .4)
 text(tmod)
 ```
 
+In the diagrams above, if the condition at a node is met, go to the left branch, 
+else go to the right branch.
+
+The values at the terminal nodes are $\hat{y}$, the average responses after 
+following the branches.
+
 ```{r}
 ozone %>% 
   dplyr::mutate(fitted = predict(tmod), 
                 resid = residuals(tmod)) %>% 
   ggplot() + 
-  geom_point(aes(x = fitted, y = resid), alpha = .2) + 
+  geom_point(aes(x = fitted, y = resid), alpha = .1) + 
   geom_abline(slope = 0, colour = 'red')
 ```
+
+... but we are not assuming homoscedacity. There are no model assumptions here. 
 
 ```{r fig.width = 5}
 qqnorm(residuals(tmod))
 qqline(residuals(tmod))
 ```
 
-# Tree pruning
+We are also not assuming normality of the residuals.
+
+## Tree pruning, model selection
 
 Question: When do we stop partitioning?
 
-*Greedy strategy* - keep partitioning until $RSS \leq \epsilon$---how to set 
-$\epsilon$?
+In theory, we can have as many terminal nodes as we have data points, but that 
+doesn't tell us much about the data.
+
+*Greedy strategy* - keep partitioning until reduction in 
+$RSS \leq \epsilon$---how to set $\epsilon$?
 
 Issue: RSS and deviance improve as model complexity increases---need to penalize 
 large models
 
-One strategy - leave-one-out CV $\sum_j^n (y_i - f_{-j}(x_j))^2$
+One strategy - leave-one-out CV: $\sum_j^n (y_j - f_{-j}(x_j))^2$, then do this 
+for all possible trees and pick the one with the smallest CV RSS.
+
+Another - $k$-fold CV
+
+1. Randomly partition data into $k$ partitions of roughly equal size
+2. For $i = 1$ to $k$, predict on the $k$^th^ partition after fitting a model on 
+the other $k-1$ partitions collectively.
+3. Calculate RSS for the $k$^th^ group, then sum them up to find total RSS.
+4. Do this for all possible types of trees and pick the best type.
+
+What do we mean by types of trees:
+
+* Usually, fix a number of terminal nodes
+* Tree depth
 
 Cross validation can be expensive. Instead can try a penalized loss function
 $CC(Tree) = 
   \sum_{i \in \text{terminal nodes}} 
-    RSS_i + \lambda \times (\text{# terminal nodes})$
+    RSS_i + \lambda \times (\text{# terminal nodes})$  
+(cost-complexity function)
+
+Need to choose $\lambda$ (complexity parameter)
+
+In `rpart` package, uses $cp = \frac{\lambda}{RSS_0}$ where $RSS_0 =$ 
+$RSS$ for entire data (root node)
 
 ```{r}
+set.seed(123)
 tmod <- rpart(O3 ~ ., data = ozone, cp = .001)
 printcp(tmod)
 plotcp(tmod)
 rpart.plot(tmod, type = 3)
 
+names(tmod)
+
 tmodr <- prune.rpart(tmod, .0154)
 1 - var(residuals(tmodr)) / var(ozone$O3)
+1 - var(residuals(tmod)) / var(ozone$O3)
 ```
+
+## Random forests
+
+*Bagging* - bootstrap aggregating
+
+For $b = 1, ..., B$:
+
+1. Draw a random sample with replacement from the data $(X, Y)$ to generate 
+a bootstrapped sample $(X_b, Y_b)$
+2. Fit a regression tree to $(X_b, Y_b)$
+3. For out of bag, obtain MSE
+
+End up with $B$ trees (a forest).
+
+$\bar{T} =$ average of $B$ iid random variables each with variance $\sigma^2$
+has variance $\frac{\sigma^2}{B}$. But if these are not independent, we get 
+$var(\bar{T}) = \rho \sigma^2 + \frac{1 - \rho}{B} \sigma^2$
+
+To reduce correlation among trees, do not use all variables at each node 
+(typically $\sqrt{p}$)
+
+```{r}
+fmod <- randomForest(O3 ~ ., ozone)
+plot(fmod)
