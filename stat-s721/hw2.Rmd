@@ -1,0 +1,115 @@
+---
+title: 'S721 HW2'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1.12
+
+## Part a
+
+Let $A_n = \emptyset$ $\forall n > 2$. Then $A_1, A_2, ..., A_n, ...$ are 
+pairwise disjoint, and $P(\cup_i^\infty A_i) = \sum_i^\infty P(A_i)$.
+
+Since $A_3, ..., A_n, ... = \emptyset$, 
+$P(\cup_i^\infty A_i) = P(A_1 \cup A_2 \cup A_3 \cup \cdots ) =$
+$P(A_1 \cup A_2 \cup \emptyset \cup \emptyset \cup \cdots) = P(A_1 \cup A_2)$. 
+
+We also have $\forall n > 2$, $P(A_n) = P(\emptyset) = 0$. Then 
+$\sum_i^\infty P(A_i) = P(A_1) + P(A_2) + 0 + 0 + \cdots = P(A_1) + P(A_2).$ 
+
+Therefore, $P(A_1 \cup A_2) = P(A_1) + P(A_2)$.
+
+## Part b
+
+Let $B_n = \cup_{i=n}^\infty A_i$. Then 
+$B_n \subset B_{n-1} \subset \cdots \subset B_1$. We can also say 
+$P(\cup_{i=1}^\infty A_i) = P((\cup_{i=1}^n A_i) \cup B_{n+1}) =
+\sum_{i=1}^n P(A_i) + P(B_{n+1})$ (note that we're looking at a *finite* $n$ 
+here).
+
+As $n \rightarrow \infty$, $B_{n+1} \rightarrow \emptyset$ since 
+$A_n \downarrow A$. Then we have 
+$\lim_{n \rightarrow \infty} P(\cup_i^n A_i) = P(\cup_i^\infty A_i)$, and on 
+the other hand, we have 
+$\lim_{n \rightarrow \infty} \sum_i^n P(A_i) + P(B_{n+1}) =$ 
+$\sum_i^\infty P(A_i) + P(\emptyset) = \sum_i^\infty P(A_i)$. Putting it all 
+together, we get:
+
+$$P(\cup_i^\infty A_i) = \lim_{n \rightarrow \infty} P(\cup_i^n A_i) = 
+  \lim_{n \rightarrow \infty} \sum_i^n P(A_i) + P(B_{n+1}) = 
+  \sum_i^\infty P(A_i)$$
+
+# Problem 1.13
+
+$P(B^c) = 1/4 \implies P(B) = 3/4$. Then if $A$ and $B$ are disjoint, 
+$P(A \cup B) = P(A) + P(B) = 1/3 + 3/4 = 13/12 > 1$. Therefore, $A$ and $B$ 
+cannot be disjoint.
+
+# Problem 1.14
+
+Let $S = \{s_1, ..., s_n\}$ where $s_i$ is the $i$^th^ element of $S$ (although 
+order doesn't matter). Then any subset of $S$ can be constructed by going 
+through each $s_i$ and either including it or not. Since there are 2 choices 
+per element and $n$ elements, there are $2^n$ possible subsets.
+
+# Not from textbook
+
+## Problem 1
+
+We can rewrite in terms of disjoint sets: 
+
+$A = (A \cap B) \cup (A \cap B^c)$  
+$B = (B \cap A) \cup (B \cap A^c)$
+
+Then, again in terms of disjoint sets, $A \cup B = 
+((A \cap B) \cup (A \cap B^c)) \cup ((B \cap A) \cup (B \cap A^c)) =$
+$(A \cap B^c) \cup (B \cap A^c) \cup ((A \cap B) \cup (A \cap B)) =$
+$(A \cap B^c) \cup (B \cap A^c) \cup (A \cap B)$. 
+
+Then since the sets are disjoint, 
+$P(A \cup B) = P(A \cap B^c) + P(B \cap A^c) + P(A \cap B)$.
+
+We can also see that $P(A) = P(A \cap B) + P(A \cap B^c)$. Then 
+$P(A \cap B^c) = P(A) - P(A \cap B)$, and vice versa. 
+
+Therefore, $P(A \cup B) = P(A \cap B^c) + P(B \cap A^c) + P(A \cap B) =$ 
+$(P(A) - P(A \cap B)) + (P(B) - P(B \cap A)) + P(A \cap B) =$
+$P(A) + P(B) - P(A \cap B)$.
+
+## Problem 2
+
+Since $A_1 \supset A_2 \supset \cdots$, we can say $A_n = \cap_i^n A_i$. Then 
+$P(A_n) = P(\cap_i^n A_i)$. 
+
+Taking $n \rightarrow \infty$ to both sides, we get:
+
+$$\lim_{n \rightarrow \infty} P(A_n) = 
+\lim_{n \rightarrow \infty} P(\cap_i^n A_i) = 
+P(\cap_i^\infty A_i) = P(A)$$
+
+## Problem 3
+
+Since $\Omega$ is a discrete sample space, the collection of all possible 
+subsets of $\Omega$ form a $\sigma$-algebra. Then for any $B \subset \mathbb{R}$
+(I don't think we even need Borel subsets here), the pre-image 
+$X^{-1}(B) \subset \Omega$. So all $X^{-1}(B) \in \mathcal{F}$.
