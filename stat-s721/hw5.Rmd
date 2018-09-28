@@ -1,0 +1,374 @@
+---
+title: 'S721 HW5'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# From text (I)
+
+## Problem 1.27
+
+### Part a
+
+We know that $\binom{n}{k} = \binom{n}{n-k}$, so for odd $n$, we can write this 
+as:
+
+$$\sum_{k=0}^n (-1)^k \binom{n}{k} = 
+  \sum_{k=0}^{\frac{n-1}{2}} (-1)^k \binom{n}{k} + 
+  \sum_{k=\frac{n-1}{2} + 1}^n (-1)^k \binom{n}{k}
+  = 0$$
+
+For even $n$, we first note that for $0 < k < n$, we have 
+$\binom{n}{k} = \binom{n-1}{k} + \binom{n-1}{n-k}$ since each 
+$\binom{n}{k}$ is on Pascal's triangle and is the sum of the two values 
+above it. Then we can write:
+
+$$\sum_{k=0}^n (-1)^k \binom{n}{k}$$ 
+$$= \binom{n}{0} + \binom{n}{n} + \sum_{k=1}^{n-1} (-1)^k \binom{n}{k}$$
+$$= \binom{n}{0} + \binom{n}{n} + 
+  \sum_{k=1}^{n-1} (-1)^k \bigg( \binom{n-1}{k} + \binom{n-1}{n-k} \bigg)$$
+  
+Since $n$ is even, $n-1$ is odd. So the first part in the summation would 
+sum to 0 if it started from $k=0$, but since it starts from $k=1$, we are left 
+with $\binom{n-1}{0}$, the $k=0$ term. On the other hand, the second part in the 
+summation would sum to 0 if it ended at $k=n$, but since it ends at $k=n-1$, 
+we are left with $\binom{n-1}{0}$. And since 1 and $n-1$ are both odd, 
+$(-1)^k = -1$ when $k$ is equal to either of those values. So we are left with:
+
+$$\binom{n}{0} + \binom{n}{n} - \binom{n-1}{0} - \binom{n-1}{n-1}$$
+$$= 1 + 1 - 1 - 1$$
+$$= 0$$
+
+### Part b
+
+Note that: 
+$$k \binom{n}{k} = \frac{k n!}{k! (n-k)!}$$
+$$= \frac{n!}{(k-1)! (n-k)!}$$
+$$= \frac{n (n-1)!}{(k-1)! (n-k)!}$$
+$$= n \binom{n-1}{k-1}$$
+
+We also note that $\sum_{k=0}^n \binom{n}{k} = 2^n$.
+
+Then
+
+$$\sum_{k=1}^n k \binom{n}{k}$$
+$$= n \sum_{k=1}^n \binom{n-1}{k-1}$$
+$$= n 2^{n-1}$$
+
+### Part c
+
+Using parts (a) and (b), we can say:
+
+$$\sum_{k=1}^n (-1)^{k+1} k \binom{n}{k}$$
+$$= \sum_{k=1}^n (-1)^{k+1} n \binom{n-1}{k-1}$$
+$$= \sum_{j=0}^{n-1} (-1)^j \binom{n-1}{j} n$$
+$$= 0$$
+
+## Problem 1.28
+
+First, note that $\int_0^n \log x dx = n \log n - n$ and 
+$\int_1^{n+1} \log x dx = (n+1) \log(n+1) - (n+1) + 1$, so their average is 
+
+$$\frac{n \log n - n + (n+1) \log(n+1) - (n+1) + 1}{2}$$
+$$= \frac{n \log n + (n+1) \log(n+1) - 2n}{2}$$
+$$\approx (n + \frac{1}{2}) \log n - n$$
+
+Note that $\exp\bigg( (n + 1/2) \log n - n \bigg) = n^{n+1/2} e^{-n}$, which 
+is the denominator of our expression. So 
+
+$$\log \bigg( \frac{n!}{n^{n+1/2} e^{-n}} \bigg)$$
+$$= \log n! - \big( (n + 1/2) \log n - n \big)$$
+
+Then we note that the difference between the $n$^th^ and $(n+1)$^th^ terms is
+
+$$\bigg( \log n! - \big( (n + 1/2) \log n - n \big) \bigg) - 
+  \bigg( \log (n+1)! - \big( (n + 1/2 + 1) \log(n+1) - n - 1 \big) \bigg)$$
+$$= (n + \frac{1}{2}) \log \frac{n+1}{n} - 1$$
+
+And by Taylor expansion, this is
+
+$$\approx \bigg(n + \frac{1}{2} \bigg) 
+  \bigg( \frac{1}{n} - \frac{1}{2 n^2} + \frac{1}{3 n^3} \bigg) - 1$$
+$$= 1 - \frac{1}{2n} + \frac{1}{3n^2} + 
+  \frac{1}{2n} - \frac{1}{4n^2} + \frac{1}{6n^3} - 1$$
+$$= \frac{1}{12n^2} + \frac{1}{6n^3}$$
+
+And this goes to 0 as $n \to \infty$. So each successive term adds less and less 
+until it reaches 0. And since this term $\sim \frac{1}{n^2}$ for large $n$, we 
+can say that the sum of these terms converges. Therefore, the sequence 
+$\log \bigg(\frac{n!}{n^{n+1/2} e^{-n}} \bigg)$ converges to a constant.
+
+## Problem 2.9
+
+We just need to calculate $F(x) = \int f(y) dy$. We can see that for the 
+support, $\int_0^x \frac{y - 1}{2} dy = \frac{x^2 - 2x + 1}{4}$, so 
+
+$$F(x) = \begin{cases}
+  0 & x \leq 1 \\
+  \Big( \frac{x-1}{2} \big)^2 & x \in (1, 3) \\
+  1 & x > 3
+\end{cases}$$
+
+and $u(x) = F(x)$.
+
+## Problem 3.11
+
+### Part a
+
+We want to show that as $M/N \to p$ and $N \to \infty$ and $M \to \infty$, 
+$\frac{\binom{M}{x} \binom{N-M}{K-x}}{\binom{N}{K}} 
+\to \binom{K}{x} p^x (1-p)^{K-x}$
+
+$$\lim\limits_{\stackrel{M/N \to p}{M, N \to \infty}} 
+  \frac{\binom{M}{x} \binom{N-M}{K-x}}{\binom{N}{K}}$$
+$$= \binom{K}{x} \lim\limits_{\stackrel{M/N \to p}{M, N \to \infty}} 
+  \frac{M! (N-M)! (N-K)!}{(M-x)! (N-M-K+x)! N!}$$
+
+Then if we replace each factorial with its Stirling approximation, we get:
+
+$$= \binom{K}{x} 
+  \lim\limits_{\stackrel{M/N \to p}{M, N \to \infty}}
+  \frac{M^{M+1/2} (N-M)^{N-M+1/2} (N-K)^{N-K+1/2}}
+  {(M-x)^{M-x+1/2} (N-M-K+x)^{N-M-K+x+1/2} N^{N+1/2}}$$
+
+If we rearrange this, we get
+
+$$\begin{split}
+  \lim\limits_{\stackrel{M/N \to p}{M, N \to \infty}} \\
+  & \binom{K}{x} \\
+  & \times \bigg(\frac{M}{M-x} \bigg)^M
+  \bigg(\frac{N-M}{N-M-K+x} \bigg)^{N-M}
+  \bigg(\frac{N-K}{N} \bigg)^N \\
+  & \times \bigg( \frac{M}{M-x} \bigg)^{1/2}
+  \bigg( \frac{N-M}{N-M-K+x} \bigg)^{1/2}
+  \bigg( \frac{N-K}{N} \bigg)^{1/2} \\
+  & \times \bigg( \frac{1}{(M-x)^{-x}} \frac{(N-K)^{-K}}{(N-M-K+x)^{-K+x}} \bigg)
+\end{split}$$
+  
+So we can break this down into 8 components:
+
+* The first component doesn't depend on anything we are taking the limits to, 
+so we can just leave it alone.
+* The second component is equal to $(1 - x / M)^{-M} \to e^x$
+* The third component is equal to $(1 - \frac{K-x}{N-M})^{-(N-M)} \to e^{K-x}$
+* The fourth component is equal to $(1 - K/N)^N \to e^{-K}$
+* In the fifth component, $M$ dominates $x$, so this goes to 1
+* In the sixth component, $N-M$ dominates $-K + x$, so this goes to 1
+* In the seventh component, $N$ dominates $K$, so this goes to 1
+* We will consider the eigth component shortly
+
+So we are left with:
+
+$$\binom{K}{x} e^{x + K - x - K} (M-x)^x \frac{(N-K)^{-K}}{(N-M-K+x)^{-K+x}}$$
+$$= \binom{K}{x} (M-x)^x \frac{(N-M-K+x)^{K-x}}{(N-K)^K}$$
+$$= \binom{K}{x} \bigg(\frac{M-x}{N-K} \bigg)^x 
+  \bigg(\frac{N-M-K+x}{N-K} \bigg)^{K-x}$$
+
+Then as $N \to \infty$, $N-K \to N$,  and as $M \to \infty$, $M-x \to M$, so we 
+get
+
+$$= \binom{K}{x} \bigg( \frac{M}{N} \bigg)^x \bigg(\frac{N-M}{N} \bigg)^{K-x}$$
+
+And $M/N \to p$, so 
+
+$$= \binom{K}{x} p^x (1-p)^{K-x}$$
+
+### Part b
+
+We have $K \to \infty$, $M/N = p \to \infty$, and $KM / N = Kp \to \lambda$, so 
+the Poisson approximation is simply
+
+$$\frac{e^{-Kp} (Kp)^x}{x!}$$
+$$= \frac{e^{-\lambda} \lambda^x}{x!}$$
+
+### Part c
+
+Using Stirling's approximation, we can write the expression as
+
+$$\begin{split}
+  \approx & \frac{e^{-x}}{x!} \times \\
+  & \bigg(\frac{K}{K-x} \bigg)^{1/2} 
+  \bigg(\frac{M}{M-x} \bigg)^{1/2}
+  \bigg(\frac{N-M}{N-M-K+x} \bigg)^{1/2} 
+  \bigg(\frac{N-K}{N} \bigg)^{1/2} \times \\
+  & \bigg( \frac{K}{K-x} \bigg)^K 
+  \bigg(\frac{M}{M-x} \bigg)^M 
+  \bigg(\frac{N-M}{N-M-K+x} \bigg)^{N-M} 
+  \bigg(\frac{N-K}{N} \bigg)^N\times \\
+  & (K-x)^x (M-x)^x (N-M-K+x)^{-K+x} (N-K)^{-K}
+\end{split}$$
+
+* We will leave the first line alone.
+* In the second line, one term dominates the other, so they all become 
+$1^{1/2} = 1$.
+* In the third line, they become exponentials as in part (a).
+* In the fourth line, one term dominates the other, so the smaller term drops 
+out.
+
+So we are left with:
+
+$$\approx \frac{1}{x!} e^{-x} e^x e^x e^{K-x} e^{-K} 
+  K^x M^x \big( \frac{1}{N-M} \big)^{K-x} \frac{1}{N^K}$$
+$$= \frac{1}{x!} (KM)^x \big( \frac{1}{N-M} \big)^{K-x} \frac{1}{N^K}$$
+
+Then multiplying by $N^x / N^x$, we get
+
+$$= \frac{1}{x!} \bigg( \frac{KM}{N} \bigg)^x \bigg(\frac{N-M}{N} \bigg)^{K-x}$$
+
+$\bigg(\frac{KM}{N}\bigg) = \lambda$, so we can say
+
+$$= \frac{1}{x!} \lambda^x \bigg(\frac{N-M}{N} \bigg)^{K-x}$$
+
+Since $K \gg x$, $(K-x) \to K$.
+
+$$\approx \frac{1}{x!} \lambda^x \bigg(\frac{N-M}{N} \bigg)^K$$
+
+$$= \frac{1}{x!} \lambda^x (1 - M/N)^K$$
+$$= \frac{1}{x!} \lambda^x \bigg(1 - \frac{(M/N)K}{K}\bigg)^K$$
+$$= \frac{1}{x!} \lambda^x \bigg(1 - \frac{KM/N}{K} \bigg)^K$$
+$$\approx \frac{1}{x!} \lambda^x e^{-KM/N}$$
+$$= \frac{1}{x!} \lambda^x e^{-\lambda}$$
+
+# Not from text (II)
+
+$f_X(x \mid \theta) = \theta x^{\theta - 1}$
+
+$Y = -\log X \rightarrow X = \exp(-Y) \rightarrow X' = -\exp(-Y)$
+
+$X \in [0, 1] \rightarrow Y \in [0, \infty)$
+
+Then $f_Y(y \mid \theta) = \theta (e^{-y})^{\theta - 1} e^{-y}$  
+$= \theta e^{-\theta y}$
+
+And $F_Y(y \mid \theta) = \int_0^y f_Y(u) du = 1 - e^{-\theta y}$, so 
+$F_Y^{-1}(q) = -\frac{1}{\theta} \log (1-q)$
+
+From HW4, we have $F_X(x) = x^\theta$ and $F_X^{-1}(q) = q^{1 / \theta}$.
+
+```{r, fig.cap = 'Solid line is density estimation, dashed line is ground truth'}
+library(ggplot2)
+
+theme_set(theme_bw())
+
+# as specified by the problem
+theta <- 2.5
+n <- 1e5
+
+draw.x <- function(n, theta) {
+  runif(n) ^ (1 / theta)
+}
+
+# draw X and then transform to Y
+X <- draw.x(n, theta)
+Y <- -log(X)
+
+# pdf of Y as derived above
+y <- seq(0, 5, by = 1e-3)
+p <- theta * exp(-theta * y)
+
+ggplot() + 
+  geom_histogram(aes(x = Y, y = ..density..), 
+                 colour = 'black', fill = 'white') + 
+  geom_density(aes(x = Y)) + 
+  geom_line(aes(x = y, y = p), linetype = 2)
+```
+
+$P(X > .3) = 1 - F_X(x) = 1 - .3^{2.5} = `r round(1 - .3^2.5, 3)`$
+
+Or empirically, we can use `mean(X > .3)` = `r round(mean(X > .3), 3)`.
+
+# Not from text (III)
+
+```{r, fig.cap = 'Solid line is normal probability.'}
+# params
+n.vector <- 10^seq(2, 7)
+a <- 0
+b <- 1
+p <- .5
+
+# binomial probs
+probs <- sapply(n.vector, function(n) {
+  ex <- n * p
+  vx <- n * p * (1 - p)
+  pbinom(b * sqrt(vx) + ex, n, p) - pbinom(a * sqrt(vx) + ex - 1, n, p)
+})
+
+corrected.probs <- sapply(n.vector, function(n) {
+  ex <- n * p
+  vx <- n * p * (1 - p)
+  pbinom(b * sqrt(vx) + ex - 1/2, n, p) - pbinom(a * sqrt(vx) + ex - 1 + 1/2, n, p)
+})
+
+# normal probs
+exact.prob <- pnorm(b) - pnorm(a)
+
+ggplot() + 
+  geom_point(aes(x = n.vector, y = probs)) + 
+  geom_point(aes(x = n.vector, y = corrected.probs), shape = 2) + 
+  scale_x_log10() + 
+  geom_hline(yintercept = exact.prob)
+```
+
+The triangles are adjusted probabilities (continuity correction).
+
+# Not from text (IV)
+
+## Part 1
+
+First, we note the Taylor expansion of $e^x = \sum_k^\infty \frac{x^k}{k!}$.
+
+Then 
+
+$$\sum_{k=0}^\infty P(X = k)$$
+$$= \sum_k \frac{e^{-\theta} \theta^k}{k!}$$
+$$= e^{-\theta} \sum_k \frac{\theta^k}{k!}$$
+$$= e^{-\theta}e^\theta$$
+$$= 1$$
+
+## Part 2
+
+By definition, $E[X] = \sum_k k P(X = k)$.
+
+$$\sum_{k=0}^\infty k \frac{e^{-\theta} \theta^k}{k!}$$
+$$= e^{-\theta} \theta \sum_{k=1}^\infty \frac{\theta^{k-1}}{(k-1)!}$$
+$$= e^{-\theta} \theta \sum_{j=0}^\infty \frac{\theta^j}{j!}$$
+$$= e^{-\theta} \theta e^\theta$$
+$$= \theta$$
+
+## Part 3
+
+Note that $E[X (X-1)] = E[X^2] - E[X]$, and $E[X^2] = Var(X) + E[X]^2$, so 
+$Var(X) = E[X(X-1)] - E[X]^2 + E[X]$.
+
+$$E[X(X-1)] = \sum_{k=0}^\infty k(k-1) \frac{e^{-\theta} \theta^k}{k!}$$
+$$= e^{-\theta} \sum_{k=2}^\infty k (k-1) \frac{\theta^k}{k!} 
+  \text{ (since the first two terms are 0)}$$
+$$= e^{-\theta} \theta^2 \sum_{j=0}^\infty \frac{\theta^j}{j!}$$
+$$= e^{-\theta} \theta^2 e^\theta$$
+$$= \theta^2$$
+
+So ...
+
+$$Var(X) = E[X (X-1)] - E[X]^2 + E[X]$$
+$$= \theta^2 - \theta^2 + \theta$$
+$$= \theta$$

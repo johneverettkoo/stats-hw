@@ -1,0 +1,197 @@
+---
+title: 'S721 HW1'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1.1
+
+## Part a
+
+An ordered set of 4 elements, each of which can be "H" or "T". $|\Omega| = 2^4$. 
+
+## Part b
+
+A count is a natural number (including 0). So $\Omega \subset \mathbb{N}_0$.
+
+# Problem 1.2
+
+## Part a
+
+Suppose $x \in A \setminus B$. Then $x \in A$ and 
+$x \notin B \iff x \in B^c$. Then $x \in A$ and $x \in B^c$, i.e., 
+$x \in A \cap B^c$.
+
+Suppose $x \in A \setminus B$. Then $x \in A$ and 
+$x \notin B \iff x \notin A \cap B$. Then $x \in A \setminus (A \cap B)$.
+
+## Part b
+
+Suppose $x \in B$ and we don't know anything about its relation to $A$. Then 
+$x$ can either $\in A$ or $\notin A$. Then $x \in B \cap A$ or 
+$x \in B \cap A^c$, i.e., $x \in (B \cap A) \cup (B \cap A^c)$.
+
+# Problem 1.3
+
+## Part a
+
+$x \in A \cup B \iff x \in A$ or $x \in B \iff x \in B \cup A$
+
+$x \in A \cap B \iff x \in A$ and $x \in B \iff x \in B \cap A$
+
+## Part b
+
+$x \in A \cap (B \cap C) \iff x \in A$ and $x \in B \cap C \iff x \in A$ and 
+$x \in B$ and $x \in C \iff x \in A \cap B$ and 
+$x \in C \iff x \in (A \cap B) \cap C$
+
+$x \in A \cup (B \cup C) \iff x \in A$ or $x \in B \cup C \iff x \in A$ or 
+$x \in B$ or $x \in C \iff x \in A \cup B$ or 
+$x \in C \iff x \in (A \cup B) \cup C$
+
+## Part c
+
+$x \in (A \cup B)^c \iff x \notin A \cup B \iff x \notin A$ and $x \notin B$
+$\iff x \in A^c$ and $x \in B^c \iff x \in A^c \cap B^c$
+
+$x \in (A \cap B)^c \iff x \notin A \cap B \iff x \notin A$ or $x \notin B$
+$\iff x \in A^c$ or $x \in B^c \iff x \in A^c \cup B^c$
+
+# Problem 1.9
+
+## Part a
+
+$x \in (\cup_\alpha A_\alpha)^c \iff x \notin \cup_\alpha A_\alpha \iff$
+$x \notin A_\alpha$ $\forall \alpha \iff x \in A_\alpha^c$ $\forall \alpha \iff$
+$x \in \cap_\alpha A_\alpha^c$
+
+## Part b
+
+$x \in (\cap_\alpha A_\alpha)^c \iff x \notin \cap_\alpha A_\alpha \iff$ 
+$\exists \alpha$ such that $x \in A_\alpha^c \iff$ 
+$x \in \cup_\alpha A_\alpha^c$
+
+# Problem 1.11
+
+## Part a
+
+i. $\emptyset \in \{\emptyset, S\} = \mathcal{B}$
+ii. $\emptyset^c = S^c$ and vice versa. Both $\emptyset$ and 
+$S \in \mathcal{B}$, so it is closed under complements.
+iii. $\emptyset \cup S = S \in \mathcal{B}$
+
+## Part b
+
+i. $\emptyset \subset S$, so $\emptyset \in \mathcal{B}$.
+ii. If $A \subset S$, then $A^c = S \setminus A \subset S$. So 
+$A^c \in \mathcal{B}$.
+iii. If $A_i \in \mathcal{B}$, then $A_i \subset S$ 
+$\implies \cup_i A_i \subset S \in \mathcal{B}$. 
+
+## Part c
+
+Suppose $\mathcal{B}_1$ and $\mathcal{B}_2$ are $\sigma$-algebras.
+
+i. They both contain $\emptyset$ since they are $\sigma$-algebras, so the 
+intersection contains $\emptyset$.
+ii. Suppose $A \in \mathcal{B}_1 \cap \mathcal{B}_2$. Then it must be in both 
+$\mathcal{B}_1$ and $\mathcal{B}_2$. Then $A^c$ must also be in both 
+$\mathcal{B}_1$ and $\mathcal{B}_2$. So 
+$A^c \in \mathcal{B}_1 \cap \mathcal{B}_2$.
+iii. Suppose $A_1, A_2, ... \in \mathcal{B}_1 \cap \mathcal{B}_2$. Then each 
+$A_i$ must be in both $\mathcal{B}_1$ and $\mathcal{B}_2$. Since they are both 
+$\sigma$-algebras, $\cup_i A_i \in$ both $\mathcal{B}_1$ and $\mathcal{B}_2$ 
+$\implies \cup_i A_i \in \mathcal{B}_1 \cap \mathcal{B}_2$.
+
+# Not from textbook
+
+## Problem 1
+
+### $[a, b]$
+
+For $a < b$, let $A = \cap_{n=1}^\infty A_n$ where 
+$A_n = (a - 1 / n, b + 1 / n)$.  
+Let $B = [a, b]$.  
+
+We can see that $B \subset A$ since $\forall n > 0$, 
+$a - 1 / n < a < b < b + 1 / n$. 
+
+Suppose $x \in A$ but $x \notin B$. Then $x < a$ or $x > b$. 
+
+If $x \in A$, then $x \in A_n$ $\forall n \in \mathbb{N}$.
+
+If $x < a$, then $\exists N \in \mathbb{N}$ such that $a - x > 1 / n$ 
+$\forall n > N$. This means that $x \notin A_n$ $\forall n > N$. Therefore, 
+$x \notin A$, which is a contradiction.
+
+Similarly, if $x > b$, then $\exists N \in \mathbb{N}$ such that 
+$x - b > 1 / n$ $\forall n > N$. This means that $x \notin A_n$ $\forall n > N$.
+Therefore $x \notin A$, which is a contradiction.
+
+Therefore, $[a, b] = \cap_{n=1}^\infty (a - 1 / n, a + 1 / n)$.
+
+### $[a, b)$
+
+Let $A = \cap_{n = 1}^\infty (a - 1 / n, b) = \cap_{n = 1}^\infty A_n$. Let 
+$B = [a, b)$. 
+
+Since $a - 1 / n < a < b$, $B \subset A$.
+
+Suppose $\exists x \in A$ but $x \notin B$. Then $x < a \implies a - x > 1 / n$ 
+$\forall n > N$ for some $N \in \mathbb{N}$. Like before, we can see that 
+$x$ is not in some $A_n$, so it cannot be in $A$, which is a contradiction. 
+Therefore, $x \in B$ $\implies A \subset B$. 
+
+Therefore, $[a, b) = \cap_{n=1}^\infty (a - 1 / n, b)$.
+
+### $(a, b]$
+
+By symmetry, we can use $A = \cup_{n = n_0}^\infty (a, b - 1 / n)$ and proceed 
+with the same reasoning as we did for $[a, b)$.
+
+## Problem 2
+
+It is sufficient to show that any open interval $(a, b)$ is generated by 
+intervals of the form $(-\infty, a]$.
+
+Using two such intervals, we can construct 
+$(a + 1 / n, b - 1 / n] = (-\infty, b - 1 / n] \cap (-\infty, a + 1 / n]^c$, a
+half-open interval (and $n \geq \frac{2}{b - a}$).
+
+Let $A = \cup_{n = n_0}^\infty A_n$ where $A_n = (a + 1 / n, b - 1 / n]$ and 
+$n_0 \geq \frac{2}{b - a}$, and let $B = (a, b)$.
+
+We can see that since $a < a + 1 / n \leq b - 1 / n < b$, so $A_n \subset B$ 
+$\forall n \geq n_0$, so $A \subset B$.
+
+Conversely, suppose $x \in B$ but $x \notin A$. Then $\exists N > n_0$ such 
+that $x \notin A_n$ $\forall n > N$. But since $x \in B$, $a < x < b$, we can
+consider two situations, $x < a + 1 / n$ and $x > b - 1 / n$. 
+
+For the first case, $a < x \leq a + 1 / n$, so $\exists \epsilon > 0$ such that 
+$(a + 1 / n) - a  > \epsilon$ $\implies 1 / n > \epsilon$ 
+$\implies n < 1 / epsilon$. But $n$ is unbounded, so this cannot be true. 
+
+For the second case, $b - 1 / n < x < b$ $\implies \exists \epsilon$ such that 
+$b - (b - 1 / n) > \epsilon$. Like before, we can see that this implies 
+$n < 1 / \epsilon$, but $\epsilon$ is fixed while $n$ is unbounded, so this 
+cannot be true. Then $A \subset B$. 

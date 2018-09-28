@@ -1,0 +1,236 @@
+---
+title: 'S721 HW3'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 1.45
+
+We have:
+
+$$P_X(X = x_i) = P(\{ s_j \in S \mid X(s_j) = x_i \})$$
+
+where each $x_i \in \mathcal{X}$ and $|\mathcal{X}| = m < \infty$.
+
+i. For each $x_i$, $P_X(X = x_i) = P(\{ s_j \in S \mid X(s_j) = x_i \})$, and 
+$P(\{ s_j \in S \mid X(s_j) = x_i \}) \geq 0$ since $P$ is a probability 
+measure. Similarly, let $A \subset \mathcal{X}$. Then 
+$P_X(A) = \sum_{x_i \in A} P_X(X = x_i)$, and each $P_X(X = x_i)$ is 
+nonnegative, so $P_X(A) \geq 0$.
+
+ii. $P_X(\mathcal{X}) = P_X(X \in \cup_{i=1}^m x_i) =$
+$P(\cup_i^m \{s_j \in S | X(s_j) = x_i\})$.
+We know that every $s_j$ maps to an $x_i$, so $X^{-1}(\mathcal{X}) = S$. 
+Therefore, this is equal to $P(X^{-1}(\mathcal{X})) = P(S) = 1$.
+
+iii. Since $\mathcal{X}$ is finite (and therefore disjoint), $\mathcal{B}$ 
+is the set of all subsets of $\mathcal{X}$.  
+Let $A_1, A_2, ...$ be pairwise disjoint subsets of $\mathcal{X}$. They are
+also all $\in \mathcal{B}$. Since the $A_i$s are disjoint and since $X$ is a 
+function, $B_i = X^{-1}(A_i)$ are all also pairwise disjoint (there cannot be 
+one $s_j \in S$ that maps to two $A_i$s since that would mean $X(s_j)$ can take 
+two different values).  
+Then $P_X(\cup_i^\infty A_i) = P(\cup_i^\infty X^{-1}(A_i)) =$ 
+$\sum_i^\infty P(X^{-1}(A_i)) = \sum_i^\infty P_X(A_i)$.
+
+# Problem 1.47
+
+## Part d
+
+$\lim_{x \rightarrow -\infty} 1 - \exp(-x) = 1 - 1 = 0$
+
+$\lim_{x \rightarrow \infty} 1 - \exp(-x) = 1 - 0 = 1$
+
+$\big(1 - \exp(-x) \big)' = \exp(-x) > 0$
+
+## Part e
+
+We have for some $\epsilon \in (0, 1)$, 
+
+$$F_Y(y) = \begin{cases}
+  \frac{1 - \epsilon}{1 + \exp(-y)} & y < 0 \\
+  \epsilon + \frac{1 - \epsilon}{1 + \exp(-y)} & y \geq 0
+\end{cases}$$
+
+For the left limit, 
+$\lim_{y \rightarrow -\infty} \frac{1 - \epsilon}{1 + \exp(-y)} = 0$ since 
+$\exp(-y) \rightarrow \infty$ as $y \rightarrow -\infty$.
+
+For the right limit, 
+$\lim_{y \rightarrow \infty} \epsilon + \frac{1 - \epsilon}{1 + \exp(-y)} =$
+$\epsilon + 1 - \epsilon = 1$ since $1 + \exp(-y) \rightarrow 1 + 0 = 1$ as 
+$y \rightarrow \infty$.
+
+$\bigg(\frac{1 - \epsilon}{1 + \exp(-y)} \bigg)' =$
+$(1 - \epsilon)(-1) (-\exp(-y))(1 + \exp(-y))^{-2} =$
+$\frac{(1 - \epsilon) \exp(-y)}{(1 + \exp(-y))^2}$. Since $\epsilon > 0$ and 
+$\exp(.) > 0$, this expression is always positive.
+
+$\epsilon + \frac{1 - \epsilon}{1 + \exp(-y)}$ is just the previous expression 
+with a constant, so its derivative is the same.
+
+
+# Problem 1.49
+
+We are given that $F_X(t) \leq F_Y(t)$ $\forall t$.
+
+$P(X > t) = 1 - P(X \leq t) = 1 - F_X(t) \geq 
+1 - F_Y(t) = 1 - P(Y \leq t) = P(Y > t)$
+
+We are given that $F_X(t) < F_Y(t)$ for some $t$, i.e., $\exists t$ such that 
+this is true. Suppose that this is true for $t = s$. Then like before, 
+
+$P(X > s) = 1 - P(X \leq s) = 1 - F_X(s) >
+1 - F_Y(s) = 1 - P(Y \leq s) = P(Y > s)$
+
+# Problem 1.53
+
+## Part a
+
+The support of $Y$ is $y \geq 1$, so by definition, 
+$\forall y < 1$, $F_Y(y) = 0$.
+
+On the other hand, as $y \rightarrow \infty$, $y^{-2} \rightarrow 0$, so 
+$1 - y^{-2} \rightarrow 1$.
+
+$\big( 1 - y^{-2} \big)' = 2y^{-3}$, and $y \geq 1$, so this is always positive. 
+
+## Part b
+
+We found the derivative of $F_Y$ for $y \geq 1$ in part (a). For $y < 1$, 
+$F_Y$ is a constant (0), so the derivative is 0. Then
+
+$$f_Y(y) = \begin{cases} 
+  0 & y < 1 \\
+  2 y^{-3} & y \geq 1
+\end{cases}$$
+
+## Part c
+
+$F_Z(z) = P(Z \leq z) = P(10 (Y - 1) \leq z) = 
+P(Y \leq z / 10 + 1) = F_Y(z / 10 + 1)$
+
+Then $F_z(z) = F_Y(z / 10 + 1) = 1 - \frac{1}{\big(\frac{z}{10} + 1 \big)^2}$
+
+# Problem 1.54
+
+## Part b
+
+We require $\int c e^{-|x|} dx = 1$. 
+
+$1 = \int c e^{-|x|} dx$  
+$= c \bigg( \int_{-\infty}^0 e^x dx + \int_0^\infty e^{-x} dx \bigg)$  
+$= c (1 + 1) = 2c$
+
+Therefore, $c = 1/2$.
+
+# Not from textbook
+
+## Problem 1
+
+i. 
+Consider $x < y$ and $F(x) = P(X \leq x)$ and $F(y) = P(X \leq y)$.  
+Note that for any $z \in \mathbb{R}$, $P(X \leq z) = P((-\infty, z])$.  
+For $x < y$, $(-\infty, x] \subset (-\infty, y]$. Therefore, 
+$P((-\infty, x]) \leq P((-\infty, y])$.
+
+ii. 
+We showed (in class and previous homework) that if 
+$A_1 \supset A_2 \supset \cdots$ then 
+$P(\lim\limits_{n \rightarrow \infty} A_n) = 
+\lim\limits_{n \rightarrow \infty} P(A_n)$.  
+Consider the sequence of intervals $(-\infty, x + 1 / n]$. We can see that each 
+interval is a subset of the previous intervals and that as 
+$n \rightarrow \infty$, the interval goes to $(-\infty, x]$.  
+$P((-\infty, x + 1 / n]) = F(x + 1/n)$ by definition, and 
+$\lim\limits_{n \rightarrow \infty} F(x + 1 / n) = 
+\lim\limits_{n \rightarrow \infty} P((-\infty, x + 1 / n]) = 
+P((-\infty, x]) = F(x)$. We also know that $F$ is monotone increasing (not 
+necessarily strictly). So if we let $\delta = 1 / n$, then we can see that 
+$F(x) = \lim\limits_{n \rightarrow \infty} F(x + 1 / n) = 
+\lim\limits_{\delta \rightarrow 0} F(x + \delta)$.
+
+iii.
+Consider the sequence of intervals $(-\infty, x - n]$ for some constant $x$. 
+We can see that each interval is a subset of the interval before it, and as 
+$n \rightarrow \infty$, this interval becomes empty (Since each interval is a 
+subset of the previous intervals, 
+$(-\infty, x - N] = \cap_n^N (-\infty, x - n]$. Assume that $y$ is in the 
+interval where $n \rightarrow \infty$. Then $\exists N \in \mathbb{N}$ such that 
+$-N < y$, so $y$ cannot be in $\cap_n^\infty (-\infty, x - n]$).  
+Let $A_n = X^{-1}((-\infty, x - n]))$ (we can do this since such intervals 
+generate the Borel $\sigma$-algebra). Since each interval is a subset of the 
+previous intervals, $A_1 \supset A_2 \supset \cdots$ as well. Since the 
+interval approaches the empty set, $A_n \rightarrow \emptyset$.  
+$\lim\limits_{n \rightarrow \infty} P((-\infty, x - n]) =$
+$\lim\limits_{n \rightarrow \infty} F(x - n) =$
+$\lim\limits_{y \rightarrow -\infty} F(y)$. On the other hand, 
+$\lim\limits_{n \rightarrow \infty} P((-\infty, x - n]) =$
+$\lim\limits_{n \rightarrow \infty} P(A_n) = P(\emptyset) = 0$. Therefore, 
+$\lim\limits_{y \rightarrow -\infty} F(y) = 0$.  
+Similarly, for $\lim\limits_{x \rightarrow \infty} F(x)$, consider the intervals 
+$(-\infty, x + n]$. Then as $n \rightarrow \infty$, the union of the intervals 
+(or equivalently, the last interval, since each interval is a subset of the 
+next interval), approaches $\mathbb{R}$. Let $B_n = X^{-1}((-\infty, x + n])$. 
+Then since each interval is a subset of the next, 
+$B_1 \subset B_2 \subset \cdots$ and $B_n = \cup_i^n B_i$.  
+By De Morgan's laws, $B_n^c = \cap_i^n B_i^c$. 
+$B^c = \lim\limits_{n \to \infty} B_n^c$ is empty since if we suppose that there 
+is some $s \in B^c$, then 
+$X(s) \in \lim\limits_{n \to \infty} (-\infty, x + n]^c = \emptyset$. So 
+$P(B^c) = P(\emptyset) = 0$, and $P(B^c) = P(\lim\limits_{n \to \infty} B_n^c)$
+$= P(\lim\limits_{n \to \infty} (-\infty, x + n]^c) =$ 
+$\lim\limits_{y \to \infty} P(X \leq y) = \lim\limits_{y \to \infty} F(y)$ 
+(letting $y = x + n$).
+
+iv. 
+Consider the intervals $(-\infty, x - 1/n)$. As $n \rightarrow \infty$, the 
+interval approaches $(-\infty, x)$. We can also see that 
+$P((-\infty, x)) = P(X < x)$.  
+Since the $i$^th^ interval is a subset of the $(i + 1)$^th^ interval, each 
+interval is also the union of itself with all of its preceeding intervals. Then 
+$(-\infty, x) = \cup_n^\infty (-\infty, x - 1/n)$ and 
+$P(X < x) = P(\cup_n^\infty (-\infty, x - 1/n))$.  
+Let $\delta = 1/n$. Then as $\delta \to \infty$, $P((-\infty, x - 1/n)) =$
+$P((-\infty, x - \delta)) \rightarrow P((-\infty, x)) = F(x^-)$.
+
+v. 
+$P(X = x) = P(X \leq x) - P(X < x) = F(x) - F(x^-)$
+
+## Problem 2
+
+It is sufficient to show that $X^{-1}((-\infty, x]) \in \mathcal{F}$.  
+Note that since $F$ is strictly increasing, $F^{-1}$ exists and is also strictly 
+increasing.
+
+$X^{-1}((-\infty, x]) = \{\omega \in \Omega \mid X(\omega) \leq x \}$  
+$= \{ \omega \in \Omega \mid F^{-1}(\omega) \leq x \}$  
+$= \{\omega \in \Omega \mid \omega \leq F(x)\}$
+
+This set is just $[0, F(x)]$ (since $\Omega = [0, 1]$), which is in 
+$\mathcal{B}$.
+
+$P(X(\omega) \leq x)$  
+$= P(\{\omega \in \Omega | X(\omega) \leq x\})$  
+$= P([0, F(x)])$  
+$= F(x)$ since $P$ is the Lebesgue measure.
