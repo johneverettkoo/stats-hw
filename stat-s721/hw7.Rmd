@@ -161,9 +161,9 @@ $M_X(t) = \exp(t^2 / 2)$.
 $M_X'(t) = t \exp(t^2 / 2)$  
 $M_X''(t) = \exp(t^2 / 2) + t \exp(t^2 / 2) = (1 + t^2) \exp(t^2 / 2)$  
 $M_X'''(t) = 2t \exp(t^2 / 2) + (1 + t^2) t \exp(t^2 / 2) = 
-(t^3 + 3t) \exp(t^2 / 2)$
+(t^3 + 3t) \exp(t^2 / 2)$  
 $M_X^{(4)}(t) = (3t + 3) \exp(...) + (t^3 + 3t) t \exp(...) = 
-(t^4 + 3t^2 + et + 3) \exp(...)$
+(t^4 + 3t^2 + 3t + 3) \exp(...)$
 
 Then setting each of these to 0 (and noting that any odd-numbered moment is 0), 
 we get 0, 1, 0, 3, 0.
@@ -331,10 +331,10 @@ $= \frac{1}{2 n (n-1)}
 $= \frac{1}{2 n (n-1)} \bigg(
 n \sum_i (X_i - \bar{X})^2 - 
 2 \sum_i (X_i - \bar{X}) \sum_j (X_j - \bar{X}) + 
-n \sum_j (X_j - \bar{X})
+n \sum_j (X_j - \bar{X})^2
 \bigg)$  
 Note that the middle term is 0 since $\sum_i (X_i - \bar{X}) = 0$. We also note 
-that $\sum_i (X_i - \bar{X}) = (n-1) S^2$. Then we get:  
+that $\sum_i (X_i - \bar{X})^2 = (n-1) S^2$. Then we get:  
 $\frac{1}{2 n (n-1)} \bigg( n (n-1) S^2 + n (n-1) S^2 \bigg)$  
 $= \frac{1}{2 n (n-1)} 2 n (n-1) S^2$  
 $= S^2$
@@ -565,6 +565,6 @@ $$E[X Y] = \sum_i^m \sum_j^n x_i y_j P(A_i \cap B_j)$$
 Since $X$ and $Y$ are independent, each $A_i$ and $B_j$ are independent. 
 Therefore, $P(A_i \cap B_j) = P(A_i) P(B_j)$, so the above becomes:
 
-$$E[X Y] = \sum_i^m \sum_j^n x_i j_y P(A_i) P(B_j)$$
-$$= \sum_i^m x_i P(A_i) \sum_j^n P(B_j)$$
+$$E[X Y] = \sum_i^m \sum_j^n x_i y_j P(A_i) P(B_j)$$
+$$= \sum_i^m x_i P(A_i) \sum_j^n y_j P(B_j)$$
 $$= E[X] E[Y]$$
