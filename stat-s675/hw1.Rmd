@@ -1,0 +1,266 @@
+---
+title: "STAT-S675"
+subtitle: 'Assignment 1'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+---
+
+# Section 1.5
+
+## Exercise 1
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+```
+
+```{r ex1, fig.width = 4, echo = FALSE}
+pairs(dplyr::select(iris, 
+                    `sepal length` = Sepal.Length, 
+                    `sepal width` = Sepal.Width,
+                    `petal length` = Petal.Length, 
+                    `petal width` = Petal.Width), 
+      main = 'Anderson\'s Iris Data', 
+      pch = 21, 
+      bg = c('red', 'green', 'blue')[unclass(iris$Species)])
+```
+
+* It appears that identifying setosas from the rest is possible with just either
+petal length or petal width by setting a threshold value below which all points
+will be classified as "setosa". 
+
+* It appears that it's possible to come up with a reasonable method for
+classifying versicolors and virginicas with a straight line (e.g., support 
+vector machine) using any two measurements other than sepal length and width as 
+a pair. Using petal length and petal width seems like it would result in the 
+best model.
+
+## Exercise 4
+
+### Part a
+
+#### In $\mathbb{R}^2$
+
+WLOG we can set $\overrightarrow{x_1} = (0, 0)$, 
+$\overrightarrow{x_2} = (2, 0)$, and $\overrightarrow{x_3} = (1, \sqrt{3})$. 
+Then we have to find $\overrightarrow{x_4} = (x, y)$ that satisfies $\Delta$.
+
+Our system of equations is then:
+
+$$x^2 + y^2 = 1.21$$
+$$(x - 2)^2 + y^2 = 1.21$$
+$$(x - 1)^2 + (y - \sqrt{3})^2 = 1.21$$
+
+From the first two equations:
+
+$$x^2 + y^2 = (x - 2)^2 + y^2$$
+$$x^2 = (x - 2)^2$$
+$$x^2 = x^2 - 4x + 4$$
+$$x = 1$$
+
+Plugging this into the first equation from the system of equations yields:
+
+$$1^2 + y^2 = 1.21$$
+$$y = \pm \sqrt{.21}$$
+
+So our possible solutions are $(1, \sqrt{.21})$ and $(1, -\sqrt{.21})$.
+
+Finally, we can try both possiblities with our third equation:
+
+$$(1 - 1)^2 + (\sqrt{.21} - \sqrt{3})^2 \approx 1.623 \neq 1.21$$
+$$(1 - 1)^2 + (-\sqrt{.21} - \sqrt{3})^2 \approx 4.797 \neq 1.21$$
+
+Therefore no combination of 4 vectors in $\mathbb{R}^2$ satisfies $\Delta$. 
+
+#### In $\mathbb{R}^3$
+
+Similar to the above, $\overrightarrow{x_1} = (0, 0, 0)$, 
+$\overrightarrow{x_2} = (2, 0, 0)$, and 
+$\overrightarrow{x_3} = (1, \sqrt{3}, 0)$. Then our system of equations is:
+
+$$x^2 + y^2 + z^2 = 1.21$$
+$$(x - 2)^2 + y^2 + z^2 = 1.21$$
+$$(x - 1)^2 + (y - \sqrt{3})^2 + z^2 = 1.21$$
+
+And we just need a nonempty solution space.
+
+Similar to the $\mathbb{R}^2$ case, we can combine the first two equations to 
+obtain $x = 1$. Plugging that into the first and third equations yields:
+
+$$1^2 + y^2 + z^2 = 0^2 + (y - \sqrt{3})^2 + z^2$$
+$$\implies 1 + y^2 = (y - \sqrt{3})^2$$
+
+And solving for $y$ gives us $y = \frac{1}{\sqrt{3}}$.
+
+Finally, we can plug $x$ and $y$ into either the first or second equation to 
+obtain a value for $z$:
+
+$$1 + \frac{1}{3} + z^2 = 1.21$$
+$$z^2 = .21 - \frac{1}{3}$$
+
+But this implies that $z^2 < 0$. Therefore no combination of 4 vectors in 
+$\mathbb{R}^3$ satisfies $\Delta$.
+
+### Part b
+
+#### In $\mathbb{R}^2$
+
+Similar to part a, we can start with some configuration of three vectors that 
+satisfies part of $\Delta$ and then solve for the last vector. In this case, 
+we can set $\overrightarrow{x_1} = (0, 0)$, $\overrightarrow{x_2} = (1, 0)$, 
+$\overrightarrow{x_4} = (1, 1)$, and then solve for $\overrightarrow{x_3}$:
+
+$$x^2 + y^2 = 4$$
+$$(x - 1)^2 + y^2 = 3$$
+$$(x - 1)^2 + (y - 1)^2 = 5$$
+
+Combining the first two equations as we've done in the past problems yields
+$x = 1$. Plugging that into the second equation yields $y = \pm \sqrt{3}$. 
+Finally, we can try both $(1, \sqrt{3})$ and $(1, -\sqrt{3})$ with the third 
+equation:
+
+$$(1 - 1)^2 + (\sqrt{3} - 1)^2 \approx .536 \neq 5$$
+$$(1 - 1)^2 + (-\sqrt{3} - 1)^2 \approx 7.464 \neq 5$$
+
+Therefore there is no set of 4 vectors in $\mathbb{R}^2$ that works with 
+$\Delta$.
+
+#### In $\mathbb{R}^3$
+
+To solve for $\overrightarrow{x_3} = (x, y, z)$:
+
+$$x^2 + y^2 + z^2 = 4$$
+$$(x - 1)^2 + y^2 + z^2 = 3$$
+$$(x - 1)^2 + (y - 1)^2 + z^2 = 5$$
+
+Combining the first two yields $x^2 - (x - 1)^2 = 1 \implies x = 1$.
+
+Plugging $x = 1$ into the second and third equations and combining them yields 
+$y^2 - (y - 1)^2 = -2 \implies y = -\frac{1}{2}$.
+
+Plugging $x = 1$ and $y = -\frac{1}{2}$ into the second equation yields 
+$z = \pm \frac{\sqrt{11}}{2}$. So we need to see if 
+$(1, \frac{1}{2}, \pm \frac{\sqrt{11}}{2})$ is consistent with the first and 
+third equations:
+
+$$1 + \frac{1}{4} + \frac{11}{4} = 4$$
+$$0 + \frac{1}{4} + \frac{11}{4} = 3$$
+
+Therefore there are two sets of 4 vectors that works with $\Delta$.
+
+## Exercise 5
+
+We can generalize the methods used in exercise 4 for $\mathbb{R}^2$. 
+Let $\Delta \in \mathbb{R} ^ {4 \times 4}$ be a dissimilarity matrix where 
+$\delta{ij} = |\overrightarrow{x_i} - \overrightarrow{x_j}|_2$. Then we can 
+start with $\overrightarrow{x_1} = (0, 0)$ and 
+$\overrightarrow{x_2} = (\delta_{1, 2}, 0)$. Then to solve for 
+$\overrightarrow{x_3} = (x, y)$ we have the system of equations: 
+
+$$x^2 + y^2 = \delta_{1, 3}^2$$
+$$(x - \delta_{1, 2})^2 + y^2 = \delta_{2, 3}^2$$
+
+Assuming there is a solution, we end up with:
+
+$$x = \frac{\delta_{1, 2}^2 + \delta_{1, 3}^2 - \delta_{2, 3}^2}{2\delta_{1, 2}}$$
+
+$$y = \pm \sqrt{\delta_{1, 3}^2 - \frac{(\delta_{1, 2}^2 + \delta_{1, 3}^2 - \delta_{2, 3}^2)^2}{4\delta_{1, 2}^2}}$$
+
+Due to symmetry, we only need to consider one of these two solutions. Note that 
+for there to be a solution for $y \in \mathbb{R}$, the term under the suqare 
+root needs to be positive.
+
+Finally, we can let $\overrightarrow{x_4} = (u, v)$ and then solve:
+
+$$u^2 + v^2 = \delta_{1, 4}^2$$
+$$(u - \delta_{1, 2})^2 + v^2 = \delta_{2, 4}^2$$
+$$(u - x)^2 + (v - y)^2 = \delta_{3, 4}^2$$
+
+```{r ex_5}
+G <- matrix(c(1, .1054, .0019, .0183, 
+              .1054, 1, .0183, .0019, 
+              .0019, .0183, 1, .1054, 
+              .0183, .0019, .1054, 1), 
+            nrow = 4, ncol = 4)
+```
+
+### Part a
+
+```{r part_a}
+Delta <- 1 - G
+
+print(Delta)
+
+x1 <- c(0, 0)
+x2 <- c(Delta[1, 2], 0)
+x3 <- c(
+  (Delta[1, 2]^2 + Delta[1, 3]^2 - Delta[2, 3]^2) / 2 / Delta[1, 2], 
+  sqrt(
+    Delta[1, 3]^2 - 
+      (Delta[1, 2]^2 + 
+         Delta[1, 3]^2 - 
+         Delta[2, 3]^2)^2 / 
+      4 / Delta[1, 2]^2
+    )
+)
+```
+
+Let $\overrightarrow{x_1}$, $\overrightarrow{x_2}$, and $\overrightarrow{x_3}$ 
+be defined as in the previous R chunk. We can verify that this works:
+
+```{r part_a_check}
+dist(rbind(x1, x2, x3))
+```
+
+Then we can use this to solve for $\overrightarrow{x_4}$ (boring algebra done 
+elsewhere):
+
+```{r solve_x4}
+x4 <- 1:2
+x4[1] <- (Delta[1, 4]^2 - Delta[2, 4]^2 + Delta[1, 2]^2) / 2 / Delta[1, 2]
+x4[2] <- sqrt(Delta[1, 4]^2 - x4[1]^2)
+
+# x4 has two solutions--calling the second one "x5"
+x5 <- x4
+x5[2] <- -x5[2]
+```
+
+And then we can check to see if either solution works:
+
+```{r part_a_solution_check}
+dist(rbind(x1, x2, x3, x4))
+dist(rbind(x1, x2, x3, x5))
+```
+
+In either case, $\delta_{1, 4}$ and $\delta_{2, 4}$ work out (as it should since 
+I solved for $\overrightarrow{x_4}$ using the first two) but $\delta{3, 4}$ is 
+incorrect, implying that there is no configuration that works.
+
+### Part b
+
+We can do the same thing we did in part a:
+
+```{r part_b}
+Delta <- -log(G)
+
+print(Delta)
+
+x1 <- c(0, 0)
+x2 <- c(Delta[1, 2], 0)
+x3 <- c(
+  (Delta[1, 2]^2 + Delta[1, 3]^2 - Delta[2, 3]^2) / 2 / Delta[1, 2], 
+  sqrt(
+    Delta[1, 3]^2 - 
+      (Delta[1, 2]^2 + 
+         Delta[1, 3]^2 - 
+         Delta[2, 3]^2)^2 / 
+      4 / Delta[1, 2]^2
+    )
+)
+```
+
+But in thise case, $\overrightarrow{x_3} \not\in \mathbb{R}^2$, so we can stop 
+here.

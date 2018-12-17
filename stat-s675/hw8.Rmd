@@ -1,0 +1,301 @@
+---
+title: "STAT-S675"
+subtitle: 'Homework 8'
+author: "John Koo"
+output: pdf_document
+# output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center')
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+[Link to assignment](http://pages.iu.edu/~mtrosset/Courses/675/hwManifold.txt)
+
+```{r setup_for_assignment}
+dp <- loadNamespace('dplyr')
+import::from(magrittr, `%>%`, `%<>%`)
+import::from(foreach, foreach, `%do%`)
+import::from(readr, read_table2)
+import::from(scatterplot3d, scatterplot3d)
+library(ggplot2)
+
+source('http://pages.iu.edu/~mtrosset/Courses/675/out.r')
+source('http://pages.iu.edu/~mtrosset/Courses/675/stress.r')
+source('http://pages.iu.edu/~mtrosset/Courses/675/manifold.r')
+
+theme_set(theme_bw())
+```
+
+# Exercise 7.4.1
+
+[From the text]
+
+Here we will construct $\Delta$ from the circle (since the result is identical 
+in either case). 
+
+```{r construct_delta, cache = TRUE}
+# number of points
+n <- 200
+
+# radius of circle
+r <- 1 / pi
+
+# construct dissimilarity matrix
+theta <- seq(2 * pi / n, 2 * pi, 2 * pi / n)
+Delta <- foreach(i = theta, .combine = rbind) %do% {
+  foreach(j = theta, .combine = c) %do% {
+    theta.ij <- abs(i - j)
+    if (theta.ij > pi) theta.ij <- 2 * pi - theta.ij
+    arc.length <- theta.ij * r
+    return(arc.length)
+  }
+}
+```
+
+```{r embed_delta}
+# spectral decomposition of tau(Delta2)
+Delta2 <- Delta ** 2
+B <- mds.tau(Delta2)
+B.eigen <- eigen(B)
+
+# find first two components
+projection.df <- B.eigen$vectors[, 1:2] %>% 
+  apply(2, function(x) x * sqrt(B.eigen$values[1:2])) %>% 
+  as.data.frame()
+
+# plot first two components
+ggplot(projection.df) + 
+  geom_point(aes(x = V1, y = V2)) + 
+  coord_fixed()
+```
+
+We can look at the rows of $B = \tau(\Delta_2)$ to obtain $b^2$:
+
+```{r obtain_b}
+summary(diag(B))
+b <- sqrt(mean(diag(B)))
+print(b ** 2)
+```
+
+Then $b^2 \approx `r round(b ** 2, 4)`$ (and $b \approx `r round(b, 4)`$).
+
+If $b$ is the radius of the embedding, this is consistent with our intuition. 
+The longest arc length in $S$ is 1, so we expect the longest pairwise Euclidean 
+distance of the embedding, $2b$, or the diameter of of the embedding, to be 
+approximately this length. 
+
+To find $a$, the angle between two consecutive points, we want $A_{i, i + 1}$, 
+where $A = \cos^{-1}\frac{B}{b^2}$.
+
+```{r compute_a}
+A <- acos(B / b ** 2)
+print(A[1:6, 1:6])
+```
+
+We can see that $a \approx 0.02449$. In the original circle $S$, the angle 
+between two consecutive values was $\frac{2 \pi}{200} \approx 0.0314$.
+
+### Analytical derivation of $b^2$
+
+Define $B = \tau(\Delta_2) = -\frac{1}{2} P \Delta_2 P$ where 
+$P = I - \frac{e e^{\top}}{n}$. Then:
+
+$$B = \tau(\Delta_2) = -\frac{1}{2} P \Delta_2 P$$
+$$= -\frac{1}{2} (I - \frac{e e^{\top}}{n}) \Delta_2 (I - \frac{e e^{\top}}{n})$$
+$$= -0.5 (\Delta_2 - \frac{e e^{\top}}{n} \Delta_2) (I - \frac{e e^{\top}}{n})$$
+$$= -0.5 (\Delta_2 - \Delta_2 \frac{e e^\top}{n} - 
+\frac{e e^\top}{n} \Delta_2 + \frac{e e^\top e e^\top}{n^2} \Delta_2)$$
+
+We know that $e e^\top = n$ and since $\Delta_2$ and $\frac{e e^\top}{n}$ are 
+symmetric, the two matrices commute. Therefore, this is equal to:
+
+$$= -0.5 (\Delta_2 - 2 \frac{e e^\top}{n} \Delta_2
++ \frac{n e e^\top}{n^2} \Delta_2)$$
+$$= -0.5 (\Delta_2 - \frac{e e^\top}{n} \Delta_2)$$
+$$= -\frac{1}{2} (I - \frac{e e^\top}{n}) \Delta_2$$
+$$= -\frac{1}{2} P \Delta_2$$
+We know that the diagonal entries of this matrix are just half the row means of 
+$\Delta_2$ subtracted by the diagonal entries of $\Delta_2$. However, 
+$diag(\Delta_2) = 0$, so ...
+
+$$[B]_{jj} = diag(\frac{1}{2} P \Delta_2) = \frac{1}{2n} \sum_k^n \delta_{kj}^2$$
+
+This is equivalent $\forall j \leq n$, so we can just look at the first row of 
+$\Delta_2$. 
+$\delta_{1 \cdot}^2 = [0, .01^2, 0.2^2, 0.3^2, ..., .99^2, 1, .99^2, ..., .01^2]$ 
+$= \frac{1}{100^2} [0, 1, 4, 9, ..., 9801, 10000, 9801, ..., 4, 1]$ 
+
+Then $\sum_k^n \delta_{kj}^2 = \frac{1}{100^2} (\sum_k^{100} k^2 + \sum_k^{99} k^2)$ 
+$= \frac{1}{100^2}(\frac{(100)(101)(201)}{6} + \frac{(99)(100)(199)}{6})$ 
+$= 66.67$
+
+Therefore, $[B]_{jj} = diag(\frac{1}{2} P \Delta_2) = 
+\frac{1}{2n} \sum_k^n \delta_{kj}^2 = \frac{66.67}{400} = 0.166675$
+
+# Other problems
+
+```{r load_data}
+file.url <- 'http://pages.iu.edu/~mtrosset/Courses/675/manifold.y'
+Y <- read_table2(file.url, col_names = FALSE)
+
+scatterplot3d(Y$X1, Y$X2, Y$X3)
+```
+
+# Problem 1
+
+CMDS
+
+```{r p1}
+# CMDS on Y
+Y.dist <- mds.edm1(Y)
+Y.cmds <- cmdscale(Y.dist)
+
+# plot first two components
+Y.cmds.df <- Y.cmds %>% 
+  as.data.frame() %>% 
+  dp$mutate(id = rownames(.))
+ggplot(Y.cmds.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+# rank by first component
+rank.1 <- rank(Y.cmds.df$V1)
+print(rank.1)
+```
+
+# Problem 2
+
+Isomap with EDM-1 weights
+
+```{r p2}
+# set k
+k <- 4
+
+# dimension of Y
+n <- nrow(Y)
+
+# define dissimilarity matrix for Y
+Y.knn <- graph.knn(Y.dist, k)
+Y.dis <- graph.dis(Y.knn, Y.dist)
+Y.shortest <- graph.short(Y.dis)
+
+Y.isomap.df <- Y.shortest %>% 
+  cmdscale() %>% 
+  as.data.frame() %>% 
+  dp$mutate(id = rownames(.))
+
+ggplot(Y.isomap.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+rank.2 <- rank(Y.isomap.df$V1)
+print(rank.2)
+```
+
+# Problem 3
+
+Isomap with unit weights
+
+```{r p3}
+Y.dis.unit <- graph.dis(Y.knn, matrix(rep(1, n ** 2), ncol = n, nrow = n))
+Y.shortest.unit <- graph.short(Y.dis.unit)
+
+Y.isomap.unit.df <- Y.shortest.unit %>% 
+  cmdscale() %>% 
+  as.data.frame() %>% 
+  dp$mutate(id = rownames(.))
+
+ggplot(Y.isomap.unit.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+rank.3 <- rank(Y.isomap.unit.df$V1, ties.method = 'first')
+print(rank.3)
+```
+
+# Problem 4
+
+Laplacian eigenmap with adjacency matrix
+
+```{r p4}
+Y.adj <- Y %>% 
+  mds.edm1() %>% 
+  graph.knn(k) %>% 
+  graph.adj()
+
+L.adj <- graph.laplacian(Y.adj)
+L.adj.eigen <- eigen(L.adj)
+L.adj.df <- cbind(
+  L.adj.eigen$vectors[, n - 1] / sqrt(L.adj.eigen$values[n - 1]),
+  L.adj.eigen$vectors[, n - 2] / sqrt(L.adj.eigen$values[n - 2])
+) %>%
+  as.data.frame() %>%
+    dp$mutate(id = as.numeric(rownames(.)))
+
+ggplot(L.adj.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+rank.4 <- rank(L.adj.df$V1)
+print(rank.4)
+```
+
+# Problem 5
+
+Laplacian eigenmap with heat kernel
+
+```{r p5}
+s <- 5
+
+Y.heat <- Y %>% 
+  mds.edm1() %>% 
+  graph.heat(s)
+
+L.heat <- graph.laplacian(Y.heat)
+
+L.heat.eigen <- eigen(L.heat)
+
+L.heat.df <- cbind(
+  L.heat.eigen$vectors[, n - 1] / sqrt(L.heat.eigen$values[n - 1]),
+  L.heat.eigen$vectors[, n - 2] / sqrt(L.heat.eigen$values[n - 2])
+) %>%
+  as.data.frame() %>%
+    dp$mutate(id = as.numeric(rownames(.)))
+
+ggplot(L.heat.df) + 
+  geom_text(aes(x = V1, y = V2, label = id)) + 
+  coord_fixed()
+
+rank.5 <- rank(L.heat.df$V1)
+print(rank.5)
+```
+
+# Problem 6
+
+```{r p6}
+cor(cbind(seq(n), rank.1, rank.2, rank.3, rank.4, rank.5), 
+    method = 'spearman')
+```
+
+We can see that the CMDS method is the odd one out here. The first component of 
+the CMDS method fails to recover any structure. 
+
+The Isomap and various Laplacian eigenmap methods perform better and all have 
+similar results, with the heat map performing the best, at least based on just 
+the ranking of the first component. 
+
+The fact that CMDS failed here matches our intuition. CMDS requires some sort of 
+correlation and cannot detect pairwise similarities very well. Since our 
+original data `Y` did not have this correlated structure, it failed to find a 
+good embedding. 
