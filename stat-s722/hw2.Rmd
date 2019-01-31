@@ -1,0 +1,545 @@
+---
+title: 'S722 HW2'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+To save on typing, I will denote 
+$\frac{\partial^k}{\partial x^k} f(x) = \partial_x^k f(x)$.
+
+# Part 1
+
+## 8.12
+
+### a
+
+Suppose $\hat{\mu}_{MLE} \leq 0$. Then $\lambda(X) = 1$, so we do not have to 
+consider this scenario. On the other hand, if $\hat{\mu}_{MLE} > 0$, then 
+$\hat{\mu}_0 = 0$ and $\hat{\mu} = \bar{X}$. So we have:
+
+$\lambda(X) = 
+\frac{(2 \pi \sigma^2)^{-n/2} \exp(-\frac{1}{2 \sigma^2} \sum X_i^2)}
+{(2 \pi \sigma^2)^{-n/2} \exp(-\frac{1}{2 \sigma^2} \sum (X_i - \bar{X})^2)}$  
+$= \big( \exp(\frac{1}{\sigma^2} \bar{X} \sum X_i - 
+\frac{1}{2 \sigma^2} \sum (\bar{X})^2) \big)^{-1}$  
+$= \exp(-\frac{n}{2 \sigma^2} (\bar{X})^2)$
+
+So we reject when $\exp(-\frac{n}{2 \sigma^2} (\bar{X})^2) < c$  
+$\implies -\frac{n}{2 \sigma^2} (\bar{X})^2 < c$  
+$\implies \frac{n}{\sigma^2} (\bar{X})^2 > c$  
+$\implies \sqrt{n} \bar{X} / \sigma > c$
+
+Since under $H_0$, 
+$\frac{\bar{X} - \mu_0}{\sigma / \sqrt{n}} \sim \mathcal{N}(0, 1)$ and 
+$\mu_0 = 0$, $c = z_{\alpha} \approx 1.645$.
+
+$\beta(\mu) = P(\text{reject } H_0 \mid \mu)$  
+$= P(Z > 1.645 - \frac{\mu}{\sigma / \sqrt{n}})$  
+$= 1 - P(Z \leq 1.645 - \frac{\mu}{\sigma / \sqrt{n}})$  
+$= 1 - \Phi(z_{\alpha} - \frac{\mu}{\sigma / \sqrt{n}})$
+
+Here, I will use $\sigma = 1$.
+
+```{r}
+library(ggplot2)
+import::from(magrittr, `%>%`)
+theme_set(theme_bw())
+
+alpha <- .05
+sigma <- 1
+n.vector <- c(1, 4, 16, 64, 100)
+
+z_alpha <- qnorm(1 - alpha)
+
+mu <- seq(-5, 5, .001)
+
+out.df <- lapply(n.vector, function(n) {
+  beta <- 1 - pnorm(z_alpha - mu / (sigma / sqrt(n)))
+  dplyr::data_frame(n = factor(n, levels = n.vector), mu = mu, beta = beta)
+}) %>% 
+  dplyr::bind_rows()
+
+ggplot(out.df) + 
+  geom_line(aes(x = mu, y = beta, colour = n)) + 
+  labs(x = expression(mu), 
+       y = expression(beta)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_x_continuous(breaks = seq(-5, 5, 1)) + 
+  scale_y_continuous(breaks = seq(0, 1, .1))
+```
+
+### b
+
+This is very similar to part (a) except $z_{\alpha} \to z_{\alpha / 2}$ and it 
+is two-sided. So now we have:
+
+$\beta(\mu) = 1 - \bigg(
+\Phi(z_{\alpha / 2} + \frac{\mu}{\sigma / \sqrt{n}}) - 
+\Phi(-z_{\alpha / 2} - \frac{\mu}{\sigma / \sqrt{n}}) \bigg)$
+
+Again, I will use $\sigma = 1$
+
+```{r}
+z_alpha_2 <- qnorm(1 - alpha / 2)
+
+out.df <- lapply(n.vector, function(n) {
+  beta <- 
+    1 - 
+    pnorm(z_alpha_2 +- mu / (sigma / sqrt(n))) +
+    pnorm(-z_alpha_2 - mu / (sigma / sqrt(n)))
+  dplyr::data_frame(n = factor(n, levels = n.vector), mu = mu, beta = beta)
+}) %>% 
+  dplyr::bind_rows()
+
+ggplot(out.df) + 
+  geom_line(aes(x = mu, y = beta, colour = n)) + 
+  labs(x = expression(mu), 
+       y = expression(beta)) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  scale_x_continuous(breaks = seq(-5, 5, 1)) + 
+  scale_y_continuous(breaks = seq(0, 1, .1))
+```
+
+## 8.13
+
+### a
+
+The level of $\phi_1$ is $P_{\theta_0}(X_1 > .95)$ 
+$= 1 - P_{\theta_0}(X_1 \leq .95) = 1 - .95 = .05$.
+
+The level of $\phi_2$ is $P_{\theta_0}(X_1 + X_2 > C)$
+
+The density of $Y = X_1 + X_2$ is $f(y) = 2 - y$, so 
+$P(Y > C) = \int_C^2 (2 - y) dy$ (since $X_1 + X_2$ is bounded from above by 
+$2 \theta_0$)  
+$= 4 - 2 - 2C + C^2 / 2$  
+$= \frac{(2 - C)^2}{2}$
+
+Then $\alpha_2 = \frac{(2 - C)^2}{2} \implies C = 2 - \sqrt{.1}$
+
+### b
+
+$\beta_1(\theta) = P_\theta(X_1 > .95)$  
+$= 1 - P_\theta(X_1 \leq .95)$  
+$= 1 - \int_\theta^{.95} dx_1$  
+$= \theta + .05$
+
+Since $\beta_1 \in [0, 1]$, we need to truncate this function, so we get:
+
+$\beta_1(\theta) = \begin{cases}
+  0 & \theta < -.05 \\
+  \theta + .05 & \theta \in [-.05, .95] \\
+  1 & \theta > .95
+\end{cases}$
+
+We have the distribution of $Y$ under $H_0$ in part (a). For arbitrary $\theta$, 
+we can just draw a triangle:
+
+```{r}
+ggplot() + 
+  geom_segment(aes(x = 0, y = 0, xend = 1, yend = 2)) + 
+  geom_segment(aes(x = 0, y = 0, xend = 2, yend = 0)) + 
+  geom_segment(aes(x = 1, y = 2, xend = 2, yend = 0)) + 
+  labs(x = 'y', y = 'f(y)') + 
+  scale_x_continuous(labels = c(expression(2 * theta), 
+                                expression(2 * theta + 2)), 
+                     breaks = c(0, 2)) + 
+  scale_y_continuous(labels = NULL)
+```
+
+This is because the minimum value for $Y$ is $2 \theta$ while the maximum value 
+is $2 \theta + 2$. Integrating to get an area of 1, we get:
+
+$f(y) = \begin{cases} 
+  0 & y < 2 \theta \\
+  y - 2 \theta & y \in [2 \theta, 2 \theta + 1) \\
+  2 \theta + 2 - y & y \in [2 \theta + 1, 2 \theta + 2) \\
+  0 & y \geq 2 \theta + 2
+\end{cases}$
+
+$\beta_2 (\theta) = P_\theta(Y > C)$ 
+$= \begin{cases}
+  0 & \theta \geq C / 2 - 1 \\
+  (2 \theta + 2 - C)^2 & \theta \in (C/2 - 1, (C-1) / 2] \\
+  1 - (C - 2 \theta)^2 / 2 & \theta \in ((C-1) / 2, C/2] \\
+  1 & \theta > C/2
+\end{cases}$
+
+```{r}
+C. <- 2 - sqrt(.1)
+
+beta.1 <- function(theta) {
+  if (theta <= -.05) {
+    return(0)
+  } else if (theta <= .95) {
+    return(theta + .05) 
+  } else {
+    return(1)
+  }
+}
+
+beta.2 <- function(theta) {
+  if (theta <= C. / 2 - 1) {
+    return(0)
+  } else if (theta < (C. - 1) / 2) {
+    return((2 * theta + 2 - C.) ^ 2 / 2)
+  } else if (theta <= C. / 2) {
+    return(1 - (C. - 2 * theta) ^ 2 / 2)
+  } else{
+    return(1)
+  }
+}
+
+theta <- seq(-.1, 1, .01)
+beta.1.vec <- sapply(theta, beta.1)
+beta.2.vec <- sapply(theta, beta.2)
+
+ggplot() + 
+  geom_line(aes(x = theta, y = beta.1.vec, colour = 'beta1')) + 
+  geom_line(aes(x = theta, y = beta.2.vec, colour = 'beta2')) + 
+  labs(x = expression(theta), y = expression(beta), colour = NULL) + 
+  scale_colour_discrete(labels = c(expression(beta[1]), 
+                                   expression(beta[2])))
+```
+
+### c
+
+The plot shows that $\phi_2$ is more powerful in most of the range plotted, 
+but $\phi_1$ is more powerful from around $\theta = 0$ to $\theta = .15$.
+
+### d
+
+We should reject $H_1$ if either $X_1$ or $X_2$ is greater than 1 since 
+$P_{\theta = 0}(X > 1) = 0$. So a more powerful test might be 
+
+$\phi_3(X_1, X_2) = \begin{cases}
+  1 & X_1 + X_2 > C \text{ or } X_1 > 1 \text{ or } X_2 > 1 \\
+  0 & \text{otherwise}
+\end{cases}$
+
+## 8.14
+
+$\sum X_i \sim \mathcal{N}(np, n p (1 - p))$  
+$\implies \frac{\sum X_i - np}{\sqrt{n p (1 - p)}} \sim \mathcal{N}(0, 1)$
+
+Similar to problem 8.13, our test is simply $\sum X_i > c$.
+
+We want $\beta(p = .49) = .01$ and $\beta(p = .51) = .99$.
+
+Since we have standard normal probabilities, we have 
+$\beta(p | n, c) = 1 - \Phi(\frac{c - np}{\sqrt{n p (1-p)}})$
+
+```{r}
+f <- function(x) {
+  c((x[1] - x[2] * .49) / sqrt(x[2] * .49 * .51),
+    (x[1] - x[2] * .51) / sqrt(x[2] * .49 * .51)) - 
+    c(qnorm(.99), qnorm(.01))
+}
+
+pracma::fsolve(f, c(1000, 1000), maxiter = 1000)
+```
+
+So we have $c \approx 6762.162$ and $n = 13525$.
+
+## 8.15
+
+The UMP test is of the form:
+
+$\frac{L(\sigma_1)}{L(\sigma_0)} > k$
+
+$\frac{(2 \pi \sigma_1^2)^{-n/2} e^{-\sum x_i / (2 \sigma_1^2)}}
+{(2 \pi \sigma_0^2)^{-n/2} e^{-\sum x_i / (2 \sigma_0)^2}}$  
+$= (\sigma_0 / \sigma_1)^n 
+\exp(\frac{1}{2} (\sigma_0^{-2} - \sigma_1^{-1}) \sum x_i^2) > k$  
+$\implies \sum x_i^2 > c$ since the exponential function is increasing.
+
+Since $X_i \stackrel{iid}{\sim} \mathcal{N}(0, \sigma_0^2)$ under the null 
+hypothesis, $\frac{1}{\sigma_0^2} \sum X_i \sim \chi^2_n$
+$\implies c= \sigma_0^2 \chi^2_{n, \alpha}$ where $\alpha$ is the area under 
+the curve to the right.
+
+## 8.16
+
+### a
+
+$1 = P(\text{reject } H_0) = P(\text{reject } H_0 \mid H_0)= 
+P(\text{reject } H_0 \mid H_1)$, so size = power = 1.
+
+### b
+
+$0 = P(\text{reject } H_0) = P(\text{reject } H_0 \mid H_0)= 
+P(\text{reject } H_0 \mid H_1)$, so size = power = 0.
+
+## 8.18
+
+### a
+
+This is very similar to problem 8.12, and just copying that while changing 
+$\theta_0$ and $c$, we get:
+
+$\beta(\theta) = 
+1 - 
+\bigg(\Phi(c + \frac{\theta_0 - \theta}{\sigma / \sqrt{n}}) - 
+\Phi(-c + \frac{\theta_0 - \theta}{\sigma / \sqrt{n}}) \bigg)$
+
+### b
+
+$\alpha = .05$, so $c = z_{\alpha / 2}$.
+
+$\beta(\theta_0 + \sigma) = 1 - \Phi(c - \sqrt{n}) + \Phi(-c - \sqrt{n}) = .75$
+
+```{r}
+c. <- qnorm(.975)
+f <- function(n) {
+  1 - pnorm(c. - sqrt(n)) + pnorm(-c. - sqrt(n)) - .75
+}
+
+uniroot(f, c(1, 100))
+```
+
+So $n = 7$.
+
+## 8.19
+
+$Y = X^\theta$  
+$\implies X = Y^{1 / \theta}$  
+$\implies X' = \frac{Y^{1 / \theta - 1}}{\theta}$  
+$\implies f(y) = \frac{1}{\theta} y^{1 / \theta - 1} e^{-y^{1 / \theta}}$ 
+(inverse gamma?)
+
+The UMP test is to reject when $\frac{L(2)}{L(1)} > k$.
+
+$\frac{L(2)}{L(1)}$
+$= \frac{\frac{1}{2} y^{1/2 - 1} e^{-y^{1/2}}}{y^0 e^{-y}}$  
+$= \frac{1}{2} y^{-1/2} e^{y^{1/2}}$
+
+```{r}
+y <- seq(0, 5, .01)
+ratio <- .5 * y ^ -.5 * exp(y ^ .5)
+
+ggplot() + 
+  geom_line(aes(x = y, y = ratio))
+```
+
+So if the likelihood ratio is greater than some $k$, then that means $y < c_1$ 
+or $y > c_2$ where the value of the ratio is equivalent at $y = c_1$ and 
+$y = c_2$.
+
+In addition, for a $0.1$-level test, we need 
+$P_{\theta_0}(Y < c_1) + P_{\theta_0}(Y > c_2) = .1$  
+$\implies .1 = 1 - e^{-c_1} + e^{-c_2}$
+
+```{r}
+f <- function(x) {
+  c(.5 * x[1] ^ -.5 * exp(x[1] ^ .5) - .5 * x[2] ^ -.5 * exp(x[2] ^ .5), 
+    1 - exp(-x[1]) + exp(-x[2]) - .1)
+}
+
+sol <- pracma::fsolve(f, c(.5, 1.5), maxiter = 1000, tol = .Machine$double.eps)
+print(sol$x)
+```
+
+The type II error is given by:
+
+$\int_{c_1}^{c_2} \frac{1}{2} y^{-1/2} e^{-y^{1/2}} dy$  
+Let $u = y^{1/2} \implies du = \frac{1}{2} y^{-1/2} dy$  
+So the integral becomes $\int_{\sqrt{c_1}}^{\sqrt{c_2}} e^{-u} du$  
+$= e^{-c_1} - e^{-c_2}$  
+$\approx `r round(exp(-sol$x[1]) - exp(-sol$x[2]), 3)`$
+
+## 8.20
+
+We can first compute the likelihood ratios:
+
+$x$ | $L(H_1) / L(H_0)$
+----|----
+1   | 6
+2   | 5
+3   | 4
+4   | 3
+5   | 2
+6   | 1
+7   | `r round(.79 / .94, 3)`
+
+The likelihood ratio is decreasing, so the test is $L(H_1) / L(H_0) < c$. 
+
+If we want a size-$.04$ test, then $P(X \leq c \mid H_0) = .04 \implies c = 4$. 
+
+The type II error probability is $P(X > 4 \mid H_1) = .2 + .1 + .79 = .82$.
+
+# Part 2
+
+Given:
+
+* Simple hypothesis test 
+    * $H_0$ : $\theta = \theta_0$
+    * $H_1$ : $\theta = \theta_1$
+* Joint pdf $f(\overrightarrow{x} \mid \theta_i)$
+* Rejection region $R$ such that for some $k \geq 0$, 
+    * $\overrightarrow{x} \in R$ if 
+    $f(\overrightarrow{x} | \theta_1) > k f(\overrightarrow{x} | \theta_0)$
+    * $\overrightarrow{x} \in R$ if 
+    $f(\overrightarrow{x} | \theta_1) < k f(\overrightarrow{x} | \theta_0)$
+* $\alpha = P_{\theta_0}(\overrightarrow{X} \in R)$
+
+Then:
+
+* This is a UMP level-$\alpha$ test
+* If such a test exists for $k > 0$, then every UMP level-$\alpha$ test is a 
+size-$\alpha$ test and every UMP level-$\alpha$ test has this type of rejection 
+region (except perhaps on a set $A$ such that 
+$P_{\theta_0}(\overrightarrow{X} \in A) = 
+P_{\theta_1}(\overrightarrow{X} \in A) = 0$).
+
+Proof:
+
+* Let $\phi(x)$ be a test function that satisfies the requirements with 
+power function $\beta$.
+* Let $\phi^*(x)$ be a test function for a level-$\alpha$ test with power 
+function $\beta^*$.
+* Note that 
+    * $f(x | \theta_1) > k f(x | \theta_0) \implies \phi(x) = 1$
+    * $f(x | \theta_1) < k f(x | \theta_0) \implies \phi(x) = 0$
+* Therefore, $\phi(x) - \phi^*(x)$ and $f(x | \theta_1) - k f(x | \theta_0)$ 
+must have the same sign
+* So $(\phi(x) - \phi^*(x)) (f(x | \theta_1) - k f(x | \theta_0)) \geq 0$.  
+$\implies 
+0 \leq \int(\phi(x) - \phi^*(x)) (f(x | \theta_1) - k f(x | \theta_0)) dx$  
+$= \beta(\theta_1) - \beta^*(\theta_1) - k(\beta(\theta_0) - \beta^*(\theta_1))$
+since $E[\phi(X) | \theta_i] = \beta(\theta_i)$.
+* $\beta(\theta_0) = \alpha$
+* $\beta^*(\theta_0) \leq \alpha$
+* Therefore, $\beta(\theta_0) - \beta^*(\theta_0) \geq 0$  
+$\implies 0 \leq 
+\beta(\theta_1) - \beta^*(\theta_1) - k(\beta(\theta_0) - \beta^*(\theta_1)) 
+\leq \beta(\theta_1) - \beta^*(\theta_1)$
+* So $\phi$ has greater power than $\phi^*$ for any $\alpha$ and $\theta_1$ 
+$\implies \phi(x)$ is UMP level-$\alpha$
+
+* Suppose that $\phi^*(x)$ is a UMP level-$\alpha$ test.  
+Then $\beta(\theta_1) = \beta^*(\theta_1)$. 
+* Then that would imply $\beta(\theta_0) - \beta^*(\theta_0) \leq 0$, which can 
+only be true when $\beta(\theta_0) - \beta^*(\theta_0) \leq 0$, which can only 
+be true if $\phi^*(x)$ is a size-$\alpha$ test, which implies that 
+$\phi$ and $\phi^*$ are the same test, so $\phi$ is a UMP level-$\alpha$ test.
+
+# Part 3
+
+## a
+
+$\frac{L(2)}{L(1)} = 
+\frac{2^{-n} \exp(-\frac{1}{2} \sum x_i)}{\exp(-\sum x_i)} > c$  
+$\implies \exp(\frac{1}{2} \sum x_i) > c'$  
+$\implies \sum x_i > c''$
+
+Under the null hypothesis ($\theta = 1$), $\sum X_i \sim Gamma(n, 1)$.
+
+A gamma-distributed random variable is $\chi^2$-distributed with $2n$ degrees 
+of freedom when the second parameter is $2$. Using a transformation, we get 
+that then $2 \sum X_i \sim \chi^2_{2n}$, so $\alpha = P(\chi^2_{2n} > 2 c) 
+\implies c = \frac{1}{2} \chi^2_{2n, \alpha}$ (where $\alpha$ is the area to the 
+right).
+
+## b
+
+Using $\alpha = .05$
+
+```{r}
+import::from(foreach, foreach, `%dopar%`)
+import::from(xtable, xtable)
+
+doMC::registerDoMC(4)
+
+alpha <- .05
+
+n.vector <- c(5, 10, 20, 50)
+nsim.vector <- c(1e3, 1e4, 1e5)
+
+theta.0 <- 1
+theta.1 <- 2
+```
+
+```{r cache = TRUE, results = 'asis'}
+out.df <- foreach(n = n.vector, .combine = dplyr::bind_rows) %dopar% {
+  lapply(nsim.vector, function(nsim) {
+    c.empirical <- sapply(seq(nsim), function(i) {
+      rexp(n, rate = 1 / theta.0) %>% 
+        sum()
+    }) %>% 
+      quantile(1 - alpha)
+    dplyr::data_frame(n = n, nsim = nsim, c.empirical = c.empirical)
+  })
+}
+
+out.df %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+
+ggplot(out.df) + 
+  geom_point(aes(x = n, y = c.empirical, colour = factor(nsim))) + 
+  labs(y = 'c', colour = expression(n[sim]))
+```
+
+## c
+
+### Exact
+
+$\beta(\theta_1) = P_{\theta_1}(\sum X_i > \frac{1}{2} \chi^2_{2n, \alpha})$
+
+Under $H_1$, $\frac{2 \sum X_i}{\theta_1} = \sum X_i \sim \chi^2_{2n}$.
+
+So $\beta(\theta_1) = P(\chi^2_{2n} > \frac{1}{2} \chi^2_{2n, \alpha})$
+
+```{r, results = 'asis'} 
+power.df <- dplyr::data_frame(n = n.vector) %>% 
+  dplyr::mutate(power = 1 - pchisq(q = .5 * qchisq(1 - alpha, 2 * n), 
+                                   2 * n)) %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+```
+
+### Monte Carlo
+
+```{r, cache = TRUE, results = 'asis'}
+out.df <- foreach(n = n.vector, .combine = dplyr::bind_rows) %dopar% {
+  c. <- .5 * qchisq(1 - alpha, 2 * n)
+  lapply(nsim.vector, function(nsim) {
+    power <- sapply(seq(nsim), function(i) {
+      rexp(n, rate = 1 / theta.1) %>% 
+        sum()
+    }) %>% 
+      magrittr::is_less_than(c.) %>% 
+      mean() %>% 
+      {1 - .}
+    dplyr::data_frame(n = n, nsim = nsim, power = power)
+  })
+}
+
+out.df %>% 
+  xtable() %>% 
+  print(include.rownames = FALSE)
+
+ggplot(out.df) + 
+  geom_point(aes(x = n, y = power, colour = factor(nsim))) + 
+  labs(y = expression(beta), colour = expression(n[sim]))
+```

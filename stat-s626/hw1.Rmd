@@ -1,0 +1,136 @@
+---
+title: 'S626'
+subtitle: 'HW1'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+# Problem 2
+
+## Part a
+
+Using $P(A) = \sum_i P(A \cap B_i)$
+
+occupation | P(occupation)
+-----------| -
+farm       | `r .018 + .035 + .031 + .008 + .018`
+operatives | `r .002 + .112 + .064 + .032 + .069`
+craftsmen  | `r .001 + .066 + .094 + .032 + .084`
+sales      | `r .001 + .018 + .019 + .01 + .051`
+professional | `r .001 + .029 + .032 + .043 + .13`
+
+## Part b
+
+Similar to part (a)
+
+occupation   | P(occupation)
+-------------| -
+farm         | `r .018 + .002 + .001 + .001 + .001`
+operatives   | `r .035 + .112 + .066 + .018 + .029`
+craftsmen    | `r .031 + .064 + .094 + .019 + .032`
+sales        | `r .008 + .032 + .032 + .01 + .043`
+professional | `r .018 + .069 + .084 + .051 + .13`
+
+## Part c
+
+Using $P(A | B) = \frac{P(A \cap B)}{P(B)}$
+
+```{r echo = FALSE}
+p_father_farm <- .018 + .035 + .031 + .008 + .018
+p_son_farm <- .018 + .002 + .001 + .001 + .001
+```
+
+occupation   | P(son's occupation \| father is farmer)
+-------------|-
+farm         | `r round(.018 / p_father_farm, 3)`
+operatives   | `r round(.035 / p_father_farm, 3)`
+craftsmen    | `r round(.031 / p_father_farm, 3)`
+sales        | `r round(.008 / p_father_farm, 3)`
+professional | `r round(.018 / p_father_farm, 3)`
+
+## Part d
+
+Similar to part (c)
+
+occupation   | P(father's occupation \| son is farmer)
+-------------|-
+farm         | `r round(.018 / p_son_farm, 3)`
+operatives   | `r round(.002 / p_son_farm, 3)`
+craftsmen    | `r round(.001 / p_son_farm, 3)`
+sales        | `r round(.001 / p_son_farm, 3)`
+professional | `r round(.001 / p_son_farm, 3)`
+
+# Problem 3
+
+## Part a
+
+We can drop all the parts that do not depend on $x$
+
+$p(x | y, z) = \frac{p(x, y, z)}{p(y, z)} \propto p(x, y, z)$ 
+$\propto f(x, z) g(y, z) h(z) \propto f(x, z)$
+
+## Part b
+
+Similar to part (a), we can say:
+
+$p(y | x, z) \propto p(x, y, z) \propto g(y, z)$
+
+## Part c
+
+$p(x, y | z) = \frac{p(x, y, z)}{p(z)} \propto p(x, y, z)$ 
+$\propto f(x, z) g(y, z) h(z) \propto f(x, z) g(y, z)$ 
+$\propto p(x, z) p(y, z)$
+$= p(x | z) p(z) p(y | z) p(z)$
+$\propto p(x | z) p(y | z)$
+
+Suppose $p(x, y | z) \neq p(x | z) p(y | z)$, i.e., 
+$p(x, y | z) = k p(x | z) p(y | z)$. Since $\int p(x, y | z) dx dy = 1$, 
+$k = \big( \int p(x | z) p(y | z) dx dy \big)^{-1}$. But 
+$\int p(x | z) p(y | z) dx dy = (\int p(x | z) dx) (\int p(y | z) dx)$
+$= (1) (1) = 1 \implies k = 1$. Therefore, $p(x, y | z) = p(x | z) p(y | z)$.
+
+# Problem 4
+
+## Part a
+
+$P_A(E) = \begin{cases} 
+  0 & 6 \text{ is not the observed outcome} \\ 
+  1 & 6 \text{ is the observed outcome}
+\end{cases}$ 
+since person $A$ already observed the outcome. 
+
+On the other hand, let's say person $B$ assumes that the die is fair. Then 
+$P_B(E) = 1/6$.
+
+## Part b
+
+If person $A$ is ignorant of soccer, then they may assign a uniform distribution 
+across all teams. Of course, $A$ may not know how many teams compete, so a 
+guess might be 200, which is approximately the number of countries in the world. 
+So perhaps $P_A(E) = 1/200$.
+
+On the other hand, if person $B$ is knowledgeable about soccer, then they may 
+know that there are 32 teams that qualify for the World Cup and that Germany 
+is almost guaranteed to qualify, so perhaps $P_B(E) = 1/32$. Person $B$ probably 
+also knows that Germany won 2 out of 10 most recent World Cups, so perhaps 
+$P_B(E) = 1/5$. 

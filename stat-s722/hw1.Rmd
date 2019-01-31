@@ -1,0 +1,438 @@
+---
+title: 'S722 HW1'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+To save on typing, I will denote 
+$\frac{\partial^k}{\partial x^k} f(x) = \partial_x^k f(x)$.
+
+# Part 1
+
+## 8.3
+
+Let $y = \sum_i y_i$ be the number of successes. We showd that this is a 
+sufficient statistic. Then we can write $\lambda$ in terms of $y$:
+
+$\lambda(y) = \begin{cases}
+1 & y/m \leq \theta_0\\
+(\frac{\theta_0}{y/m})^y (\frac{1 - \theta_0}{1 - y/m})^{m - y} & 
+  y/m > \theta_0
+\end{cases}$
+
+And we reject $H_0$ if $\lambda$ is too small, i.e., $\lambda < c$.
+
+We can also see that we should reject when $y \leq m \theta_0$ since we would 
+get $\lambda = 1$. 
+
+We can see that when $y > m \theta_0$, we have:
+
+$\log \lambda = y \log \theta_0 - y \log y + y \log m + 
+(m - y) \log(1 - \theta_0) - (m - y) \log (1 - y/m)$. 
+
+Derivating once, we get:
+
+$(\log \lambda)' = \log \theta_0 - \log y - 1 + \log m - \log (1 - \theta_0) +
+\frac{1}{1 - y/m} + \log (1 - y/m) - \frac{y/m}{1 - y/m}$  
+$= \log \frac{\theta_0 (1 - y/m)}{m y (1 - \theta_0)}$.
+
+Setting this negative is equivalent to setting the term inside the logarithm to 
+less than 1, which gives us
+
+$y > \frac{m \theta_0}{m^2 (1 - \theta_0) + \theta_0}$
+
+or alternatively
+
+$y/m = \bar{y} > \frac{\theta_0}{m^2 (1 - \theta_0) + \theta_0}$
+
+Since the denominator is always positive, $y/m$ is always less than $\theta_0$. 
+
+## 8.5
+
+### Part a
+
+$\log f(x_i \mid \theta, \nu) = \log \theta + \theta \log \nu - 
+(\theta + 1) \log x_i$, so we get
+
+$\ell(\theta, \nu) = 
+n \log \theta + n \theta \log \nu - (\theta + 1) \sum_i x_i$
+
+Then we get $\partial_\nu \ell = \frac{n \theta}{\nu} = 0$ 
+$\implies \nu \to \infty$. However, $\nu \leq x_{(1)}$ so we can set 
+$\hat{\nu} = x_{(1)}$. 
+
+$\partial_\theta \ell = n / \theta + n \log \hat{\nu} - \sum_i x_i = 0$  
+$\implies n + \theta (n \log x_{(1)} - \sum_i x_i) = 0$  
+$\implies \hat{\theta} = \frac{n}{\sum_i x_i - n \log x_{(1)}}$
+
+### Part b
+
+In order to show this, we must show that $\lambda$ has one global maximum.
+
+First, we note that:
+
+$T = \log \frac{\prod_i X_i}{X_{(1)}^n}$  
+$= \sum_i \log X_i - n \log X_{(1)}$  
+$\implies \hat{\theta} = n / T$
+
+Under $H_0$, we get $L(\Theta_0) = \frac{x_{(1)}^n}{\prod_i x_i^2}$, so the 
+likelihood ratio statistic is
+
+$\lambda = \frac{X_{(1)}^n / \prod_i X_i^2}
+{(n/T)^n X_{(1)}^{n^2 / T} / \prod_i X_i^{n/T + 1}}$  
+$= \bigg( \frac{X_{(1)}^n}{\prod_i X_i}\bigg)^{1 - n/T} 
+\bigg(\frac{T}{n} \bigg)^n$ (after some algebra)  
+$= T^{n/T - 1 + n} / n^n$
+
+Then $\log \lambda = (n/T - 1 + n) \log T - n \log n$ and  
+$(\log \lambda)' = -\frac{n}{T^2} \log T + \frac{n/T - 1 + n}{T}$
+
+In order to show the desired result, we need to set this to zero and solve for 
+$T$ to obtain a single local maximum, but I don't know how to do this 
+analytically. However, some algebra after setting to zero yields:
+
+$\log T = 1 + (n^{-2} - n^{-1})T$
+
+which is a logarithm on one side and a linear equation on the other. Since 
+the left side is monotone increasing and the right side is monotone decreasing 
+for $n > 1$ and they are both unbounded, they must meet at some point. And a 
+logarithmic curve can meet a negative linear curve at at most one point, so 
+there is only one maximum for $\lambda$ (after checking the second derivative). 
+
+### Part c
+
+We saw in the previous part that $T$ can be written as
+
+$T = \sum_i \log X_i - n \log X_{(1)}$  
+$= \sum_i (\log X_i - \log X_{(1)})$
+
+Let $Y = \log X_i$.  
+Then $X = e^Y$.  
+and $X' = e^Y$.  
+Then $f_Y(y) = \nu e^{-y} I(y \geq \nu)$.
+
+Now let $Z_i = Y_i - Y_{(1)}$.  
+Then the indicator function goes away, so we have $f_Z(z) = e^{-z}$, i.e., 
+$Z_i \sim Exponential(1)$. Therefore, $T \sim Gamma(n - 1, 1)$, and 
+$2T \sim Gamma(n - 1, 2) = \chi_{2(n-1)}^2$.
+
+## 8.6
+
+### Part a
+
+The MLE for the parameter of an exponential distribution is simply the sample 
+mean, which is also a sufficient statistic. Therefore, we get
+
+$\hat{\theta}_R = \frac{\sum X_i + \sum Y_i}{n + m}$
+
+$\hat{\theta} = \frac{1}{n}\sum X_i$  
+$\hat{\mu} = \frac{1}{m} \sum Y_i$
+
+Then we get:
+
+$\lambda = \frac{
+  (\frac{n+m}{\sum X_i + \sum Y_i})^{n+m} 
+  \exp(-(\frac{n+m}{\sum X_i + Y_i}) (\sum X_i + \sum Y_i))
+}{
+  (\frac{n}{\sum X_i})^n (\frac{m}{\sum Y_i})^m 
+  \exp(-\frac{n}{\sum X_i} \sum X_i - \frac{m}{\sum Y_i} \sum Y_i)
+}$  
+$= (\frac{n+m}{\sum X_i + \sum Y_i})^{n+m} 
+(\frac{\sum X_i}{n})^n (\frac{\sum Y_i}{m})^m$
+
+### Part b
+
+Continuing with the algebra from part (a), we get:
+
+$\lambda = \frac{(n+m)^{n_m}}{n^n m^m} 
+(\frac{\sum X_i}{\sum X_i + Y_i})^n (\frac{\sum Y_i}{\sum X_i + \sum Y_i})^m$  
+$= \frac{(n+m)^{n_m}}{n^n m^m} T^n (1-T)^m$
+
+Differentiating once and setting to zero, we get the maximum at: 
+
+$\lambda'(T) = C \big( n T^{n-1} (1 - T)^m - m T^n (1-T)^{m-1} \big) = 0$  
+$\implies n (1-T) = m T$  
+$\implies T = \frac{n}{n+m}$
+
+### Part c
+
+Since $X_i$ and $Y_i$ are exponentially distributed, 
+
+$\sum X_i \sim Gamma(n, \theta)$  
+$\sum Y_i \sim Gamma(m, \theta)$  
+
+Therefore, $\sum X_i + \sum Y_i \sim Gamma(n+m, \theta)$  
+$\implies T \sim Beta(n, m)$ (using diagram from back of book)
+
+## 8.7
+
+### Part a
+
+Without any restriction, we have:
+
+$\log f(x \mid \theta, \lambda) = 
+-\log \lambda - x / \lambda + \theta / \lambda$  
+$\implies \ell(\theta, \lambda) = 
+-n \log \lambda - \frac{1}{\lambda} \sum x_i + \frac{n \theta}{\lambda}$
+
+This is increasing in $\theta$, so $\hat{\theta} = X_{(1)}$.
+
+We also get:
+
+$0 = \partial_\lambda \ell = -n / \lambda + \sum x_i / \lambda - 
+n \theta / \lambda$  
+$\implies \hat{\lambda} = \frac{\sum X_i - n X_{(1)}}{n}$
+
+With the null hypothesis restriction, we have the same result as long as 
+$x_{(1)} \leq 0$. Otherwise, we set $\hat{\theta} = 0$ and so 
+$\hat{\lambda} = \sum X_i / n$. Therefore, we can write the LRT statistic as 
+
+$\lambda(\overrightarrow{x}) = \begin{cases}
+  1 & x_{(1)} \leq 0 \\
+  \frac{L(\bar{x}, 0)}{L(\frac{\sum x_i - n x_{(1)}}{n}, x_{(1)})} & x_{(1)} > 0
+\end{cases}$
+
+For the latter case, we have:
+
+$\lambda = \frac{\bar{x}^{-n} e^{-\sum x_i / \bar{x}}}
+{(\frac{n}{\sum x_i - n x_{(1)}})^n 
+\exp(-\frac{\sum x_i - x_{(n)}}{\frac{\sum x_i - x_{(n)}}{n}})}$  
+$= (\frac{\bar{x} - x_{(1)}}{\bar{x}})^n$  
+$= (1 - \frac{x_{(1)}}{\bar{x}})^n$
+
+Now let our statistic be $T = \frac{X_{(1)}}{\bar{X}}$. We can see that 
+$\lambda$ is a decreasing function of $T$, so we reject when $T > c$.
+
+### Part b
+
+We already know that for an exponential random variable ($\gamma = 0$), the MLE 
+is $\hat{\beta} = \bar{x}$. 
+
+For the case where $\gamma \neq 0$, we have
+
+$f(x \mid \gamma, \beta) = 
+\frac{\gamma}{\beta} x^{\gamma-1} e^{-x^\gamma / \beta}$  
+$\implies \log f = 
+\log \gamma - \log \beta + (\gamma-1) \log x - x^\gamma / \beta$  
+$\implies \ell(\gamma, \beta) = 
+n \log \gamma - n \log \beta + (\gamma-1) \sum \log x_i - 
+\sum x_i^\gamma / \beta$  
+
+To find the MLEs, we differentiate and set to 0: 
+
+$\partial_\beta \ell = -n / \beta + \frac{1}{\beta^2} \sum x_i^\gamma = 0$  
+$\implies \hat{\beta} = \frac{1}{n} \sum x_i^\gamma$
+
+There is no closed form solution for $\hat{\gamma}$.
+
+The LRT statistic is then:
+
+$\lambda = \frac{\bar{x}^{-n}}
+{\sup_\gamma (\gamma / \frac{1}{n} \sum x_i^\gamma)^n \prod x_i^{\gamma-1}}$  
+
+Again, since we cannot evaluate $\hat{\gamma}$ analytically, this cannot be 
+evaluated without some sort of numerical method.
+
+## 8.8
+
+### Part a
+
+In the unrestricted case, our MLEs are solved as follows:
+
+$f(x \mid \theta, a) = (2 \pi a \theta)^{-1/2} 
+\exp(-\frac{(x - \theta)^2}{2 a \theta})$  
+$\implies \log f = -\frac{1}{2} \log 2 \pi - \frac{1}{2} \log a - 
+\frac{1}{2} \log \theta - \frac{(x - \theta)^2}{2 a \theta}$  
+$\implies \ell(\theta, a) = -\frac{n}{2} \log 2 \pi - \frac{n}{2} \log a -
+\frac{n}{2} \log \theta - \frac{1}{2 a \theta} \sum (x_i - \theta)^2$  
+$= -\frac{n}{2} \log 2 \pi - \frac{n}{2} \log a - \frac{n}{2} \log \theta -
+\frac{\sum x_i^2}{2 a \theta} + \frac{\sum x_i}{a} - \frac{n \theta}{2 a}$
+
+Differentiation yields
+
+$\partial_a \ell = -\frac{n}{2a} + \frac{\sum (x_i - \theta)^2}{2 a^2 \theta}$  
+$\partial_\theta \ell = -\frac{n}{2 \theta} + \frac{\sum x_i^2}{2 a \theta^2} -
+\frac{n}{2a}$
+
+Setting the first to 0 and solving for $a$ yields:
+
+$\hat{a} = \frac{1}{n \theta} \sum (x_i - \theta)^2$
+
+Some algebra on the second yields:
+
+$n \theta^2 + n a \theta = \sum x_i^2$
+
+Substituting the first part into the second yields:
+
+$n \theta^2 + \frac{n \theta}{n \theta} \sum (x_i - \theta)^2 = \sum x_i$  
+$\implies n \theta^2 + \sum x_i^2 - 2 \theta \sum x_i + n \theta^2  = 
+\sum x_i^2$  
+$\implies \hat{\theta} = \frac{1}{n} \sum x_i = \bar{x}$
+
+Substituting this into our expression for $\hat{a}$ yields:
+
+$\hat{a} = \frac{\sum (x_i - \theta)^2}{\sum x_i}$
+
+Under the null hypothesis $\alpha = 1$, we have
+
+$\ell_R = -\frac{n}{2} \log \theta - \frac{\sum x_i^2}{2 \theta} + \sum x_i -
+\frac{n \theta}{2}$  
+$\implies \ell_R' = -\frac{n}{2 \theta} + \frac{\sum x_i^2}{2 \theta^2} -
+\frac{n}{2}$
+
+Setting this to 0, we get
+
+$\hat{\theta}_R = \frac{-1 + \sqrt{1 + \frac{4 \sum x_i^2}{n}}}{2}$ 
+(we only consider one solution since $\theta > 0$).
+
+For the LRT statistic
+
+$\lambda = \frac{\hat{\theta}_R^{-n/2} 
+  \exp(-\frac{(x - \hat{\theta}_R)^2}{2 \hat{\theta}}_R)}
+{\hat{a}^{-n/2} \hat{\theta}^{-n/2} 
+  \exp(-\frac{(x - \hat{\theta})^2}{2 \hat{a} \hat{\theta}})}$
+  
+We reject $H_0$ if this value is above some value $c$.
+
+### Part b
+
+The MLE under the null hypothesis is unchanged. 
+
+For the unrestricted case, now we have
+
+$\ell(\theta, a) = -\frac{n}{2} \log 2 \pi - n \log a - 
+\frac{n}{2} \log \theta - \frac{1}{2 a \theta^2} \sum (x_i - \theta)^2$ 
+
+So the derivatives are:
+
+$\partial_\theta \ell = -\frac{n}{2 \theta} + \frac{\sum x_i^2}{a \theta^3} -
+\frac{\sum x_i}{2 a \theta^2}$  
+$\partial_a \ell = -\frac{n}{a} + \frac{\sum (x_i - \theta)^2}{2 a^2 \theta^2}$
+
+Setting to 0, the second yields
+
+$\hat{a} = \frac{1}{n \theta^2} \sum (x_i - \theta)^2$
+
+The second can be turned into
+
+$n a \theta^2 = 2 \sum x_i^2 - \theta \sum x_i$
+
+Substituting our expression for $\hat{a}$ and solving for $\theta$ yields:
+
+$\hat{\theta} = \sqrt{\frac{1}{n} \sum x_i^2}$
+
+And again, for the LRT statistic, we have
+
+$\lambda = \frac{L(\hat{\theta}_R)}{L(\hat{a}, \hat{\theta})}$
+
+which results in a messy expression. We reject $H_0$ if $lambda > c$ for some 
+value $c$.
+
+## 8.9
+
+### Part a
+
+The $Y_i$'s are exponentially distributed.  
+Under $H_0$, the MLE is $\hat{\lambda}_R = \frac{1}{\bar{Y}}$.  
+The unrestricted MLEs are $\hat{\lambda_i} = \frac{1}{Y_i}$.
+
+The LRT statistic is
+
+$\lambda = \frac{(1 / \bar{y})^n}{\prod y_i^{-1}}$
+
+$\lambda \leq 1$, so we get:
+
+$(1 / \bar{y})^n \leq (\prod y_i)^{-1}$  
+$\implies \bar{y}^n \geq \prod y_i$  
+$\implies \bar{y} \geq (\prod y_i)^{1/n}$
+
+### Part b
+
+$X_i = 1 / Y_i$  
+$\implies Y_i = 1 / X_i$  
+$\implies Y_i' = -X_i^{-2}$
+
+Then $f_i(x) = \lambda_i e^{-\lambda_i / x_i} / x_i^2$  
+$\implies \log f_i = \log \lambda_i - 2 \log x_i - \lambda_i / x_i$,  
+so under the alternative hypothesis, we can just differentiate and set to zero 
+to obtain $\hat{\lambda}_i = x_i$.
+
+Under the null hypothesis, we have  
+$\ell = n \log \lambda - 2 \sum \log x_i - \lambda \sum x_i^{-1}$  
+$\implies \ell' = n / \lambda - \sum x_i^2$  
+$\implies \hat{\lambda}_R = \frac{n}{\sum 1 / x_i}$
+
+For the LRT statistic, some simplification gets us:
+
+$\lambda = \frac{\hat{\lambda}_R^n / \prod x_i^2}{\prod x_i / \prod x_i^2}$  
+$= \hat{\lambda}_R^n / \prod x_i$  
+$= \frac{(n / \sum x_i^{-1})^n}{\prod x_i}$
+
+Again, bounding $\lambda \leq 1$, we get
+
+$\frac{(n / \sum x_i^{-1})^n}{\prod x_i} \leq 1$  
+$\implies (\frac{n}{\sum 1 / x_i})^n \leq \prod x_i$  
+$\implies \frac{n}{\sum 1 / x_i} \leq (\prod x_i)^{1/n}$
+
+# Part 2
+
+For simplicity of notation, let 
+$\kappa(\overrightarrow{x}) = 
+\frac{\sup_{\Theta_0} L(\theta \mid x)}{\sup_{\Theta_0^c} L(\theta \mid x)}$
+
+We can see that when the unrestricted MLE $\hat{\theta} \not\in \Theta_0^c$, the 
+two expressions are equivalent. So we will consider the case where the 
+unrestricted MLE is in $\Theta_0$.
+
+Then immediately, we can see that $\lambda = 1$ (and we always fail to reject 
+(unless for some reason we set $c = 1$). And in this case, the numerator of 
+$\kappa$ is the unrestricted likelihood and so is greater than the denominator, 
+so $\kappa \geq 1$.
+
+# Part 3
+
+We can write 
+$f(\overrightarrow{x} \mid \theta) = 
+g(T(\overrightarrow{x}) \mid \theta) h(\overrightarrow{x}) =
+L(\theta \mid \overrightarrow{x})$, 
+so the LRT statistic becomes:
+
+$\lambda = \frac{\sup_{\Theta_0} L}{\sup_\Theta L}$  
+$= \frac{\sup_{\Theta_0} f(\overrightarrow{x} \mid \theta)}
+{\sup_\Theta f(\overrightarrow{x} \mid \theta)}$  
+$= \frac{
+  \sup_{\Theta_0} g(T(\overrightarrow{x}) \mid \theta) h(\overrightarrow{x})
+}{
+  \sup_\Theta g(T(\overrightarrow{x}) \mid \theta) h(\overrightarrow{x})
+}$  
+$= \frac{
+  \sup_{\Theta_0} g(T(\overrightarrow{x}) \mid \theta)
+}{
+  \sup_\Theta g(T(\overrightarrow{x}) \mid \theta)
+}$
+
+Now we note that $g(T \mid \theta)$ is the density function of $T$ given 
+$\theta$, which is then a likelihood function of $\theta$ given $T$. So this is 
+just the ratio of two likelihoods as a function of $T$:
+
+$= \lambda^*(T(\overrightarrow{x}))$
