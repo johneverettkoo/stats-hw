@@ -1,0 +1,453 @@
+---
+title: 'S722 HW3'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+To save on typing, I will denote 
+$\frac{\partial^k}{\partial x^k} f(x) = \partial_x^k f(x)$.
+
+# Part 1
+
+## 8.17
+
+### a
+
+$L(\mu, \theta) = f(x, y | \mu, \theta) = 
+\Big(\prod x_i^{\mu - 1} \mu \Big) \Big( \prod y_i^{\theta - 1} \theta \Big)$  
+$= \mu^n \theta^m (\prod x_i)^{\mu - 1} (\prod y_i)^{\theta - 1}$
+
+Under $H_0$, we can just use the MLE for $\mu = \theta$, so we get 
+$\hat{\mu}_0 = \hat{\theta}_0 = -\frac{n+m}{\sum \log x_i + \sum \log y_i}$.
+
+For the unrestricted MLEs, we can take the log likelihood:
+
+$\ell(\mu, \theta) = n \log \mu + m \log \theta + 
+(\mu - 1) \sum \log x_i + (\theta - 1) \sum \log y_i$
+
+Then take the derivative and set to zero:
+
+$0 = n / \mu + \sum \log x_i$  
+$0 = m / \theta + \sum \log y_i$
+
+And we obtain:
+
+$\hat{\mu} = -\frac{n}{\sum \log x_i}$  
+$\hat{\theta} = -\frac{m}{\sum \log y_i}$
+
+The LRT statistic is 
+$\frac{L(\hat{\mu}_0 = 
+\hat{\theta}_0, \hat{\theta}_0)}{L(\hat{\mu}, \hat{\theta})}$  
+$= \frac{(-\frac{n+m}{\sum \log x_i + \sum \log y_i})^{n+m} 
+  (\prod x_i)^{-\frac{n+m}{\sum \log x_i + \sum \log y_i} - 1} 
+  (\prod y_i)^{-\frac{n+m}{\sum \log x_i + \sum \log y_i} - 1}}
+{(-\frac{n}{\sum \log x_i})^n (-\frac{m}{\sum \log y_i})^m 
+  (\prod x_i)^{-\frac{n}{\sum \log x_i} - 1} 
+  (\prod y_i)^{-\frac{m}{\sum \log y_i} - 1}}$  
+$= -(\frac{n+m}{m})^n (\frac{n+m}{m})^m 
+(\frac{\sum \log x_i}{\sum \log x_i + \sum \log y_i})^n 
+(\frac{\sum \log y_i}{\sum \log x_i + \sum \log y_i})^m
+(\prod x_i \prod y_i)^{-\frac{n+m}{\log \prod x_i \prod y_i}}
+(\prod x_i)^{\frac{n}{\log \prod x_i}}
+(\prod y_i)^{\frac{m}{\log \prod y_i}}$
+
+Then using the fact that $t^{1 / \log t} = e$, we get
+
+$= -(\frac{n+m}{m})^n (\frac{n+m}{m})^m 
+(\frac{\sum \log x_i}{\sum \log x_i + \sum \log y_i})^n 
+(\frac{\sum \log y_i}{\sum \log x_i + \sum \log y_i})^m
+e^{-n-m} e^n e^m$  
+$= -(\frac{n+m}{m})^n (\frac{n+m}{m})^m 
+(\frac{\sum \log x_i}{\sum \log x_i + \sum \log y_i})^n 
+(\frac{\sum \log y_i}{\sum \log x_i + \sum \log y_i})^m$
+
+And as usual, we reject $H_0$ if this is $\leq c$ for some $c \in (0, 1)$.
+
+### b
+
+Substituting $T = \frac{\sum \log x_i}{\sum \log x_i + \sum \log y_i}$, we get
+
+$\lambda(T) = (\frac{n+m}{m})^n (\frac{n+m}{m})^m T^n (1 - T)^m$
+
+```{r echo = FALSE}
+library(ggplot2)
+import::from(magrittr, `%>%`)
+
+theme_set(theme_bw())
+```
+
+```{r echo = FALSE, cache = TRUE}
+T <- seq(-5, 5, .01)
+lambda <- (1 - T) * T
+
+ggplot() + 
+  geom_line(aes(x = T, y = lambda)) + 
+  labs(y = expression(lambda)) + 
+  scale_x_continuous(breaks = NULL) + 
+  scale_y_continuous(breaks = NULL)
+```
+
+So we reject if $T \geq c_1$ or $T \leq c_2$ for some $c_1$ and $c_2$ such that 
+$\lambda(c_1) = \lambda(c_2)$.
+
+### c
+
+Under $H_0$: 
+
+$-\log X_i \sim Exp(1 / \mu)$  
+$\implies -\sum \log X_i \sim Gamma(n, 1 / \mu)$  
+$\implies \frac{\sum \log X_i}{\sum \log X_i + \sum \log Y_i} \sim Beta(n, m)$ 
+(since $\mu = \theta$ under $H_0$)
+
+So we set:
+
+$\alpha = .1 = P(T \leq c_1) + P(T \geq c_2)$  
+$(1 - c_1)^m c_1^n = (1 - c_2)^m c_2^n$
+
+Since the beta CDF doesn't have an easy to use closed form, this needs to be 
+solved numerically.
+
+## 8.22
+
+### a
+
+We have $Y = \sum X_i \sim Binomial(10, p)$
+
+$\frac{L(1/4)}{L(1/2)} = (1/2)^y (3/2)^{10-y}$
+
+```{r, echo = FALSE, cache = TRUE}
+y <- seq(0, 10)
+ratio <- .5 ** y * 1.5 ** (10 - y)
+
+ggplot() + 
+  geom_point(aes(x = y, y = ratio)) + 
+  scale_x_continuous(breaks = y)
+```
+
+Since this is decreasing in $y$, we reject $H_0$ for small values of $y$. 
+We need $c$ such that $P(Y \leq c | H_0) = .0547$.
+
+```{r}
+qbinom(.0547, 10, .5)
+pbinom(3, 10, .5)
+pbinom(2, 10, .5)
+```
+
+So we use $c = 2$ (we could be more precise but `r pbinom(2, 10, .5)` is close 
+enough to .0547).
+
+The power is $P(Y \leq 2 | H_1) = \sum_0^2 \binom{10}{y} .25^y .75^{10-y}$
+$\approx `r round(pbinom(2, 10, .25), 3)`$.
+
+### b
+
+When $\sum X_i = 6$, $\hat{p} = 3/5 \in \Theta_0^C$. So $\hat{p}_0 = 1/2$.
+
+The size is $P(Y \geq 6 | H_0) = P(Y \geq 6 | 1/2)$
+$\approx \sum_6^10 \binom{10}{y} .5^10 = `r round(1 - pbinom(5, 10, .5), 3)`$.
+
+The power function is $\beta(p) = P(Y \geq 6 | p)$:
+
+```{r, cache = TRUE}
+p <- seq(0, 1, .01)
+beta <- 1 - pbinom(5, 10, p)
+
+ggplot() + 
+  geom_line(aes(x = p, y = beta)) + 
+  labs(y = expression(beta))
+```
+
+### c
+
+```{r cache = TRUE}
+MASS::fractions(pbinom(seq(0, 10), 10, .5))
+```
+
+## 8.23
+
+### a
+
+$\beta(\theta) = P(X > 1/2 | \theta)$
+
+```{r cache = TRUE}
+theta <- seq(0, 5, .01)
+beta <- 1 - pbeta(.5, theta, 1)
+
+ggplot() + 
+  geom_line(aes(x = theta, y = beta)) + 
+  labs(x = expression(theta), y = expression(beta))
+```
+
+### b
+
+$\frac{L(2)}{L(1)} = \frac{B(2, 1)^{-1} x}{B(1, 1)^{-1}} = 2x$
+
+So we reject $H_0$ if $2x > k \implies x > k / 2$. 
+
+To determine $k/2$:
+
+$\alpha = P(X > k/2 | 1) = \int_{k/2}^1 dx = 1 - k/2$  
+$\implies k/2 = 1 - \alpha$
+
+So we reject $H_0$ when $X > 1 - \alpha$.
+
+### c
+
+By Karlin-Rubin, the UMP test for this is the same as in part (b).
+
+## 8.25
+
+### a
+
+$\frac{L(\theta_1)}{L(\theta_0)}$
+$= \exp( -\frac{1}{2 \sigma^2} ((x - \theta_1)^2 - (x - \theta_0)^2))$
+$\propto \exp(\frac{\theta_1 - \theta_0}{\sigma^2} x)$
+
+This is monotone w.r.t. $x$.
+
+### b
+
+$\frac{L(\theta_1)}{L(\theta_0)}$
+$= \frac{e^{-\theta_1} \theta_1^x}{e^{-\theta_0} \theta_0^x}$  
+$\propto (\theta_1 / \theta_0)^x$
+
+This is monotone w.r.t. $x$.
+
+### c
+
+$\frac{L(\theta_1)}{L(\theta_0)}$
+$= \frac{\theta_1^x (1 - \theta_1)^{n-x}}{\theta_0^x (1 - \theta_0)^{n-x}}$  
+$\propto \bigg(\frac{\theta_1 (1 - \theta_0)}{\theta_0 (1 - \theta_1)}\bigg)^x$
+
+This is monotone w.r.t. $x$.
+
+## 8.26
+
+### a
+
+If $f$ has an MLR, then $\frac{f(x | \theta_1)}{f(x | \theta_0)}$ is monotone. 
+
+We need to show that $F(x | \theta_0) \geq F(x | \theta_1)$ for 
+$\theta_0 > \theta_1$. 
+
+Consider $\big( F(x | \theta_0) \geq F(x | \theta_1) \big)'$  
+$= f(x | \theta_0) - f(x | \theta_1)$  
+$= f(x | \theta_1) \big( \frac{f(x | \theta_0)}{f(x | \theta_1)} - 1 \big)$.
+
+Since the ratio is monotone, 
+$\big( \frac{f(x | \theta_0)}{f(x | \theta_1)} - 1 \big)$ must stay positive 
+or negative. And since $f(x | \theta_1) \geq 0$, the whole expression cannot 
+change sign. And the only time the expression can go to $0$ is when 
+$x \to \pm \infty$. Therefore, $F(x | \theta_0) \geq F(x | \theta_1)$ is always 
+either increasing or decreasing.
+
+## 8.27
+
+$\frac{g(t | \theta_1)}{g(t | \theta_0)}$ 
+$\propto e^{(w(\theta_1) - w(\theta_0))t}$,
+which is monotone w.r.t. $t$.
+
+Examples include the bernoulli, binomial, and poisson distributions.
+
+## 8.29
+
+### a
+
+$\frac{f(x | \theta_1)}{f(x | \theta_0)}$ 
+$= \frac{1 + (x - \theta_0)^2}{1 + (x - \theta_1)^2}$
+
+```{r cache = TRUE, echo = FALSE}
+x <- seq(-5, 5, .01)
+ratio <- (1 + x ** 2) / (x ** 2 - 2 * x + 2)
+
+ggplot() + 
+  geom_line(aes(x = x, y = ratio)) + 
+  scale_x_continuous(breaks = seq(-5, 5))
+```
+
+So there exists at least some $\theta_0$, $\theta_1$ such that this ratio is 
+not monotone. 
+
+### b
+
+$\frac{f(x | \theta_1)}{f(x | \theta_0)}$ 
+$= \frac{1 + (x - \theta_0)^2}{1 + (x - \theta_1)^2}$
+$= \frac{1 + x^2}{x^2 - 2x + 2}$
+
+Taking the derivative and setting equal to 0 yields:
+
+$0 = (2x - 2) (1 + x^2) - (x^2 - 2x + 2) (2x) = 2x^2 - 2x - 2$  
+$\implies x^2 - x - 1 = 0$  
+$\implies x = \frac{1 \pm \sqrt{5}}{2}$
+
+From the plot in part (a), we can see that the ratio is decreasing when 
+$x \in (-\infty, \frac{1 - \sqrt{5}}{2}] \cup (\frac{1 + \sqrt{5}}{2}, \infty)$ 
+and increasing otherwise. 
+
+We can also see that the ratio is equal to 2 when $x = 1$ or $x = 3$. So 
+$\phi(x) = 1 \iff 1 < x < 3$ is equivalent to 
+$\phi(x) = 1 \iff \text{ ratio } > 2$.
+
+By Neyman-Pearson, this is the UMP for a certain size.
+
+Type I error:
+
+```{r cache = TRUE}
+pcauchy(3, 0) - pcauchy(1, 0)
+```
+
+Type II error:
+
+```{r cache = TRUE}
+1 - (pcauchy(3, 1) - pcauchy(1, 1))
+```
+
+### c
+
+The ratio is not monotone, so it cannot be UMP for a composite hypothesis test. 
+
+## 8.32
+
+### a
+
+From the class notes, we simply have 
+$\phi = 1 \iff \bar{X} < \theta_0 - z_{\alpha} \frac{\sigma}{\sqrt{n}}$
+
+### b
+
+When $\theta < \theta_0$, the test from part (a) is UMP, but it is not UMP when
+$\theta > \theta_0$. Similarly, when $\theta > \theta_0$, 
+$\phi = 1 \iff \bar{X} < \theta_0 + z_{\alpha} \frac{\sigma}{\sqrt{n}}$ is UMP 
+but not when $\theta < \theta_0$. 
+
+If we try $\phi = 1 \iff 
+\bar{X} \in (-\infty, \theta_0 - z_{\alpha} \frac{\sigma}{\sqrt{n}}) \cup
+(\bar{X} < \theta_0 + z_{\alpha} \frac{\sigma}{\sqrt{n}}, \infty)$, 
+we get a size-$2 \alpha$ test. 
+
+Trying $\phi = 1 \iff 
+\bar{X} \in (-\infty, \theta_0 - z_{\alpha / 2} \frac{\sigma}{\sqrt{n}}) \cup
+(\bar{X} < \theta_0 + z_{\alpha / 2} \frac{\sigma}{\sqrt{n}}, \infty)$ 
+results in a size-$\alpha$ test, but it is less powerful than the one-sided 
+tests. 
+
+## 8.33
+
+### a
+
+Under $P(Y_n \geq 0 | H_0) = 0$, so we only need to consider $Y_1 \geq k$ 
+(assuming $k \in (0, 1)$). 
+
+$\alpha = P(Y_1 \geq k | H_0) = \int_k^1 n (1 - y)^{n-1} dy = (1 - k)^n$
+$\implies k = 1 - a^{1/n}$.
+
+### b
+
+When $\theta \leq k - 1$, we cannot reject $H_0$, so $\beta(\theta) = 0$.  
+When $\theta > k$, $H_0$ cannot be true, so $\beta(\theta) = 1$. 
+
+When $\theta \in (k - 1, 0]$, $Y_n < 1$, so we only need to consider 
+$P(Y \geq k)$. So 
+$\beta(\theta) = \int_k^{\theta + 1} n(1 - y + \theta)^{n-1} dy$
+$= (1 - k + \theta)^n$.
+
+When $\theta \in (0, k]$, $\beta(\theta) = P(Y_1 \geq k \cup Y_n \geq 1)$  
+$= P(Y_1 \geq k) + P(Y_1 < k \cap Y_n \geq 1)$.  
+We already computed the first term, and the second term is 
+$= \int_k^{\theta+1} n (1 - y_1 + \theta)^{n-1} dy_1 + 
+\int_\theta^k dy_1 \int_1^{\theta + 1} dy_n n (n-1) (y_n - y_1)^{n-2}$  
+$= \int_\theta^k n (\theta + 1 - y_1)^{n-1} dy_1 - 
+\int_\theta^k (1 - y_1)^{n-1} dy_1$  
+$= 1 - (1 - \theta)^n - (\theta + 1 - k)^n + (1 - k)^n$.  
+The last term is $\alpha$, and the third term cancels out with the first part, 
+so we are left with $\beta(\theta) = 1 - (1 - \theta)^n + \alpha$.
+
+$\beta(\theta) = \begin{cases} 
+  0 & \theta \leq k - 1 \\
+  (1 - k + \theta)^n & \theta \in (k - 1, 0] \\
+  1 - (1 - \theta)^n + \alpha & \theta \in (0, k] \\
+  1 & \theta > k
+\end{cases}$
+
+### c
+
+The sufficient statistic for iid uniform random variables is the min and max, so 
+$(Y_1, Y_n)$ is sufficient. 
+
+$f(y_1, y_n | \theta) = 
+n (n-1) (y_n - y_1)^{n-2} I(\theta < y_1 < y_n < \theta + 1)$,  
+so $f(y_1, y_n | \theta) = n (n-1) (y_n - y_1)^{n-2} I(0 < y_1 < y_n < 1)$.
+
+Since only the indicator part is different between $H_0$ and $H_1$, we only have 
+to consider that part. So we have to make sure that when $Y_n \geq 1$ or 
+$Y_1 \geq k$, $I(\theta < y_1 < y_n < \theta + 1) > k' I(0 < y_1 < y_n < 1)$, 
+and when both $Y_n < 1$ and $Y_1 < k$, 
+$I(\theta < y_1 < y_n < \theta + 1) < k' I(0 < y_1 < y_n < 1)$.
+
+* Suppose $Y_n \geq 1$. Then we are in the rejection region, so we look at 
+$I(\theta < y_1 < y_n < \theta + 1) > k' I(0 < y_1 < y_n < 1)$. And here we can 
+immediately see that the right hand side is 0, so this is true.
+* Suppose $Y_1 \geq k$. We are again in the rejection region , so we look at 
+$I(\theta < y_1 < y_n < \theta + 1) > k' I(0 < y_1 < y_n < 1)$. If $k > 1$, 
+again, the right hand side is 0. If $k \in (0, 1)$, we can consider just the 
+case where $Y_n > Y_1 > k$ otherwise again the right hand side is 0. In that 
+case, the left and right hand sides (without the $k'$ are equal, so we can just 
+set $k' < 1$. 
+* Suppose $Y_n < 1$ and $Y_1 < k$. Then as long as $Y_1 < Y_n$, the right 
+hand side is 1. On the other hand, the left hand side could be 0 or 1, so the 
+inequality still holds when choosing $k' < 1$.
+
+### d
+
+If $\theta > k = 1 - .1^{1/n}$, then $\beta(\theta) = 1 > .8$.
+
+# Part 2
+
+$\frac{L(\theta)}{L(1)} = \frac{1}{\theta} e^{(1 - \frac{1}{\theta}) \sum x_i}$, 
+which is monotone w.r.t. $x$. Under $H_1$, this is increasing w.r.t. $x$, so 
+we reject when $\sum X_i > c$ for some $c$. 
+
+Next, we note that $Y = \sum X_i \sim Gamma(n, \theta)$. Under $H_0$, 
+$Y = \sum X_i \sim Gamma(n, 1)$.  
+So $\alpha = .05 = P(Y > c | H_0)$, and we can solve for $c = c(n)$ numerically. 
+
+The power function is $\beta(\theta) = P(Y > c | \theta)$ where we use the same 
+$c$ from before. 
+
+```{r, cache = TRUE}
+n.vector <- c(10, 50, 100)
+theta <- seq(.01, 5, .01)
+alpha <- .05
+theta.0 <- 1
+
+lapply(n.vector, function(n) {
+  c. <- qgamma(1 - alpha, shape = n, scale = theta.0)
+  beta <- 1 - pgamma(c., shape = n, scale = theta)
+  dplyr::data_frame(n = n, theta = theta, beta = beta)
+}) %>% 
+  dplyr::bind_rows() %>% 
+  ggplot() + 
+  geom_line(aes(x = theta, y = beta, colour = factor(n))) + 
+  scale_colour_brewer(palette = 'Set1') + 
+  labs(x = expression(theta), y = expression(beta), colour = 'n')
+```
