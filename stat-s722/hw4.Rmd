@@ -1,0 +1,396 @@
+---
+title: 'S722 HW4'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 2, 
+                      fig.width = 4, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+To save on typing, I will denote 
+$\frac{\partial^k}{\partial x^k} f(x) = \partial_x^k f(x)$.
+
+# Problem 1
+
+## a
+
+```{r packages_etc, echo = FALSE}
+library(ggplot2)
+import::from(magrittr, `%>%`)
+
+theme_set(theme_bw())
+```
+
+```{r cache = TRUE, echo = FALSE}
+f0 <- function(x) {
+  if (x <= 1 & x >= 0) {
+    return(2 * x)
+  } else {
+    return(0)
+  }
+}
+
+f1 <- function(x) {
+  if (x <= 1 & x >= 0) {
+    return (3 * x ** 2)
+  } else {
+    return(0)
+  }
+}
+
+f2 <- function(x) {
+  if (x < 1 & x > 0) {
+    return(x * exp(x)) 
+  } else {
+    return(0)
+  }
+}
+
+f <- function(x, theta) {
+  if (theta == 0) return(f0(x))
+  else if (theta == 1) return(f1(x))
+  else if (theta == 2) return(f2(x))
+}
+
+x.vector <- seq(-1, 2, .01)
+theta.vector <- seq(0, 2)
+
+lapply(theta.vector, function(theta) {
+  lapply(x.vector, function(x) {
+    dplyr::data_frame(x = x, theta = as.character(theta), p = f(x, theta))
+  }) %>% 
+    dplyr::bind_rows()
+}) %>% 
+  dplyr::bind_rows() %>% 
+  ggplot() + 
+  geom_line(aes(x = x, y = p, colour = theta)) + 
+  labs(y = expression(f(x)), 
+       colour = expression(theta))
+```
+
+$\frac{L(1)}{L(0)} = \frac{3}{2} x$ is increasing w.r.t. $x$, so we reject when 
+this ratio is large. We can ignore the constant up front and just look at $x$ by
+itself. So the UMP test would be to reject when $X > c$ for some $c = c(\alpha)$, 
+and to obtain $c$:
+
+$\alpha = .19 = P(X > c | H_0) = 1 - P(X \leq c | H_0)$  
+$= 1 - \int_0^c 2x dx = 1 - c^2$  
+$\implies c = \sqrt{1 - \alpha} = \sqrt{.81} = `r sqrt(.81)`$
+
+To obtain the power, we compute  
+$\beta(\theta = 1) = P(X > .9 | \theta = 1)$  
+$= 1 - P(X \leq .9 | \theta = 1)$
+$= 1 - \int_0^.9 3 x^2 dx = 1 - .9^3 \approx `r round(1 - .9 ** 3, 3)`$
+
+## b
+
+From the plot, we can see that $f(x | 1) > f(x | 2)$ for the relevant region, so 
+the UMP would use $\theta = 1$ since it is the MLE. So the test in part (a) is 
+the UMP of size .19.
+
+# Problem 2
+
+## a
+
+$L(\theta) = \prod \frac{2 x_i}{\theta} \exp(-\frac{1}{\theta} x_i^2)$  
+$= (\frac{2}{\theta})^n (\prod x_i) \exp(-\frac{1}{\theta} \sum x_i^2)$  
+$\propto \theta^{-n} \exp(-\frac{1}{\theta} \sum x_i^2)$
+
+Then the log-likelihood is  
+$\ell(\theta) = -n \log \theta - \frac{1}{\theta} \sum x_i^2 + C$
+
+And to find the MLE for $\theta$,  
+$0 = \ell'(\theta) = -n / \theta + \theta^{-2} \sum x_i^2$  
+$\implies \hat{\theta} = \frac{1}{n} \sum X_i^2$
+
+The likelihood is maximized at  
+$L(\frac{1}{n} \sum x_i^2) \propto (\frac{1}{n} \sum x_i^2)^{-n} \exp(-n)$
+
+So the LRT statistic is
+
+$\lambda(X) = \frac{L(\hat{\theta})}{L(1)}$
+$= \frac{(\frac{1}{n} \sum X_i^2)^{-n} \exp(-n)}{\exp(-\sum X_i^2)}$  
+$\propto (\sum X_i^2)^{-n} \exp(\sum X_i^2)$
+
+Letting $T = \sum X_i^2$, we get $\lambda(T) = T^{-n} \exp(T)$, and the LRT is 
+$\phi(T) = 1 \iff T^{-n} \exp(T) > c$.
+
+$\lambda$ is not a monotone function of $T$, and it has a global minimum. So 
+this test is equivalent to $\phi(T) = 1 \iff T < c_1 \text{ or } T > c_2$.
+
+To find $c_1$ and $c_2$, we solve the system of equations:
+
+* $\alpha = P(T < c_1 | H_0) + P(T > c_2 | H_0)$
+* $\lambda(c_1) = \lambda(c_2)$
+
+## b
+
+A UMP size-$\alpha$ test does not exist in this case because it is a two-sided 
+test. To be more specific, suppose this were a right-sided test. Since the MLE 
+for $\theta$ is $\frac{1}{n} \sum X_i^2$, we would reject for large values of 
+$\sum X_i^2$, i.e., when $T > c$ for some $c$. Similarly, if this were a 
+left-sided test, we would reject when $T < c$ for some $c$. Then the UMP test 
+would require knowing whether $\theta > 1$ or $\theta < 1$. 
+
+# Problem 3
+
+8.37 from Casella & Berger
+
+## a
+
+Under $H_0$, $\bar{X} \sim \mathcal{N}(\theta_0, \frac{\sigma^2}{n})$. So  
+$P(\bar{X} > \theta_0 + z_\alpha \sigma / \sqrt{n} | H_0)$  
+$= P(\frac{\bar{X} - \theta_0}{\sigma / \sqrt{n}} > z_\alpha | H_0)$ 
+$= P(Z > z_\alpha) = \alpha$.
+
+Using the LRT method, we have 
+
+$\lambda(X) = 
+\frac{\exp(-\frac{1}{2 \sigma^2} \sum (X_i - \theta_0)^2)}
+{\exp(-\frac{1}{2 \sigma^2} \sum (X_i - \bar{X})^2)}$  
+$= \exp(-\frac{n}{2 \sigma^2} (\bar{X} - \theta_0^2)^2)$
+
+And we reject if this value is too small. We can also see that $\lambda$ can be 
+expressed purely in terms of $\bar{X}$, and $\lambda$ is decreasing in 
+$\bar{X}$, so this is equivalent to rejecting for large $\bar{X}$. Using the 
+distribution of $\bar{X}$, we arrive at the test described.
+
+## b
+
+From class, we arrived at the test described in (a) from the ratio 
+$\frac{\sup_{\theta \in \Theta_0^C} L(\theta)}
+{\sup_{\theta \in \Theta_0} L(\theta)}$, so it is the UMP test.
+
+## c
+
+Under $H_0$, $\frac{\bar{X} - \theta_0}{S / \sqrt{n}} \sim T_{n-1}$. So 
+$P(\bar{X} > \theta_0 + t_{n-1, \alpha} S / \sqrt{n} | H_0)$
+$= P(\frac{\bar{X} - \theta_0}{S / \sqrt{n}} > t_{n-1, \alpha} | H_0)$
+$= P(T > t_{n-1, \alpha}) = \alpha$.
+
+The MLE for $\sigma^2$ is $\frac{1}{n} \sum (X_i - \bar{X})^2$, and in the 
+restricted case, $\hat{\sigma}^2_R = \frac{1}{n} \sum (X_i - \theta_0)^2$. We 
+can note that when we plug these into the likelihoods, the exponential term 
+cancels out since we have $\sum (x_i - \bar{x})^2 / \sum (x_i - \bar{x})^2$ and 
+likewise with $\theta_0$ instead of $\bar{x}$. So the LRT test statistic is 
+simply:
+
+$\lambda(X) = (\hat{\sigma}^2 / \hat{\sigma}^2_R)^{n/2}$
+
+We can remove the power since we know it must be positive. So the term we must 
+consider is:
+
+$\hat{\sigma}^2 / \hat{\sigma}^2_R$  
+$= \frac{\frac{1}{n} \sum (X_i - \bar{X})^2}
+  {\frac{1}{n} \sum (X_i - \theta_0)^2}$  
+$= \frac{\sum (X_i - \bar{X})^2}{\sum (X_i - \theta_0)^2}$  
+$= \frac{(n-1) S^2}{\sum (X_i - \bar{X} + \bar{X} - \theta_0)^2}$  
+$= \frac{(n-1) S^2}
+{\sum (X_i - \bar{X})^2 + \sum (\bar{X} - \theta_0)^2 + 
+  2 \sum (X_i - \bar{X}) (\bar{X} - \theta_0)}$
+$= \frac{(n-1) S^2}{(n-1) S^2 + n (\bar{X} - \theta_0)^2}$  
+$= \frac{n-1}{(n-1) + \frac{(\bar{X} - \theta_0)^2}{S^2 / n}}$
+
+This is decreasing in $\frac{(\bar{X} - \theta_0)^2}{S^2 / n}$, so it is also 
+decreasing in $\frac{\bar{X} - \theta_0}{S / \sqrt{n}}$. Then rejecting when the 
+ratio is too small is equivalent to rejecting when this is too large. 
+
+# Problem 4
+
+8.41 from Casella & Berger
+
+## a
+
+Under $H_0$, $\hat{\mu}_R = \frac{\sum X_i + \sum Y_i}{n + m}$. Then 
+$\hat{\sigma}^2_R = 
+\frac{\sum (X_i - \hat{\mu}_R)^2 + \sum (Y_i - \hat{\mu}_R)^2}{n + m}$
+
+We can simplify $\hat{\sigma}^2_R$:
+
+$\sum (X_i - \hat{\mu}_R)^2 = \sum (X_i - \frac{n \bar{X} + m \bar{Y}}{n+m})^2$  
+$= \sum(X_i - \bar{X} + \bar{X} - \frac{n \bar{X} + m \bar{Y}}{n + m})^2$  
+$= \sum (X_i - \bar{X})^2 + n(\bar{X} - \frac{n \bar{X} + m \bar{Y}}{n+m})^2 + 
+2 (\bar{X} - \frac{n \bar{X} + m \bar{Y}}{n+m}) \sum (X_i - \bar{X})$  
+$= \sum (X_i - \bar{X})^2 + n(\bar{X} - \frac{n \bar{X} + m \bar{Y}}{n+m})^2$  
+$= \sum (X_i - \bar{X})^2 + 
+n\frac{(n \bar{X} + m \bar{X} - n \bar{X} - m \bar{Y})^2}{(n + m)^2}$  
+$= \sum (X_i - \bar{X})^2 + \frac{n m^2}{(n+m)^2} (\bar{X} - \bar{Y})^2$
+
+and similarly for the $Y$ term. So we have:
+
+$\hat{\sigma}^2_R = \frac{\sum (X_i - \bar{X})^2 + (Y_i - \bar{Y})^2}{n+m} + 
+(\frac{n m^2}{(n+m)^3} + \frac{n^2 m}{(n+m)^3}) (\bar{X} - \bar{Y})^2$  
+$= \frac{\sum (X_i - \bar{X})^2 + (Y_i - \bar{Y})^2}{n+m} + 
+\frac{nm}{(n+m)^2} (\bar{X} - \bar{Y})^2$
+
+Without the $H_0$ restriction, we get the usual $\hat{\mu}_X = \bar{X}$ and 
+$\hat{\mu}_Y = \bar{Y}$ and 
+$\hat{\sigma}^2 = \frac{\sum (X_i - \bar{X})^2 + \sum (Y_i - \bar{Y})^2}{n+m}$.
+
+Plugging these terms into the likelihood functions, similar to 8.37, we get 
+terms canceling out in the exponentials. So we are left with simply
+
+$\lambda(X, Y) = \Big(\frac{\hat{\sigma}^2_R}{\hat{\sigma}^2} \Big)^{-(n+m) / 2}$
+
+and we reject for small $\lambda(X, Y)$, which is equivalent to rejecting for 
+large $\frac{\hat{\sigma}^2_R}{\hat{\sigma}^2}$.
+
+$\frac{\hat{\sigma}^2_R}{\hat{\sigma}^2}$
+$= \frac{\sum (X_i - \bar{X})^2 + \sum (Y_i - \bar{Y})^2 + 
+  \frac{n m}{n+m} (\bar{X} - \bar{Y})^2}
+{\sum (X_i - \bar{X})^2 + \sum (Y_i - \bar{Y})^2}$  
+$= 1 + \frac{n m}{n+m} \frac{(\bar{X} - \bar{Y})^2}{(n+m-2) S_p^2}$  
+$= 1 + \frac{(\bar{X} - \bar{Y})^2}{(n+m-2) (n^{-1} + m^{-1}) S_p^2}$
+
+We can ignore the leading constant term ($1$) as well as the factor of 
+$(n+m-2)^{-2}$, and we are left with
+
+$\frac{(\bar{X} - \bar{Y})^2}{(n^{-1} + m^{-1}) S_p^2} > c$  
+$\implies |\frac{\bar{X} - \bar{Y}}{(n^{-1} + m^{-1}) S_p}| > c'$
+
+## b
+
+Under $H_0$, $\bar{X} \sim \mathcal{N}(\mu, \sigma^2 / n)$ and 
+$\bar{Y} \sim \mathcal{N}(\mu, \sigma^2 / m)$, so 
+$\bar{X} - \bar{Y} \sim \mathcal{N}(0, (n^{-1} + m^{-1}) \sigma^2)$.
+
+Since $S_X^2$ and $S_Y^2$ are $\chi^2$ distributed with $n-1$ and $m-1$ degrees 
+of freedom respectively, and since $S_p^2$ is just a linear combination of the 
+two, $S_p^2 \sim \chi^2_{n+m-2}$. So 
+$\frac{\bar{X} - \bar{Y}}{S_p \sqrt{n^{-1} + m^{-1}}} \sim T_{n+m-2}$.
+
+## c
+
+```{r}
+# data
+core <- c(1294, 1279, 1274, 1264, 1263, 1254, 1251, 
+          1251, 1248, 1240, 1232, 1220, 1218, 1210)
+periphery <- c(1284, 1272, 1256, 1254, 1242, 
+               1274, 1264, 1256, 1250)
+n <- length(core)
+m <- length(periphery)
+
+# sample means
+core.mean <- mean(core)
+periphery.mean <- mean(periphery)
+
+# pooled variance
+s.p <- sqrt(
+    (sum((core - core.mean) ** 2) + sum((periphery - periphery.mean) ** 2)) / 
+      (n + m - 2))
+
+# t-statistic
+t.stat <- (core.mean - periphery.mean) / (s.p * sqrt(1 / n + 1 / m))
+t.stat
+```
+
+So we would reject $H_0$ if our chosen $c$ is less than $1.291$. 
+
+## d
+
+We can compute the two-sided $p$-value using the $t$-distribution:
+
+```{r}
+2 * pt(t.stat, df = n + m - 2)
+```
+
+Failing to reject $H_0$ would be equivalent to performing a UMP level-$.21$ 
+test.
+
+## e
+
+```{r}
+# number of simulations
+n.sim <- 1e3
+
+p.value.vector <- sapply(seq(n.sim), function(i) {
+  # bootstrap
+  core.bs <- sample(core, n, replace = TRUE)
+  periphery.bs <- sample(periphery, m, replace = TRUE)
+  
+  # compute statistics
+  core.mean <- mean(core.bs)
+  periphery.mean <- mean(periphery.bs)
+  s.p <- sqrt(
+    (sum((core.bs - core.mean) ** 2) + 
+       sum((periphery.bs - periphery.mean) ** 2)) / 
+      (n + m - 2))
+  
+  # t-statistic
+  t.stat <- (core.mean - periphery.mean) / (s.p * sqrt(1 / n + 1 / m))
+  
+  # p-value
+  2 * pt(-abs(t.stat), df = n + m - 2)
+})
+
+summary(p.value.vector)
+
+ggplot() + 
+  geom_histogram(aes(x = p.value.vector), fill = 'white', colour = 'black') + 
+  labs(x = 'p')
+```
+
+# Problem 5
+
+11.13 from Casella & Berger
+
+Similar to the example from class, we have
+
+$L(\theta, \sigma^2 | y) = \prod_i^k \prod_j^{n_i} (2 \pi \sigma^2)^{-1/2}
+\exp(-\frac{1}{2\sigma^2} (y_{ij} - \theta_i)^2)$  
+$= (2 \pi \sigma^2)^{-N/2} 
+\exp(-\frac{1}{2 \sigma^2} \sum_i \sum_j (y_{ij} - \theta_i)^2)$  
+$= (2 \pi \sigma^2)^{-N/2} 
+\exp(-\frac{1}{2 \sigma^2} (\sum_i \sum_j (y_{ij} - \bar{y}_i)^2 + 
+  \sum_i \sum_j (\bar{y}_i - \theta_i)^2))$
+
+Under $H_1$, the second term is 0 since $\hat{\theta}_i = \bar{y}_i$. Under 
+$H_0$, $\hat{\theta}_R = \bar{y}$ where $\bar{y}$ is the overall mean. 
+
+Simiarly, under $H_0$, we get 
+$\hat{\sigma}^2_R =
+\frac{1}{N} 
+(\sum_i \sum_j (y_{ij} - \bar{y}_i)^2 + 
+  \sum_i \sum_j (\bar{y}_i - \bar{y})^2)$  
+and under $H_1$, we get 
+$\hat{\sigma}^2 = \frac{1}{N} \sum_i \sum_j (y_{ij} - \bar{y}_i)^2$
+since the second term is 0.
+
+Similar to before, the terms in the exponentials disappear when we plug in the 
+MLEs for $\theta_i$ and $\sigma^2$. So the likelihood ratio is:
+
+$\lambda(Y) = (\hat{\sigma}^2_R / \hat{\sigma}^2)^{-N/2}$
+
+And we reject when this value is small. This is equivalent to rejecting when 
+$\hat{\sigma}^2_R / \hat{\sigma}^2$ is large. 
+
+$\hat{\sigma}^2_R / \hat{\sigma}^2$
+$= \frac{\sum_i \sum_j (y_{ij} - \bar{y}_i)^2 + 
+  \sum_i \sum_j (\bar{y}_i - \bar{y})^2}
+{\sum_i \sum_j (y_{ij} - \bar{y}_i)^2}$  
+$= 1 + 
+  \frac{\sum_i \sum_j (\bar{y}_i - \bar{y})^2}
+  {\sum_i \sum_j (y_{ij} - \bar{y}_i)^2}$
+
+We can ignore the leading constant of $1$. Then we note that this is a ratio of 
+two $\chi^2$ distributed random variables (times a constant), with the numerator
+having $k-1$ degrees of freedom and the denominator having $N-k$ degrees of 
+freedom. Thus this ratio is $F_{k-1, N-k}$-distributed, and we reject when it 
+is greater than $F_{k-1, N-k, \alpha}$ for a level-$\alpha$ test.
