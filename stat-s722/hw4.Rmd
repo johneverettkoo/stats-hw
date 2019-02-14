@@ -320,31 +320,31 @@ test.
 # number of simulations
 n.sim <- 1e3
 
-p.value.vector <- sapply(seq(n.sim), function(i) {
-  # bootstrap
-  core.bs <- sample(core, n, replace = TRUE)
-  periphery.bs <- sample(periphery, m, replace = TRUE)
+# assumed parameters
+grand.mean <- mean(c(core, periphery))
+pooled.sd <- s.p
+
+p.value.sim <- sapply(seq(n.sim), function(i) {
+  # generate data
+  core <- rnorm(n, grand.mean, pooled.sd)
+  periphery <- rnorm(m, grand.mean, pooled.sd)
   
   # compute statistics
-  core.mean <- mean(core.bs)
-  periphery.mean <- mean(periphery.bs)
+  core.mean <- mean(core)
+  periphery.mean <- mean(periphery)
   s.p <- sqrt(
-    (sum((core.bs - core.mean) ** 2) + 
-       sum((periphery.bs - periphery.mean) ** 2)) / 
+    (sum((core - core.mean) ** 2) + sum((periphery - periphery.mean) ** 2)) / 
       (n + m - 2))
   
   # t-statistic
-  t.stat <- (core.mean - periphery.mean) / (s.p * sqrt(1 / n + 1 / m))
+  t.stat.i <- (core.mean - periphery.mean) / (s.p * sqrt(1 / n + 1 / m))
   
   # p-value
-  2 * pt(-abs(t.stat), df = n + m - 2)
-})
+  return(abs(t.stat.i) > abs(t.stat))
+}) %>% 
+  mean()
 
-summary(p.value.vector)
-
-ggplot() + 
-  geom_histogram(aes(x = p.value.vector), fill = 'white', colour = 'black') + 
-  labs(x = 'p')
+p.value.sim
 ```
 
 # Problem 5
