@@ -340,7 +340,9 @@ ggplot() +
 ## b
 
 $p(y_2 | y_1) = \int p(y_2 | y_1, \theta) p(\theta | y_1) d \theta$, so here we
-are saying $p(y_2 | y_1, \theta) = p(y_2, \theta)$.
+are saying $p(y_2 | y_1, \theta) = p(y_2, \theta)$, i.e., 
+$\tilde{Y} \perp Y \mid \theta$, i.e., each observation is independent of the 
+others.
 
 $p(y_2 | y_1) = \int_0^1 p(y_2 | \theta) p(\theta | y_1) d\theta$  
 $= \int \binom{n_2}{y_2} \theta^{y_2} (1 - \theta)^{n_2 - y_2} 
