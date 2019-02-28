@@ -439,10 +439,9 @@ equivalent to the quantities stated.
 ## e
 
 First, note that we always have the constraint 
-$F_{n-1}(b) - F_{n-1}(a) = 1 - \alpha$, so it must be that 
-$b = F_{n-1}^{-1} (1 - \alpha + F_{n-1}(a))$.
+$F_{n-1}(b) - F_{n-1}(a) = 1 - \alpha$.
 
-We will use Newton-Raphson optimization to find $a$ and $b$ for the above 
+We will use the Newton-Raphson algorithm to find $a$ and $b$ for the above 
 constraint as well as the constraints specified individually  in parts (a) and 
 (b).
 
