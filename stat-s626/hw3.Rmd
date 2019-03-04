@@ -101,18 +101,19 @@ From class, we know:
 
 ```{r, cache = TRUE}
 pred.posterior.df <- plyr::ldply(n.0.vector, function(n.0) {
-  y.a.tilde <- rnbinom(n, a.a + sum(y.a), mu = a.b + n.a)
-  y.b.tilde <- rnbinom(n, 12 * n.0 + sum(y.b), mu = n.0 + n.b)
+  y.a.tilde <- rnbinom(n, a.a + sum(y.a), mu = (a.a + sum(y.a)) / (a.b + n.a))
+  y.b.tilde <- rnbinom(n, 12 * n.0 + sum(y.b), 
+                       mu = (12 * n.0 + sum(y.b)) / (n.0 + n.b))
   dplyr::data_frame(n.0 = n.0, p = mean(y.b.tilde < y.a.tilde))
 }, .parallel = TRUE)
 
 ggplot(pred.posterior.df) + 
   geom_line(aes(x = n.0,y = p)) + 
   labs(x = expression(n[0]), 
-       y = expression(P(tilde(Y)[B] < tilde(y)[A]~'|'~y[A], y[B])))
+       y = expression(P(tilde(Y)[B] < tilde(Y)[A]~'|'~y[A], y[B])))
 ```
 
-Similar to above, the probability goes to 0 as we become more and more sure 
+Similar to above, the probability decreases as we become more and more sure 
 that $\theta_B > \theta_A$.
 
 # 4.5
