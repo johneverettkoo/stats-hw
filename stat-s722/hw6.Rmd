@@ -1,0 +1,305 @@
+---
+title: 'S722 HW6'
+author: 'John Koo'
+output: pdf_document
+# output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 2, 
+                      fig.width = 4, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+To save on typing, I will denote 
+$\frac{\partial^k}{\partial x^k} f(x) = \partial_x^k f(x)$.
+
+# Part 1
+
+## 1.33
+
+$P(M | CB) = \frac{P(CB | M) P(M)}{P(CB | M) P(M) + P(CB | F) P(F)}$  
+$= \frac{(.05) (.5)}{(.05) (.5) + (.0025) (.5)}$  
+$\approx `r round(.05 * .5 / (.05 * .5 + .0025 * .5), 3)`$
+
+## 2.11
+
+### a
+
+From example 2.1.7, 
+$f_Y(y) = \frac{1}{2 \sqrt{y}} (f_X(\sqrt{y}) + f_X(-\sqrt{y}))$
+$= (2 \pi y)^{-1/2} e^{-y/2}$.
+
+Then $E[Y] = \int_0^\infty \sqrt{\frac{y}{2 \pi}} e^{-y / 2} dy$.  
+Let $u = \sqrt{y}$ and $dv = e^{-y/2} dy$. Then $du = \frac{1}{2} y^{-1/2}$ and 
+$v = -2 e^{-y / 2}$.  
+Then the integral becomes $(2 \pi)^{-1/2} \int_0^\infty y^{-1/2} e^{-y/2} dy$.  
+Let $u = \sqrt{y} \implies du = \frac{1}{2} y^{-1/2} dy$. Then the integral 
+becomes  
+$(2 \pi)^{-1/2} \int_0^\infty 2 e^{-u^2 / 2} du$
+$= (2 \pi)^{-1/2} (2) (\pi / 2)^{1/2} = 1$.
+
+### b
+
+$Y = |X| \implies X = \pm Y \implies |X'| = 1$  
+$\implies f_Y(y) = f_X(y) + f_X(-y)$
+$= \sqrt{2 / \pi} e^{-y^2 / 2}$.
+
+$E[Y] = \int_0^\infty y (2 \pi)^{1/2} e^{-y^2 / 2} dy$  
+$u = y^2 / 2 \implies du = y dy$ so the above becomes  
+$= (2 / \pi)^{1/2} \int_0^\infty e^{-u} du = (2 / \pi)^{1/2}$.
+
+$E[Y^2] = (2 / \pi)^{1/2} \int_0^\infty y^2 e^{-y^2 / 2} dy$  
+$u = y$ and $dv = y e^{-y^2 / 2}$ $\implies du = dy$ and $v = -e^{-y^2 / 2}$ so 
+the above becomes  
+$= \sqrt{2 / \pi} \int_0^\infty e^{-y^2 / 2} dy = 1$.
+
+So $Var(Y) = E[Y^2] - (E[Y])^2 = 1 - \frac{2}{\pi}$.
+
+## 2.33
+
+### a
+
+$M_X(t) = E[e^{tX}] = \sum_x e^{tx} \frac{e^{-\lambda} \lambda^x}{x!}$
+$= e^{-\lambda} \sum \frac{(e^t \lambda)^x}{x!} = e^{-\lambda} e^{\lambda e^t}$ 
+$= e^{\lambda (e^t - 1)}$
+
+$E[X] = M_X'(t = 0) = e^{\lambda (e^t - 1)} \lambda e^t|_{t=0}$ 
+$= e^{\lambda (1 - 1)} \lambda e^0 = \lambda$
+
+$E[X^2] = M_X''(t = 0)$
+$= \lambda e^t e^{\lambda (e^t - 1)} \lambda e^t + 
+\lambda e^t e^{\lambda (e^t - 1)} |_{t=0}$
+$= \lambda^2 + \lambda$
+
+$Var(X) = E[X^2] - (E[X])^2 = \lambda$
+
+$\phi_X(t) = M_X(it) = e^{\lambda (e^{it} - 1)}$
+
+$E[X] = -i \phi_X'(0) = -i e^{\lambda (e^{it} - 1)} \lambda i e^{it} |_{t=0}$
+$= (-1) i^2 \lambda = \lambda$
+
+$E[X^2] = -\phi_X''(0)$ 
+$= -i \lambda (e^{\lambda (e^{it} - 1)} i e^{it} \lambda +
+e^{\lambda (e^{it} - 1)} i e^{it}) |_{t=0}$  
+$= -i \lambda (i \lambda + i) = \lambda^2 + \lambda$
+
+$Var(X) = E[X^2] - (E[X])^2 = \lambda$
+
+### c
+
+$M_X(t) = E[e^{tX}]$
+$= \int e^{tx} (2 \pi \sigma^2)^{-1/2} e^{-\frac{(x - \mu)^2}{2 \sigma^2}} dx$  
+$= (2 \pi \sigma^2)^{-1/2} 
+\int e^{-\frac{1}{2 \sigma^2} (x^2 - 2 \mu x + \mu^2 - 2 \sigma^2 t x)} dx$  
+$= (2 \pi \sigma^2)^{-1/2} 
+e^{-\frac{\mu^2}{2 \sigma^2}} 
+\int e^{-\frac{1}{2 \sigma^2} 
+(x^2 - 2 (\mu + \sigma^2 t) x + (\mu + \sigma^2 t)^2 - 
+(\mu + \sigma^2 t)^2)} dx$  
+$= (2 \pi \sigma^2)^{-1/2} 
+e^{-\frac{\mu^2}{2 \sigma^2}} e^{\frac{(\mu + \sigma^2 t)^2}{2 \sigma^2}} 
+\int e^{-\frac{1}{2 \sigma^2} (x - (\mu + \sigma^2 t))^2} dx$  
+$= (2 \pi \sigma^2)^{-1/2} (2 \pi \sigma^2)^{1/2} 
+e^{-\frac{\mu^2}{2 \sigma^2} + \frac{\mu^2}{2 \sigma^2} + 
+\frac{\sigma^4 t^2}{2 \sigma^2} + \frac{2 \mu \sigma^2 t}{2 \sigma^2}}$  
+$= e^{\frac{\sigma^2 t^2}{2} + \mu t}$
+
+$E[X] = M_X'(0) = e^{\sigma^2 t^2 / 2 + \mu t} (\sigma^2 t + \mu) |_{t=0} = \mu$
+
+$E[X^2] = M_X''(0) = e^{\sigma^2 t^2 / 2 + \mu t} (\sigma^2 t + \mu)^2 +
+e^{\sigma^2 t^2 / 2 + \mu t} \sigma^2 |_{t=0}$
+$= \mu^2 + \sigma^2$
+
+$Var(X) = E[X^2] - (E[X])^2 = \sigma^2$
+
+$\phi_X(t) = M_X(it) = e^{-\sigma^2 t^2 / 2 + i \mu t}$
+
+$E[X] = -i \phi_X'(0)$ 
+$= -i e^{-\sigma^2 t^2 / 2 + i \mu t} (-\sigma^2 t + i \mu) |_{t=0}$
+$= -i (i \mu) = \mu$
+
+$E[X^2] = -\phi_X''(0)$
+$= -e^{-\sigma^2 t^2 / 2 + i \mu t} ((-\sigma^2 t + i \mu)^2 - \sigma^2) |_{t=0}$
+$= \mu^2 + \sigma^2$
+
+$Var(X) = \mu^2 + \sigma^2 - \mu^2 = \sigma^2$
+
+## 2.38
+
+### a
+
+$M_X(t) = E[e^{tX}] = \sum_{x=0}^\infty e^{tx} \binom{r+x-1}{x} p^r (1-p)^x$  
+$= p^r \sum_x \binom{r+x-1}{r} \big(e^t (1-p) \big)^r$  
+$= \frac{p^r}{\big(1 - e^t (1 - p) \big)^r}$
+
+### b
+
+$M_Y(t) = M_X(2pt) = \bigg(\frac{p}{1 - e^{2pt} (1-p)} \bigg)^r$
+
+$\lim\limits_{p \to 0} \frac{p}{1 - e^{2pt} (1-p)}$
+$= \lim\limits_{p \to 0} \frac{1}{e^{2pt} - 2t e^{2pt} (1-p)}$
+$= \frac{1}{1 - 2t}$  
+$\implies \lim\limits_{p \to 0} \bigg(\frac{p}{1 - e^{2pt} (1-p)} \bigg)^r$
+$= \bigg(\frac{1}{1 - 2t}\bigg)^r$
+
+## 3.24
+
+### a
+
+$Y = X^{1/\gamma} \implies X = Y^\gamma \implies X' = \gamma Y^{\gamma - 1}$
+
+$\implies f_Y(y) = f_X(y^\gamma) \gamma y^{\gamma - 1}$
+$= \frac{\gamma}{\beta} e^{-y^\gamma / \beta} y^{\gamma - 1}$
+
+### b
+
+$Y = (2X / \beta)^{1/2} \implies X = \beta Y^2 / 2 \implies X' = \beta Y$
+
+$\implies f_Y(y) = y e^{-y^2 / 2}$
+
+### c
+
+$Y = 1 / X \implies X = 1 / Y \implies |X'| = Y^{-2}$ 
+
+$\implies f_Y(y) = \frac{1}{\Gamma(a) b^a} y^{-(a+1)} e^{-\frac{1}{by}}$
+
+### d
+
+$Y = (X / \beta)^{1/2} \implies X = \beta Y^2 \implies X' = \beta Y / 2$
+
+$\implies f_Y(y) = \frac{2}{\Gamma(3/2)} y^2 e^{y^2}$
+
+### e
+
+$Y = \alpha - \gamma \log X \implies X = \exp(\frac{\alpha - Y}{\gamma})$
+$\implies |X'| = \frac{1}{\gamma} \exp(\frac{\alpha - Y}{\gamma})$
+
+$\implies f_Y(y) = 
+\frac{1}{\gamma} \exp(-e^{\frac{\alpha - y}{\gamma}} + 
+  \frac{\alpha - y}{\gamma})$
+
+## 3.48
+
+$f(x+1) = \binom{n}{x+1} p^{x+1} (1-p)^{n-x-1}$  
+$= \binom{n}{x} \frac{n-x}{x+1} \frac{p}{1-p} p^x (1-p)^{n-x}$  
+$= \frac{n-x}{x+1} \frac{p}{1-p} f(x)$
+
+## 3.49
+
+### a
+
+$E[g(X) (X - \alpha \beta)]$ 
+$= \int_0^\infty 
+g(x) (x -\alpha \beta) 
+\frac{1}{\Gamma(\alpha) \beta^\alpha} x^{\alpha-1} e^{-x / \beta} dx$  
+$u = g(x)$ and 
+$dv = (x - \alpha \beta) x^{\alpha - 1} e^{-x / \beta} e^{-x / \beta} dx$
+$\implies du = g'(x) dx$ and $v = -\beta x^\alpha e^{-x / \beta}$ so the above
+becomes  
+$\frac{1}{\Gamma(\alpha) \beta^\alpha} 
+\beta \int g'(x) x^\alpha e^{-x / \beta} dx$  
+$= \beta \int x g'(x) f(x) dx$
+$= \beta E[X g'(X)]$
+
+## 4.4
+
+### a
+
+$1 = \int_0^1 \int_0^2 C (x + 2y) dx dy = 4C \implies C = 1/4$
+
+### b
+
+$f_X(x) = \int_0^1 \frac{1}{4} (x + 2y) dy = \frac{x+1}{4}$
+
+### c
+
+$F(x, y) = \int_0^x \int_0^y \frac{s + 2t}{4} ds dt = \frac{x^2 y + 2 y^2 x}{8}$
+
+### d
+
+$Z = 9 / (X+1)^2 \implies X = 3 Z^{-1/2} -1$ 
+$\implies |X'| = \frac{3}{2} Z^{-3/2}$
+
+$\implies f_Z(z) = \frac{1}{4} (3 z^{-1/2} - 1 + 1) \frac{3}{2} z^{-3/2}$
+$= \frac{9}{8} z^{-2}$
+
+## 4.40
+
+### a
+
+In the case where $a$, $b$, and $c$ are natural numbers ...
+
+$\int \int x^{a-1} y^{b-1} (1 - x - y)^{c-1} dx dy$
+$= \Gamma(a) \int y^{b-1} (1-y)^{c+a-1} dy$
+$= \frac{\Gamma(a) \Gamma(b) \Gamma(c)}{\Gamma(a+b+c)}$  
+$\implies C = \frac{\Gamma(a+b+c)}{\Gamma(a) \Gamma(b) \Gamma(c)}$
+
+### b
+
+By symmetry, we only have to show this for one, say, $X$.
+
+Reusing some of the math from part (a), we get
+$f_X(x) = \int_0^{1-x} f_{X, Y}(x, y) dy =
+\frac{\Gamma(a+b+c)}{\Gamma(a) \Gamma(b) \Gamma(c)} \Gamma(b) 
+x^{a-1} (1 - x)^{c + b - 1}$
+$\implies X \sim Beta(a, b + c)$
+
+### c
+
+$f_{Y|X}(y) \propto f_{X, Y}(x, y) \propto y^{b-1} (1 - x - y)^{c-1}$  
+$= y^{b-1} \sum_{i=0}^{c-1} (-y)^i (1-x)^{c-1-i}$  
+$\propto y^{b-1} \sum_i (-y)^i = y^{b-1} (1-y)^{c-1}$  
+$\implies Y \mid X \sim Beta(b, c)$
+
+### d
+
+$E[X, Y] = \int \int \frac{\Gamma(a+b+c)}{\Gamma(a) \Gamma(b) \Gamma(c)} 
+x^a y^b (1 - x - y)^{c-1} dx$  
+$= \frac{\Gamma(a+b+c)}{\Gamma(a) \Gamma(b) \Gamma(c)} 
+\frac{\Gamma(a+1) \Gamma(b+1) \Gamma(c)}{\Gamma(a+b+c+2)}$  
+$= \frac{ab}{(a+b+c+1) (a+b+c)}$
+
+
+# Part 2
+
+## 1
+
+$E[e^{itX}] \leq E[(e^{itX})^2] = E[\sin^2 tX + \cos^2 tX] = E[1] = 1$
+
+## 2
+
+$\phi_{aX+b}(t) = E[e^{it (aX+b)}] = E[e^{itb} e^{itaX}]$ 
+$= e^{itb} E[e^{i (at) X}] = e^{itb} \phi_X (at)$
+
+## 3
+
+$\phi_{\sum_j X_j}(t) = E[e^{it \sum_j X_j}]$
+$= E[\prod_j e^{it X_j}] = \prod_j E[e^{it X_j}] = \prod_j \phi_{X_j}(t)$
+
+## 4
+
+Let $\delta > 0$.
+
+$|\phi(t + \delta) - \phi(t)|^2 = |E[e^{i (t + \delta) X} - e^{itX}]|^2$
+$= |E[e^{itX} (e^{i \delta X} - 1)]|^2$
+$\leq E[|e^{itX} (e^{i \delta X} - 1)|^2]$
+$= E[(e^{i \delta X} - 1)^2]$
+$\leq E[\delta^2 X^2] = \delta^2 E[X^2]$
+
+So letting $\epsilon = \delta \sqrt{E[X^2]}$, we get 
+$|\phi(t + \delta) - \phi(t)| \leq \epsilon$, assuming that the second moment 
+exists.
