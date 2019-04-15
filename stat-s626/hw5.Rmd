@@ -321,7 +321,7 @@ Based on the information given, we might set the prior to:
 
 $\beta_0 = (23, 0)^\top$  
 $g = n$  
-$nu0 = 1$  
+$\nu_0 = 1$  
 $\sigma_0 = 1/2$ (assume 95\% are between 22 and 24)
 
 ```{r cache = TRUE}
