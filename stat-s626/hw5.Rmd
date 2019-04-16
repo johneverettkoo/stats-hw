@@ -319,17 +319,86 @@ I will use Zellner's $g$-prior.
 
 Based on the information given, we might set the prior to:
 
-$\beta_0 = (23, 0)^\top$  
+$\beta_0 = (23, 0)^\top$ (based on information given about typical times)  
 $g = n$  
 $\nu_0 = 1$  
 $\sigma_0 = 1/2$ (assume 95\% are between 22 and 24)
+
+As a sanity check, we can try generating data from this prior and seeing if 
+they match the information we are given.
+
+```{r cache = TRUE}
+beta0 <- c(23, 0)
+g <- 6
+nu0 <- 1
+sigma0 <- .5
+
+# draw x from 1 to 20 based on the fact that we have data from weeks 1-6
+x <- sample(seq(20), iter, replace = TRUE)
+x.model <- cbind(1, x)
+xtx.inv <- solve(t(x.model) %*% x.model)
+
+# draw sigma from prior
+sigma <- rgamma(iter, nu0 / 2, nu0 + sigma0 ** 2 / 2) ** -.5
+
+# draw beta from prior
+beta <- sapply(seq(iter), function(i) {
+  mvtnorm::rmvnorm(1, 
+                   beta0, 
+                   g * sigma[i] ** 2 * xtx.inv)
+}) %>% 
+  t()
+
+# draw error terms
+e <- rnorm(iter, 0, sigma)
+
+# draw responses
+y <- sapply(seq(iter), function(i) {
+  sum(x.model[i, ] * beta[i, ]) + e[i]
+})
+
+# check if the generated data make sense
+summary(y)
+```
+
+This does not match our expectations. In particular, the minimum and maximum are
+too large. We can try increasing $\nu_0$ to see if we can fix this.
+
+```{r cache = TRUE}
+nu0 <- 20
+
+# draw sigma from prior
+sigma <- rgamma(iter, nu0 / 2, nu0 + sigma0 ** 2 / 2) ** -.5
+
+# draw beta from prior
+beta <- sapply(seq(iter), function(i) {
+  mvtnorm::rmvnorm(1, 
+                   beta0, 
+                   g * sigma[i] ** 2 * xtx.inv)
+}) %>% 
+  t()
+
+# draw error terms
+e <- rnorm(iter, 0, sigma)
+
+# draw responses
+y <- sapply(seq(iter), function(i) {
+  sum(x.model[i, ] * beta[i, ]) + e[i]
+})
+
+# check if these make sense
+summary(y)
+quantile(y, c(.025, .975))
+```
+
+This seems more reasonable, so we'll use these for our prior. 
 
 ```{r cache = TRUE}
 # priors
 beta0 <- c(23, 0)
 g <- 6
-nu0 <- 1
-sigma0 <- .5
+nu0 <- 20
+sigma0 <- 0.5
 
 # iterations
 iter <- 1e3
@@ -383,7 +452,8 @@ y.hat %>%
   magrittr::set_colnames(seq(4)) %>% 
   tidyr::gather('swimmer', 'y.hat', 1:4) %>% 
   ggplot() + 
-  geom_density(aes(x = y.hat, colour = swimmer)) 
+  geom_density(aes(x = y.hat, colour = swimmer))  + 
+  labs(x = expression(hat(y)))
 
 sapply(seq(4), function(j) {
   sapply(seq(iter), function(i) {
@@ -394,7 +464,9 @@ sapply(seq(4), function(j) {
 ```
 
 There is too much uncertainty 2 weeks out to make a good prediction, with the 
-first swimmer being slightly better.
+first swimmer being slightly better. However, we can also note that these 
+values do not make sense and are too spread out. So perhaps our prior is 
+mis-specified. 
 
 # 9.3
 
