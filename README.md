@@ -12,4 +12,8 @@
 * STAT-S632 (Linear Models II)
 * STAT-S676 (Model Selection)
 
+* STAT-S626 (Bayesian Statistics)
+* STAT-S721 (Advanced Statistical Theory I)
+* STAT-S722 (Advanced Statistical Theory II)
+
 Occasional assignments will be done by hand and won't be included here.
