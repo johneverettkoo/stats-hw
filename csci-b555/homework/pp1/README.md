@@ -4,6 +4,8 @@
 
 Author: John Koo
 
+URL: https://github.com/johneverettkoo/stats-hw/tree/master/csci-b555/homework/pp1
+
 To run: `python main.py [parent_directory]` in the terminal
 
 The file structure is assumed to be:
@@ -31,3 +33,5 @@ Some notes:
 * *k=10* is chosen in *k*-fold cross-validation for all experiments
 * If the log likelihoods are -inf for both classes, then the predicted class is 
 chosen randomly based on the proportion of classes in the training set
+* The write-up is in `write-up.ipynb`. This was converted into a .pdf for 
+submission.

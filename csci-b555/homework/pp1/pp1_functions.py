@@ -226,59 +226,6 @@ def kfold_cv(reviews, ratings,
     return accuracies
 
 
-def experiment(path,
-               m=0., k=10, learning_curve_step=.1,
-               verbose=True,
-               plot_path=None):
-    """
-    function to run the experiments described in assignment
-    testing a range of smoothing parameters
-    this only does one dataset, specified by path
-    """
-
-    # get the data
-    reviews, ratings = open_reviews(os.path.join(path))
-
-    # initialize list of accuracies
-    accuracies = []
-
-    # for each subset proportion, try k-fold CV and store the accuracy metrics
-    proportions = np.arange(learning_curve_step, 1 + learning_curve_step,
-                            learning_curve_step)
-    for proportion in proportions:
-        accuracies.append(kfold_cv(reviews, ratings,
-                                   proportion,
-                                   k=k,
-                                   method='map', alpha=m))
-
-    acc_mean = [np.mean(accuracy) for accuracy in accuracies]
-    acc_std = [np.std(accuracy) for accuracy in accuracies]
-
-    # if verbose, print out the means and standard deviations
-    if verbose:
-        print('subsample', 'mean acc, std acc')
-        print(np.stack([proportions,
-                        acc_mean,
-                        acc_std]).T)
-
-    # plot
-    if plot_path is not None:
-        flattened_accs = [accuracy for sub_accs in accuracies
-                          for accuracy in sub_accs]
-        flattened_props = np.repeat(proportions, k)
-        plt.scatter(x=flattened_props, y=flattened_accs)
-        # plt.plot(proportions,
-        #          [np.mean(accuracy) for accuracy in accuracies])
-        plt.errorbar(proportions, acc_mean,
-                     yerr=[2 * s for s in acc_std],
-                     c='red')
-        plt.xlabel('subsample proportion')
-        plt.ylabel('accuracy')
-        plt.show()
-        plt.savefig(plot_path)
-
-    return accuracies
-
 def learning_curve(reviews, ratings, alpha=0., k=10, learning_curve_step=.1):
     """compute accuracies from k-fold CV with subsampling"""
 
