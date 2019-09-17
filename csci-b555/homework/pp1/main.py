@@ -48,7 +48,7 @@ except:
 
 # check if functions exist
 try:
-    from pp1_functions import open_reviews, learning_curve
+    from pp1_functions import open_reviews, learning_curve, kfold_cv
 except:
     sys.exit('could not find pp1_functions.py')
 
@@ -113,6 +113,42 @@ m_values = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9,
 colormap = plt.cm.viridis(np.linspace(0, 1, len(m_values)))
 
 # for each dataset
+# for data_file in DATA_FILES:
+#     print(f'dataset: {data_file} ...')
+#     dataset_name = data_file.split('_')[0]
+#
+#     # read the data
+#     os.chdir(os.path.join(PARENT_DIR, DATA_SUBDIR))
+#     reviews, ratings = open_reviews(data_file)
+#
+#     # for each value of m specified by the assignment
+#     # compute the accuracy curves
+#     fig = plt.figure(figsize=())
+#     for i, m in enumerate(m_values):
+#         # compute accuracies for each subsample proportion and fold
+#         accuracies = learning_curve(reviews, ratings,
+#                                     m,
+#                                     K, LEARNING_CURVE_STEP)
+#
+#         # compute the mean and std accuracy for each subsample proportion
+#         mean_accs = [np.mean(accuracy) for accuracy in accuracies]
+#         std_accs = [np.std(accuracy) for accuracy in accuracies]
+#
+#         # plot
+#         proportions = np.arange(LEARNING_CURVE_STEP, 1 + LEARNING_CURVE_STEP,
+#                                 LEARNING_CURVE_STEP)
+#         plt.errorbar(proportions, mean_accs,
+#                      yerr=[2 * s for s in std_accs],
+#                      uplims=True, lolims=True,
+#                      label=m,
+#                      c=colormap[i])
+#     plt.legend(loc='lower right')
+#     plt.xlabel('subsample proportion')
+#     plt.ylabel('accuracy')
+#     plt.title(dataset_name)
+#     plt.savefig(os.path.join(PARENT_DIR, PLOT_SUBDIR, 'experiment-2',
+#                              dataset_name + '.png'))
+
 for data_file in DATA_FILES:
     print(f'dataset: {data_file} ...')
     dataset_name = data_file.split('_')[0]
@@ -123,27 +159,22 @@ for data_file in DATA_FILES:
 
     # for each value of m specified by the assignment
     # compute the accuracy curves
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure()
+    all_accuracies = []
     for i, m in enumerate(m_values):
         # compute accuracies for each subsample proportion and fold
-        accuracies = learning_curve(reviews, ratings,
-                                    m,
-                                    K, LEARNING_CURVE_STEP)
+        accuracies = kfold_cv(reviews, ratings, method='map', alpha=m)
+        all_accuracies.append(accuracies)
 
-        # compute the mean and std accuracy for each subsample proportion
-        mean_accs = [np.mean(accuracy) for accuracy in accuracies]
-        std_accs = [np.std(accuracy) for accuracy in accuracies]
+    # compute the mean and std accuracy for each subsample proportion
+    mean_accs = [np.mean(accuracy) for accuracy in all_accuracies]
+    std_accs = [np.std(accuracy) for accuracy in all_accuracies]
 
-        # plot
-        proportions = np.arange(LEARNING_CURVE_STEP, 1 + LEARNING_CURVE_STEP,
-                                LEARNING_CURVE_STEP)
-        plt.errorbar(proportions, mean_accs,
-                     yerr=[2 * s for s in std_accs],
-                     uplims=True, lolims=True,
-                     label=m,
-                     c=colormap[i])
-    plt.legend(loc='lower right')
-    plt.xlabel('subsample proportion')
+    # plot
+    plt.errorbar(m_values, mean_accs,
+                 yerr=[2 * s for s in std_accs],
+                 uplims=True, lolims=True)
+    plt.xlabel('smoothing parameter')
     plt.ylabel('accuracy')
     plt.title(dataset_name)
     plt.savefig(os.path.join(PARENT_DIR, PLOT_SUBDIR, 'experiment-2',
