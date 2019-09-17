@@ -4,7 +4,8 @@
 
 Author: John Koo
 
-URL: https://github.com/johneverettkoo/stats-hw/tree/master/csci-b555/homework/pp1
+URL to this repository: 
+https://github.com/johneverettkoo/stats-hw/tree/master/csci-b555/homework/pp1
 
 To run: `python main.py [parent_directory]` in the terminal
 
@@ -27,6 +28,7 @@ assumed to be preexisting.
 
 Some notes:
 
+* This was written for Python 3
 * `pp1_functions.py` contains all the necessary functions 
 * The data are contained in a subdirectory `sentiment labelled sentences`
 * Plots are generated and saved to the subdirectory `plots`

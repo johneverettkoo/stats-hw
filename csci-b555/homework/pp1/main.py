@@ -95,7 +95,7 @@ for data_file in DATA_FILES:
                      yerr=[2 * s for s in std_accs],
                      uplims=True, lolims=True,
                      label=f'm={m}')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower right')
     plt.xlabel('subsample proportion')
     plt.ylabel('accuracy')
     plt.title(dataset_name)
@@ -110,7 +110,7 @@ print('starting experiment 2 ...')
 m_values = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9,
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 # colors for plotting
-colormap = plt.cm.viridis(np.array(m_values))
+colormap = plt.cm.viridis(np.linspace(0, 1, len(m_values)))
 
 # for each dataset
 for data_file in DATA_FILES:

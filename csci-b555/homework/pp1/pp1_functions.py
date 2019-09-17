@@ -147,7 +147,6 @@ def create_predictor_fn(reviews, ratings,
     return predictor_fn
 
 
-
 def assign_fold_indices(reviews, ratings, k=10):
     """assign fold 1..k to each review"""
 
@@ -178,6 +177,7 @@ def assign_fold_indices(reviews, ratings, k=10):
     folds = np.concatenate([pos_folds, neg_folds])
 
     return reviews, ratings, folds
+
 
 def kfold_cv(reviews, ratings,
              proportion=1.,
