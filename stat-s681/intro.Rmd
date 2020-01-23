@@ -1,0 +1,83 @@
+---
+title: 'Introduction'
+# output: pdf_document
+output: html_document
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 3, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+two categories of neuroimaging
+
+* structural
+    * understand brain structure
+* functional
+    * understand cognitive and affective processes
+    * brain organization
+    
+MRI vs fMRI
+
+* structural 
+    * high spatial resolution
+    * no temporal information
+    * distinguish between different types of tissue
+* functional
+    * lower spatial resolution
+    * temporal information
+    * used to relate changes in signal to some experimental task
+
+BOLD (blood oxygen level dependent) fMRI
+
+* measures ratio of oxygenated to deoxygenated hemoglobin in the blood
+* doesn't measure neuronal activity directly, measures metabolic demands
+* oxyhemoglobin - diamagnetic  
+deoxyhemoglobin - paramagnetic, supresses MR signal
+* hemodynamic response function
+    * not necessarily fixed across subjects and tasks/regions
+    * very small signal - .1 to 5%
+    * response is delayed and somewhat slow
+
+fMRI data
+
+* ~100,000 voxels per image
+* voxels ~8 mm^3^
+* typically .5 to 2 Hz
+* acquired in frequency domain (k-space)
+    * inverse fourier transform required to construct actual image
+* requires a lot of preprocessing - motion correction, denoising, filtering, 
+normalization, etc.
+
+* main focus - brain mapping
+    * correspond a region of the brain to a particular task
+    * typical approach
+        1. construct model at each voxel, e.g., general linear model
+        2. perform statistical test to determine whether task related 
+        activation is present
+        3. use thresholding for statistical significance (multiple comparison 
+        analysis)
+
+connectivity
+    * structural connectivity
+    * functional connectivity
+    * effective connectivity
+    * dynamic connectivity
+
+network analysis
+
+prediction & classification
+    * multivariate pattern analysis
