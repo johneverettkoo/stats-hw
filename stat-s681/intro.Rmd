@@ -81,3 +81,42 @@ network analysis
 
 prediction & classification
     * multivariate pattern analysis
+
+## Data Acquisition
+
+* raw data in $k$-space  
+* each measurement in $k$-space in $d + 1$ dimensions: one for frequency in 
+each direction, and amplitude
+* inverse fourier transform used to convert to image  
+* $S(t_j) \approx \int M(x, y) e^{-2 \pi i (k_x(t_j) x + k_y(t_j) y)} dx dy$  
+* data cleaning: remove high freqency values in $k$-space before transforming
+* values in image space in complex space, typically only keep magnitude
+
+## BOLD fMRI
+
+* blood oxygenated level dependent (BOLD) 
+* local changes in deoxyhemoglobin concentration
+* hemodynamic response function (HRF)
+    * $y$-axis - typically some normalized quantity
+* BOLD signal convolution of signal and HRF
+
+## Experimental Design
+
+* block design
+* event-related design
+
+## Preprocessing
+
+* slice timing correction
+* motion correction
+* coregistration and normalization
+* spatial smoothing
+
+order in which the preprocessing is performed can affect the end "cleaned" 
+data
+
+## Data Analysis
+
+* modeling the fMRI signal
+* localizing brain activity
+    * geneal linear models
