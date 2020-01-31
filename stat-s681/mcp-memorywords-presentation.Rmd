@@ -1,0 +1,84 @@
+---
+title: The MCP Memory Words Dataset
+date: 'January 31, 2020'
+author: John Koo
+# output: beamer_presentation
+# output: html_document
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.lp = '')
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r}
+import::from(magrittr, `%>%`)
+```
+
+# Midnight Scan Club Data Overview
+
+* Most previous fMRI analyses involved looking at group effects (using 
+group-aggregated data)
+* Primary focus of MSC dataset: Consider individuals rather than groups
+
+* 10 subjects 
+* 5 tasks
+* Includes additional information about each subject
+
+# Incidental Memory Task (Words) Overview
+
+* Subjects shown a sequence of words
+* Words from the English Lexicon Project (Balota et al.)
+    * Each session consisted of 24 words (40K in the ELP)
+    * Subjects asked to categorize each word as abstract or concrete 
+    (one of 13 semantic variables in the ELP)
+* Each word presented for 1.7 seconds with 0.5 to 4.9 second intervals
+
+# Visualizations
+
+Using the `oro.nifti`[^1] and `neurobase`[^2] packages
+
+[^1]: https://cran.r-project.org/web/packages/oro.nifti/index.html
+
+[^2]: https://cran.rstudio.com/web/packages/neurobase/index.html
+
+```{r}
+home.dir <- '/N/project/clubneuro/MSC/fmriprep_ver1p3p2'
+
+subjects <- 
+  paste0('sub-MSC', stringr::str_pad(seq(10), 2, pad = '0', side = 'left'))
+sessions <- 
+  paste0('ses-func', stringr::str_pad(seq(10), 2, pad = '0', side = 'left'))
+
+task <- 'memorywords'
+
+# setwd(home.dir)
+```
+
+```{r}
+setwd(file.path(home.dir, subjects[1], sessions[1], 'func'))
+
+files <- dir() %>% 
+  .[grepl(paste0('.+', task, '.+nii\\.gz'), .)]
+
+x <- neurobase::readnii(files[5])
+```
+
+```{r}
+oro.nifti::orthographic(x)
+```
+
+# Visualizations
+
+```{r}
+# oro.nifti::orthographic(x)
+# neurobase::ortho2(x)
+oro.nifti::slice(x, z = seq(dim(x)[3]))
+```
