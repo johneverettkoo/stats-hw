@@ -46,7 +46,7 @@ SUBJECT <- 1
 SESSION <- 1
 TASK <- 'memorywords'
 
-ALPHA <- .01
+ALPHA <- .05
 
 REMOVE.GLOBAL <- FALSE
 COMBINE.SUBTASKS <- FALSE
@@ -224,7 +224,7 @@ to abstract vs. concrete.
 
 ```{r fig.width = 3, fig.height = 3}
 if (!COMBINE.SUBTASKS) {
-  contrast.map <- create.contrast.map(beta.hat, Y.list$voxel.ind.array)
+  contrast.map <- create.contrast.map(beta.hat, Y.list$voxel.ind.array, ALPHA)
   print(plot.contrast.map(contrast.map[, , 20]))
   print(plot.contrast.map(contrast.map[, 20, ]))
   print(plot.contrast.map(contrast.map[20, , ]))
@@ -357,6 +357,13 @@ if (COMBINE.SUBTASKS) {
   t.stats <- cbind(beta.hat['abstract', ] / se.betahat.abs,
                    beta.hat['concrete', ] / se.betahat.con)
   colnames(t.stats) = c('abstract', 'concrete')
+}
+
+if (!COMBINE.SUBTASKS) {
+  contrast.map <- create.contrast.map(beta.hat, Y.list$voxel.ind.array, ALPHA)
+  print(plot.contrast.map(contrast.map[, , 20]))
+  print(plot.contrast.map(contrast.map[, 20, ]))
+  print(plot.contrast.map(contrast.map[20, , ]))
 }
 
 if (COMBINE.SUBTASKS) {

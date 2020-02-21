@@ -188,16 +188,24 @@ plot.tmap <- function(tmap.slice, title = NULL) {
 
 create.contrast.map <- function(beta.hat, 
                                 voxel.ind.array, 
-                                normalize = FALSE,
+                                alpha = .01,
                                 params = c('abstract', 'concrete')) {
+  T <- ncol(beta.hat)
+  p <- nrow(beta.hat)
+  cutoff <- qt(1 - alpha / 2, T - p)
   contrast.param <- c(1, -1)
   beta.hat <- beta.hat[params, ]
-  contrast.vec <- as.vector(contrast.param %*% beta.hat)
+  sp2 <- pooled.var(beta.hat[params[1], ],
+                    beta.hat[params[2], ])
+  contrast.vec <- as.vector(contrast.param %*% beta.hat) / sqrt(sp2)
   
-  T <- length(contrast.vec)
   voxel.array <- voxel.ind.array
-  for (i in seq_along(t.stats)) {
-    voxel.array[voxel.ind.array == i] <- contrast.vec[i]
+  for (i in seq(T)) {
+    if (abs(contrast.vec[i]) > cutoff) {
+      voxel.array[voxel.ind.array == i] <- contrast.vec[i]
+    } else {
+      voxel.array[voxel.ind.array == i] <- 0
+    }
   }
   
   return(voxel.array)
@@ -222,4 +230,12 @@ plot.contrast.map <- function(contrast.map.slice, title = NULL,
           axis.title.y = element_blank(),
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank())
+}
+
+pooled.var <- function(x1, x2) {
+  n1 <- length(x1)
+  n2 <- length(x2)
+  n <- n1 + n2
+  sp2 <- ((n1 - 1) * var(x1) + (n2 - 1) * var(x2)) / (n - 2)
+  return(sp2)
 }
