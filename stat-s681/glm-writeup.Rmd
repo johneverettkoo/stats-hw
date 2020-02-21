@@ -31,6 +31,8 @@ import::here(load.fmri.data,
              .txv.check,
              construct.t.map,
              plot.tmap,
+             create.contrast.map,
+             plot.contrast.map,
              .from = 'glm-functions.R')
 
 theme_set(theme_bw())
@@ -41,16 +43,17 @@ https://github.com/johneverettkoo/stats-hw/tree/master/stat-s681
 
 ```{r params}
 SUBJECT <- 1
-SESSION <- 10
+SESSION <- 1
 TASK <- 'memorywords'
 
-ALPHA <- .05
+ALPHA <- .01
 
-REMOVE.GLOBAL = TRUE
+REMOVE.GLOBAL <- FALSE
+COMBINE.SUBTASKS <- FALSE
 ```
 
 ```{r read_data}
-data.list <- load.fmri.data(SUBJECT, SESSION, TASK)
+data.list <- load.fmri.data(SUBJECT, SESSION, TASK, COMBINE.SUBTASKS)
 ```
 
 For this analysis, we will focus on session `r SESSION` for subject 
@@ -89,25 +92,48 @@ data.list$t1w_mask.nifti@.Data %>%
 Regressors:
 
 ```{r}
-data.list$reg.df %>% 
-  dplyr::select(time.s,
-                reference_bold = ref, 
-                trans_x, trans_y, trans_z,
-                rot_x, rot_y, rot_z,
-                drift, drift_2 = drift2) %>% 
-  tidyr::gather('regressor', 'value', -time.s) %>% 
-  dplyr::mutate(regressor_type = strsplit(regressor, 
-                                          '_', 
-                                          fixed = TRUE) %>% 
-                  sapply(function(x) x[1])) %>% 
-  ggplot() + 
-  geom_line(aes(x = time.s, 
-                y = value, 
-                colour = regressor)) + 
-  labs(x = 'time [s]', 
-       y = NULL) + 
-  facet_grid(regressor_type ~ .,
-             scales = 'free_y')
+if (COMBINE.SUBTASKS) {
+  data.list$reg.df %>% 
+    dplyr::select(time.s,
+                  reference_bold = ref, 
+                  trans_x, trans_y, trans_z,
+                  rot_x, rot_y, rot_z,
+                  drift, drift_2 = drift2) %>% 
+    tidyr::gather('regressor', 'value', -time.s) %>% 
+    dplyr::mutate(regressor_type = strsplit(regressor, 
+                                            '_', 
+                                            fixed = TRUE) %>% 
+                    sapply(function(x) x[1])) %>% 
+    ggplot() + 
+    geom_line(aes(x = time.s, 
+                  y = value, 
+                  colour = regressor)) + 
+    labs(x = 'time [s]', 
+         y = NULL) + 
+    facet_grid(regressor_type ~ .,
+               scales = 'free_y')
+} else {
+  data.list$reg.df %>% 
+    dplyr::select(time.s,
+                  reference_abstract = abstract, 
+                  reference_concrete = concrete,
+                  trans_x, trans_y, trans_z,
+                  rot_x, rot_y, rot_z,
+                  drift, drift_2 = drift2) %>% 
+    tidyr::gather('regressor', 'value', -time.s) %>% 
+    dplyr::mutate(regressor_type = strsplit(regressor, 
+                                            '_', 
+                                            fixed = TRUE) %>% 
+                    sapply(function(x) x[1])) %>% 
+    ggplot() + 
+    geom_line(aes(x = time.s, 
+                  y = value, 
+                  colour = regressor)) + 
+    labs(x = 'time [s]', 
+         y = NULL) + 
+    facet_grid(regressor_type ~ .,
+               scales = 'free_y')
+}
 ```
 
 # GLM Results and Diagnostics
@@ -146,11 +172,19 @@ heatmap(out[, 20, ], Rowv = NA, Colv = NA)
 
 ```{r}
 # construct data matrix
-X <- model.matrix(~ ref + 
-                    trans_x + trans_y + trans_z + 
-                    rot_x + rot_y + rot_z + 
-                    drift + drift2,
-                  data = data.list$reg.df)
+if (COMBINE.SUBTASKS) {
+  X <- model.matrix(~ ref + 
+                      trans_x + trans_y + trans_z + 
+                      rot_x + rot_y + rot_z + 
+                      drift + drift2,
+                    data = data.list$reg.df)
+} else {
+  X <- model.matrix(~ abstract + concrete + 
+                      trans_x + trans_y + trans_z + 
+                      rot_x + rot_y + rot_z + 
+                      drift + drift2,
+                    data = data.list$reg.df)
+}
 
 Y <- Y.list$Y
 
@@ -172,30 +206,58 @@ sigma2.hat <- RSS / (T - p)
 
 # compute t-statistics
 XtX.inv.diag <- diag(XtX.inv)
-se.betahat <- sqrt(sigma2.hat * XtX.inv.diag['ref'])
-t.stats <- beta.hat['ref', ] / se.betahat
+if (COMBINE.SUBTASKS) {
+  se.betahat <- sqrt(sigma2.hat * XtX.inv.diag['ref'])
+  t.stats <- beta.hat['ref', ] / se.betahat
+} else {
+  se.betahat.abs <- sqrt(sigma2.hat * XtX.inv.diag['abstract'])
+  se.betahat.con <- sqrt(sigma2.hat * XtX.inv.diag['concrete'])
+  t.stats <- cbind(beta.hat['abstract', ] / se.betahat.abs,
+                   beta.hat['concrete', ] / se.betahat.con)
+  colnames(t.stats) = c('abstract', 'concrete')
+}
 ```
 
-The main parameter of interest is $\beta_{task}$ which corresponds to the 
-reference BOLD signal based on the task. This value should be approximately 
-$t$-distributed under the null that $\beta_{task} = 0$, and we can try 
-verifying that it's at least bell-shaped, centered at 0, with slightly heavier
-tails than an equivalent normal:
+Using the two $\beta_{task}$ estimates for each voxel, we can try constructing 
+contrast maps. Hopefully we'll be able to see contiguous zones that correspond 
+to abstract vs. concrete.
+
+```{r fig.width = 3, fig.height = 3}
+if (!COMBINE.SUBTASKS) {
+  contrast.map <- create.contrast.map(beta.hat, Y.list$voxel.ind.array)
+  print(plot.contrast.map(contrast.map[, , 20]))
+  print(plot.contrast.map(contrast.map[, 20, ]))
+  print(plot.contrast.map(contrast.map[20, , ]))
+}
+```
+
+Under the null hypothesis, the two $\beta_{task}$ estimates should be 
+approximately $t$-distributed when divided by their standard errors. We can 
+check visually whether this is the case:
 
 ```{r, fig.width = 3, fig.height = 3}
-plot(density(t.stats), main = 't statistics for each voxel')
-qqnorm(t.stats)
+t.stats.vec <- as.vector(t.stats)
+plot(density(t.stats.vec), main = 'combined t statistics for each voxel')
+qqnorm(t.stats.vec)
 ```
 
 Setting the significance level $\alpha = `r ALPHA`$, we can construct 
 $t$-maps:
 
 ```{r, fig.height = 3, fig.width = 3, cache = FALSE}
-t.map <- construct.t.map(t.stats, Y.list$voxel.ind.array, ALPHA)
-
-plot.tmap(t.map[, , 20])
-plot.tmap(t.map[, 20, ])
-plot.tmap(t.map[20, , ])
+if (COMBINE.SUBTASKS) {
+  t.map <- construct.t.map(t.stats, Y.list$voxel.ind.array, ALPHA)
+  plot.tmap(t.map[, , 20])
+  plot.tmap(t.map[, 20, ])
+  plot.tmap(t.map[20, , ])
+} else {
+  for (subtask in c('abstract', 'concrete')) {
+    t.map <- construct.t.map(t.stats[, subtask], Y.list$voxel.ind.array, ALPHA)
+    print(plot.tmap(t.map[, , 20], title = paste('t-map for', subtask)))
+    print(plot.tmap(t.map[, 20, ], title = paste('t-map for', subtask)))
+    print(plot.tmap(t.map[20, , ], title = paste('t-map for', subtask)))
+  }
+}
 ```
 
 Note that in the above plots, $t$-statistic values below the cutoff at the 
@@ -207,22 +269,43 @@ right about the model fit. One thing we can check for (empirically/visually) is
 goodness of fit of the global signal. 
 
 ```{r, fig.height = 3}
-global.mod <- lm(global_signal ~
-                   ref + 
-                   trans_x + trans_y + trans_z + 
-                   rot_x + rot_y + rot_z + 
-                   drift + drift2,
-                 data = data.list$reg.df)
-yhat <- predict(global.mod)
-
-data.list$reg.df %>% 
-  dplyr::mutate(yhat = yhat) %>% 
-  ggplot() + 
-  geom_line(aes(x = time.s, y = global_signal, colour = 'global signal')) + 
-  geom_line(aes(x = time.s, y = yhat, colour = 'model fit')) + 
-  geom_line(aes(x = time.s, y = ref * 10 + mean(yhat), 
-                colour = 'reference BOLD signal (adj)'))
+if (COMBINE.SUBTASKS) {
+  global.mod <- lm(global_signal ~
+                     ref + 
+                     trans_x + trans_y + trans_z + 
+                     rot_x + rot_y + rot_z + 
+                     drift + drift2,
+                   data = data.list$reg.df)
+  yhat <- predict(global.mod)
+  
+  data.list$reg.df %>% 
+    dplyr::mutate(yhat = yhat) %>% 
+    ggplot() + 
+    geom_line(aes(x = time.s, y = global_signal, colour = 'global signal')) + 
+    geom_line(aes(x = time.s, y = yhat, colour = 'model fit')) + 
+    geom_line(aes(x = time.s, y = ref * 10 + mean(yhat), 
+                  colour = 'reference BOLD signal (adj)'))
   labs(x = 'time [s]', y = 'BOLD signal', colour = NULL)
+} else {
+  global.mod <- lm(global_signal ~
+                     abstract + concrete + 
+                     trans_x + trans_y + trans_z + 
+                     rot_x + rot_y + rot_z + 
+                     drift + drift2,
+                   data = data.list$reg.df)
+  yhat <- predict(global.mod)
+  
+  data.list$reg.df %>% 
+    dplyr::mutate(yhat = yhat) %>% 
+    ggplot() + 
+    geom_line(aes(x = time.s, y = global_signal, colour = 'global signal')) + 
+    geom_line(aes(x = time.s, y = yhat, colour = 'model fit')) + 
+    geom_line(aes(x = time.s, y = abstract * 2 + mean(yhat), 
+                  colour = 'adjusted reference signal (abstract)')) + 
+    geom_line(aes(x = time.s, y = concrete * 2 + mean(yhat),
+                  colour = 'adjusted reference signal (concrete)')) + 
+  labs(x = 'time [s]', y = 'BOLD signal', colour = NULL)
+}
 ```
 
 Unfortunately in this model, the reference BOLD signal is not a good predictor 
@@ -265,12 +348,28 @@ sigma2.hat <- RSS / (T - p)
 
 # compute t-statistics
 XtX.inv.diag <- diag(XtX.inv)
-se.betahat <- sqrt(sigma2.hat * XtX.inv.diag['ref'])
-t.stats <- beta.hat['ref', ] / se.betahat
+if (COMBINE.SUBTASKS) {
+  se.betahat <- sqrt(sigma2.hat * XtX.inv.diag['ref'])
+  t.stats <- beta.hat['ref', ] / se.betahat
+} else {
+  se.betahat.abs <- sqrt(sigma2.hat * XtX.inv.diag['abstract'])
+  se.betahat.con <- sqrt(sigma2.hat * XtX.inv.diag['concrete'])
+  t.stats <- cbind(beta.hat['abstract', ] / se.betahat.abs,
+                   beta.hat['concrete', ] / se.betahat.con)
+  colnames(t.stats) = c('abstract', 'concrete')
+}
 
-t.map <- construct.t.map(t.stats, Y.list$voxel.ind.array, ALPHA)
-
-plot.tmap(t.map[, , 20])
-plot.tmap(t.map[, 20, ])
-plot.tmap(t.map[20, , ])
+if (COMBINE.SUBTASKS) {
+  t.map <- construct.t.map(t.stats, Y.list$voxel.ind.array, ALPHA)
+  plot.tmap(t.map[, , 20])
+  plot.tmap(t.map[, 20, ])
+  plot.tmap(t.map[20, , ])
+} else {
+  for (subtask in c('abstract', 'concrete')) {
+    t.map <- construct.t.map(t.stats[, subtask], Y.list$voxel.ind.array, ALPHA)
+    print(plot.tmap(t.map[, , 20], title = paste('t-map for', subtask)))
+    print(plot.tmap(t.map[, 20, ], title = paste('t-map for', subtask)))
+    print(plot.tmap(t.map[20, , ], title = paste('t-map for', subtask)))
+  }
+}
 ```

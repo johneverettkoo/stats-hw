@@ -8,6 +8,7 @@
 #'   and additional regressors/metadata
 load.fmri.data <- function(subject, session = 1, 
                            task = 'memorywords', 
+                           combine.subtask = TRUE,
                            home.dir = '/N/project/clubneuro/MSC',
                            data.dir = 'fmriprep_ver1p3p2',
                            events.dir = 'washu_preproc/surface_pipeline') {
@@ -39,33 +40,56 @@ load.fmri.data <- function(subject, session = 1,
   # read the data
   t1w_bold.nifti <- neurobase::readNIfTI2(data.path)
   t1w_mask.nifti <- neurobase::readNIfTI2(mask.path)
-  events.df <- readr::read_tsv(events.path)
+  events.df <- readr::read_tsv(events.path) %>% 
+    dplyr::filter(trial_type != 'err') %>% 
+    dplyr::mutate(trial_type = strsplit(trial_type, '_') %>% 
+                    sapply(function(x) x[1]) %>% 
+                    tolower())
   reg.df <- readr::read_tsv(reg.path)
   
-  # number of scans and time between scans
-  scans <- nrow(reg.df)
+  # time between scans
   timestep.size <- t1w_bold.nifti@pixdim[5]
+  # number of scans
+  scans <- nrow(reg.df)
   
   # create vector of reference BOLD responses
-  ref.vec <- fmri::fmri.stimulus(scans = scans + 1,
-                                 onsets = events.df$onset / timestep.size,
-                                 durations = events.df$duration,
-                                 TR = timestep.size)
+  # ref.vec <- fmri::fmri.stimulus(scans = scans + 1,
+  #                                onsets = events.df$onset / timestep.size,
+  #                                durations = events.df$duration,
+  #                                TR = timestep.size)
   # ref.vec <- fmri::fmri.stimulus(scans = scans,
   #                                onsets = events.df$onset / timestep.size,
   #                                durations = events.df$duration,
   #                                TR = timestep.size)
   # ref.vec <- c(ref.vec[1], ref.vec)
+  if (combine.subtask) {
+    # construct reference bold signal
+    ref.vec <- fmri::fmri.stimulus(scans = scans, 
+                                   onsets = events.df$onset / timestep.size,
+                                   durations = events.df$duration)
+    ref.df <- dplyr::tibble(ref = ref.vec)
+  } else {
+    ref.df <- plyr::ddply(events.df, 'trial_type', function(temp.df) {
+      # construct reference bold signal
+      ref.vec <- fmri::fmri.stimulus(scans = scans,
+                                     onsets = temp.df$onset / timestep.size,
+                                     durations = temp.df$duration)
+      dplyr::tibble(t = seq(scans),
+                    ref = ref.vec)
+    }) %>% 
+      tidyr::spread(trial_type, ref) %>% 
+      dplyr::select(-t)
+  }
   
   # and attach to reg.df
   reg.df %<>% 
-    dplyr::mutate(ref = ref.vec)
+    cbind(ref.df)
   
   # add linear and quadratic drift terms to reg.df
   # and timepoints
   reg.df %<>% 
     dplyr::mutate(drift = seq(dplyr::n()),
-                  drift = (drift - mean(drift)) / diff(range(drift)),
+                  drift = drift / max(drift),
                   drift2 = drift ** 2,
                   time.s = seq(timestep.size, timestep.size * scans, 
                                length.out = scans))
@@ -128,6 +152,7 @@ construct.TxV <- function(bold, mask,
 
 construct.t.map <- function(t.stats, voxel.ind.array, alpha = .01) {
   # again, this is not a good/efficient way to do this ...
+  T <- length(t.stats)
   cv <- qt(1 - alpha / 2, T - p)
   voxel.array <- voxel.ind.array
   for (i in seq_along(t.stats)) {
@@ -140,9 +165,8 @@ construct.t.map <- function(t.stats, voxel.ind.array, alpha = .01) {
   return(voxel.array)
 }
 
-plot.tmap <- function(tmap.slice) {
+plot.tmap <- function(tmap.slice, title = NULL) {
   tmap.slice %>%
-    # t() %>% 
     dplyr::as_tibble() %>% 
     tibble::rowid_to_column(var = 'x') %>% 
     tidyr::gather(key = 'y', value = 'z', -1) %>% 
@@ -150,9 +174,48 @@ plot.tmap <- function(tmap.slice) {
     na.omit() %>% 
     ggplot() + 
     geom_tile(aes(x = x, y = y, fill = z)) + 
-    viridis::scale_fill_viridis() + 
+    # viridis::scale_fill_viridis() + 
+    scale_fill_gradient2(mid = 'grey90') + 
     coord_fixed() + 
-    labs(fill = 't-statistic') + 
+    labs(fill = 't-statistic', title = title) + 
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(), 
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank())
+}
+
+create.contrast.map <- function(beta.hat, 
+                                voxel.ind.array, 
+                                normalize = FALSE,
+                                params = c('abstract', 'concrete')) {
+  contrast.param <- c(1, -1)
+  beta.hat <- beta.hat[params, ]
+  contrast.vec <- as.vector(contrast.param %*% beta.hat)
+  
+  T <- length(contrast.vec)
+  voxel.array <- voxel.ind.array
+  for (i in seq_along(t.stats)) {
+    voxel.array[voxel.ind.array == i] <- contrast.vec[i]
+  }
+  
+  return(voxel.array)
+}
+
+plot.contrast.map <- function(contrast.map.slice, title = NULL,
+                              params = c('abstract', 'concrete')) {
+  contrast.map.slice %>%
+    dplyr::as_tibble() %>% 
+    tibble::rowid_to_column(var = 'x') %>% 
+    tidyr::gather(key = 'y', value = 'z', -1) %>% 
+    dplyr::mutate(y = as.numeric(gsub('V', '', y))) %>% 
+    na.omit() %>% 
+    ggplot() + 
+    geom_tile(aes(x = x, y = y, fill = z)) + 
+    scale_fill_gradient2(mid = 'grey90') + 
+    coord_fixed() + 
+    labs(fill = paste(params, collapse = '\nvs\n'), title = title) + 
     theme(axis.title.x = element_blank(),
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(), 
