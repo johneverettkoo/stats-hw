@@ -1,0 +1,238 @@
+---
+title: 'Prewhitening Analysis of the Memory Words Task from the MSC Dataset'
+author: 'John Koo'
+# output: pdf_document
+output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8, 
+                      fig.dpi = 300)
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+source('glm-functions.R')
+
+theme_set(theme_bw())
+
+cores.to.use <- parallel::detectCores() / 2
+doMC::registerDoMC(cores.to.use)
+```
+
+```{r params}
+SUBJECT <- 1
+SESSION <- 1
+TASK <- 'memorywords'
+
+ALPHA <- .01
+
+REMOVE.GLOBAL <- FALSE
+```
+
+```{r read_data}
+data.list <- load.fmri.data(SUBJECT, SESSION, TASK, FALSE)
+```
+
+For this analysis, we will focus on session `r SESSION` for subject 
+`r SUBJECT`. We will look at the T1-weighted scans. This particular session 
+consisted of `r dim(data.list$t1w_bold.nifti)[4]` scans of 
+$`r dim(data.list$t1w_bold.nifti)[1]` \times 
+`r dim(data.list$t1w_bold.nifti)[2]` \times 
+`r dim(data.list$t1w_bold.nifti)[3]`$ voxels. Each voxel is 
+$`r data.list$t1w_bold.nifti@pixdim[2]` \times
+`r data.list$t1w_bold.nifti@pixdim[3]` \times 
+`r data.list$t1w_bold.nifti@pixdim[4]`$ mm. The scans were taken at 
+$`r data.list$t1w_bold.nifti@pixdim[5]`$ second intervals.
+
+First, we'll just fit the GLM model on the data as is and see what we get:
+
+```{r}
+glm.list <- fit.glm(data.list$t1w_bold.nifti,
+                    data.list$t1w_mask.nifti,
+                    data.list$reg.df,
+                    remove.global = REMOVE.GLOBAL)
+```
+
+```{r}
+contrast.map <- create.contrast.map(glm.list$beta,
+                                    glm.list$voxel.ind.array,
+                                    ALPHA,
+                                    contrast.param = c(1, 1))
+
+possibly.interesting.slice <- which(contrast.map == max(contrast.map,
+                                                        na.rm = TRUE),
+                                    arr.ind = TRUE)
+
+plot.contrast.map(contrast.map[, , possibly.interesting.slice[3]],
+                  title = paste('t-map at slice z =',
+                                possibly.interesting.slice[3]),
+                  op = '+')
+plot.contrast.map(contrast.map[, possibly.interesting.slice[2], ],
+                  title = paste('t-map at slice y =',
+                                possibly.interesting.slice[2]),
+                  op = '+')
+plot.contrast.map(contrast.map[possibly.interesting.slice[1], , ],
+                  title = paste('t-map at slice x =',
+                                possibly.interesting.slice[1]),
+                  op = '+')
+```
+
+The inputs are the six motion parameters, two drift parameters, and two 
+parameters of interest referring to the two subtasks ("abstract" and 
+"concrete"). The contrast vector is $\begin{bmatrix} 1 & 1 \end{bmatrix}^\top$. 
+Previous data analysis suggests that the two subtasks activate similar parts 
+of the brain, the visual cortex. 
+
+Since the observations are sequential in time, we expect the observations (and 
+therefore residuals) to be autocorrelated, violating the constant variance 
+assumption of OLS. We can check for autocorrelation by fitting ACF models on 
+the residuals at each voxel. Since we have many voxels' worth of BOLD 
+timeseries, one thing we can try looking at is the mean ACF coefficients:
+
+```{r}
+acf.coefs <- plyr::aaply(glm.list$resid, 2, function(x) {
+  as.vector(acf(x, plot = FALSE)$acf)
+}, .parallel = TRUE) %>% 
+  t()
+
+acf.summary.df <- plyr::adply(acf.coefs, 1, function(x) {
+  dplyr::tibble(mean.acf = mean(x), 
+                sd.acf = sd(x))
+}, .parallel = TRUE) %>% 
+  dplyr::transmute(acf.lag = as.numeric(X1) - 1,
+                   mean.acf, sd.acf)
+
+ggplot(acf.summary.df) + 
+  geom_line(aes(x = acf.lag, 
+                y = mean.acf)) + 
+  geom_ribbon(aes(x = acf.lag,
+                  ymin = mean.acf - 2 * sd.acf,
+                  ymax = mean.acf + 2 * sd.acf),
+              alpha = .25) + 
+  labs(x = 'lag', y = 'ACF')
+```
+
+In the above plot, the solid line is the mean ACF and the ribbon represents 
+$\pm 2$ standard deviations. 
+
+On average, it seems like there is very little autocorrelation. However, this 
+doesn't mean that is the case across every voxel. We can try looking at how the 
+lag changes across voxels.
+
+```{r}
+acf.1 <- acf.coefs[2, ]
+acf.2 <- acf.coefs[3, ]
+
+acf.1.map <- construct.t.map(acf.1, glm.list$voxel.ind.array, 1)
+acf.2.map <- construct.t.map(acf.2, glm.list$voxel.ind.array, 1)
+
+plot.tmap(acf.1.map[, , 16], title = 'lag-1', legend = NULL)
+plot.tmap(acf.2.map[, , 16], title = 'lag-2', legend = NULL)
+```
+
+It seems like the highest autocorrelation for both lag-1 and lag-2 occurs 
+in the prefrontal cortex. If the AR(1) model is best for these data, then we 
+would expect the lag-2 coefficients to be equal to the square of the lag-1 
+coefficients. Since most of the lag-2 coefficients are negative, this 
+clearly is not the case, but we can check anyway:
+
+```{r}
+acf.1.2.map <- construct.t.map(acf.1 ** 2, glm.list$voxel.ind.array, 1)
+plot.tmap(acf.1.2.map[, , 16], title = 'lag-1 squared', legend = NULL)
+```
+
+One thing we could do here is estimate an autocorrelation matrix $V$ for each 
+voxel and use that to whiten each voxel. But to restrict our model, we'll just 
+fit a global autocorrelation matrix. To compensate, we can try adding a few 
+extra terms. For now, we'll use an AR(4) model, although the data don't suggest 
+the mean lag is much more than 1 or 2. 
+
+We have multiple timeseries, one for each voxel, so we'll just do the naive 
+thing and fit AR(4) models for each voxel and average out the estimated 
+parameters. 
+
+```{r, fig.width = 2}
+average.ar.params <- plyr::aaply(glm.list$resid, 2, function(x) {
+  ar(x, aic = FALSE, order.max = 4)$ar
+}, .parallel = TRUE) %>% 
+  colMeans()
+# average.ar.params <- c(1, average.ar.params)
+
+T <- 121
+first.row <- sapply(average.ar.params, function(x) {
+  sapply(seq(T), function(i) x ** (i - 1)) / 4
+}) %>% 
+  rowSums()
+V <- toeplitz(first.row)
+heatmap(V[, seq(T, 1)], Rowv = NA, Colv = NA, labRow = NA, labCol = NA)
+```
+
+As expected from the average autocorrelation plot, the autocorrelation matrix 
+is close to the identity. We can also check if this looks anything like the 
+mean ACF plot from before:
+
+```{r}
+ggplot(acf.summary.df) + 
+  geom_line(aes(x = acf.lag, 
+                y = mean.acf, 
+                colour = 'sample mean')) + 
+  geom_ribbon(aes(x = acf.lag,
+                  ymin = mean.acf - 2 * sd.acf,
+                  ymax = mean.acf + 2 * sd.acf),
+              alpha = .25) + 
+  labs(x = 'lag', y = 'ACF', colour = NULL) + 
+  geom_line(aes(x = acf.lag, 
+                y = first.row[1:21], 
+                colour = 'AR(4) estimated'))
+```
+
+In either case, everything is very close to 0.
+
+We can finally apply the prewhitening and fit a GLM on the prewhitened data:
+
+```{r}
+glm.list <- fit.glm(data.list$t1w_bold.nifti,
+                    data.list$t1w_mask.nifti,
+                    data.list$reg.df,
+                    V,
+                    remove.global = REMOVE.GLOBAL)
+```
+
+```{r}
+contrast.map <- create.contrast.map(glm.list$beta,
+                                    glm.list$voxel.ind.array,
+                                    ALPHA,
+                                    contrast.param = c(1, 1))
+
+possibly.interesting.slice <- which(contrast.map == max(contrast.map,
+                                                        na.rm = TRUE),
+                                    arr.ind = TRUE)
+
+plot.contrast.map(contrast.map[, , possibly.interesting.slice[3]],
+                  title = paste('t-map at slice z =',
+                                possibly.interesting.slice[3]),
+                  op = '+')
+plot.contrast.map(contrast.map[, possibly.interesting.slice[2], ],
+                  title = paste('t-map at slice y =',
+                                possibly.interesting.slice[2]),
+                  op = '+')
+plot.contrast.map(contrast.map[possibly.interesting.slice[1], , ],
+                  title = paste('t-map at slice x =',
+                                possibly.interesting.slice[1]),
+                  op = '+')
+```

@@ -52,6 +52,7 @@ load.fmri.data <- function(subject, session = 1,
   # number of scans
   scans <- nrow(reg.df)
   
+  # construct reference bold signal
   # create vector of reference BOLD responses
   # ref.vec <- fmri::fmri.stimulus(scans = scans + 1,
   #                                onsets = events.df$onset / timestep.size,
@@ -63,14 +64,12 @@ load.fmri.data <- function(subject, session = 1,
   #                                TR = timestep.size)
   # ref.vec <- c(ref.vec[1], ref.vec)
   if (combine.subtask) {
-    # construct reference bold signal
     ref.vec <- fmri::fmri.stimulus(scans = scans, 
                                    onsets = events.df$onset / timestep.size,
                                    durations = events.df$duration)
     ref.df <- dplyr::tibble(ref = ref.vec)
   } else {
     ref.df <- plyr::ddply(events.df, 'trial_type', function(temp.df) {
-      # construct reference bold signal
       ref.vec <- fmri::fmri.stimulus(scans = scans,
                                      onsets = temp.df$onset / timestep.size,
                                      durations = temp.df$duration)
@@ -150,7 +149,7 @@ construct.TxV <- function(bold, mask,
   return(voxel.array)
 }
 
-construct.t.map <- function(t.stats, voxel.ind.array, alpha = .01) {
+construct.t.map <- function(t.stats, voxel.ind.array, alpha = .01, p = 10) {
   # again, this is not a good/efficient way to do this ...
   T <- length(t.stats)
   cv <- qt(1 - alpha / 2, T - p)
@@ -165,7 +164,7 @@ construct.t.map <- function(t.stats, voxel.ind.array, alpha = .01) {
   return(voxel.array)
 }
 
-plot.tmap <- function(tmap.slice, title = NULL) {
+plot.tmap <- function(tmap.slice, title = NULL, legend = 't-stat') {
   tmap.slice %>%
     dplyr::as_tibble() %>% 
     tibble::rowid_to_column(var = 'x') %>% 
@@ -177,7 +176,7 @@ plot.tmap <- function(tmap.slice, title = NULL) {
     # viridis::scale_fill_viridis() + 
     scale_fill_gradient2(mid = 'grey90') + 
     coord_fixed() + 
-    labs(fill = 't-statistic', title = title) + 
+    labs(fill = legend, title = title) + 
     theme(axis.title.x = element_blank(),
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(), 
@@ -189,11 +188,11 @@ plot.tmap <- function(tmap.slice, title = NULL) {
 create.contrast.map <- function(beta.hat, 
                                 voxel.ind.array, 
                                 alpha = .01,
-                                params = c('abstract', 'concrete')) {
+                                params = c('abstract', 'concrete'),
+                                contrast.param = c(1, -1)) {
   T <- ncol(beta.hat)
   p <- nrow(beta.hat)
   cutoff <- qt(1 - alpha / 2, T - p)
-  contrast.param <- c(1, -1)
   beta.hat <- beta.hat[params, ]
   sp2 <- pooled.var(beta.hat[params[1], ],
                     beta.hat[params[2], ])
@@ -211,8 +210,9 @@ create.contrast.map <- function(beta.hat,
   return(voxel.array)
 }
 
-plot.contrast.map <- function(contrast.map.slice, title = NULL,
-                              params = c('abstract', 'concrete')) {
+plot.contrast.map <- function(contrast.map.slice, title = 't-map',
+                              params = c('abstract', 'concrete'),
+                              op = '-') {
   contrast.map.slice %>%
     dplyr::as_tibble() %>% 
     tibble::rowid_to_column(var = 'x') %>% 
@@ -223,7 +223,8 @@ plot.contrast.map <- function(contrast.map.slice, title = NULL,
     geom_tile(aes(x = x, y = y, fill = z)) + 
     scale_fill_gradient2(mid = 'grey90') + 
     coord_fixed() + 
-    labs(fill = paste(params, collapse = '\nvs\n'), title = title) + 
+    labs(fill = paste(params, collapse = paste0('\n', op, '\n')), 
+         title = title) + 
     theme(axis.title.x = element_blank(),
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(), 
@@ -238,4 +239,57 @@ pooled.var <- function(x1, x2) {
   n <- n1 + n2
   sp2 <- ((n1 - 1) * var(x1) + (n2 - 1) * var(x2)) / (n - 2)
   return(sp2)
+}
+
+fit.glm <- function(bold.array,
+                    mask.array,
+                    reg.df, 
+                    V = NULL,
+                    task.cols = c('abstract', 'concrete'),
+                    remove.global = FALSE) {
+  Y.list <- construct.TxV(bold.array,
+                          mask.array, 
+                          remove.global = remove.global,
+                          global.signal = reg.df$global_signal)
+  model.formula <- paste('~', paste(task.cols, collapse = ' + '), '+', 
+                         'trans_x + trans_y + trans_z + ',
+                         'rot_x + rot_y + rot_z') %>% 
+    as.formula()
+  
+  X <- model.matrix(model.formula, data = reg.df)
+  Y <- Y.list$Y
+  if (!is.null(V)) {
+    Y <- V %*% Y
+    X <- V %*% X
+  }
+  
+  T <- nrow(Y)
+  V <- ncol(Y)
+  p <- ncol(X)
+  
+  # compute beta hat
+  XtX.inv <- solve(t(X) %*% X)
+  beta.hat <- XtX.inv %*% t(X) %*% Y
+  
+  # compute y hat
+  Y.hat <- X %*% beta.hat
+  
+  # compute residuals
+  E <- Y - Y.hat
+  RSS <- apply(E, 2, function(x) sum(x ** 2))
+  sigma2.hat <- RSS / (T - p)
+  
+  # t statistics for the betas of interest
+  XtX.inv.diag <- diag(XtX.inv)
+  se.betahat.abs <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[1]])
+  se.betahat.con <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[2]])
+  t.stats <- cbind(beta.hat[task.cols[1], ] / se.betahat.abs,
+                   beta.hat[task.cols[2], ] / se.betahat.con)
+  colnames(t.stats) = task.cols
+  
+  return(list(beta = beta.hat,
+              resid = E,
+              sigma2 = sigma2.hat,
+              t.stats = t.stats,
+              voxel.ind.array = Y.list$voxel.ind.array))
 }
