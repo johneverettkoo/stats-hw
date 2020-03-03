@@ -174,12 +174,19 @@ average.ar.params <- plyr::aaply(glm.list$resid, 2, function(x) {
 # average.ar.params <- c(1, average.ar.params)
 
 T <- 121
-first.row <- sapply(average.ar.params, function(x) {
-  sapply(seq(T), function(i) x ** (i - 1)) / 4
-}) %>% 
-  rowSums()
-V <- toeplitz(first.row)
-heatmap(V[, seq(T, 1)], Rowv = NA, Colv = NA, labRow = NA, labCol = NA)
+start.vec <- c(1, 
+               average.ar.params[1],
+               average.ar.params[1] ** 2 + average.ar.params[2],
+               average.ar.params[1] ** 3 + 
+                 2 * average.ar.params[1] * average.ar.params[2] + 
+                 average.ar.params[3],
+               average.ar.params[1] ** 4 + 
+                 average.ar.params[2] ** 2 + 
+                 3 * average.ar.params[1] ** 2 * average.ar.params[2] + 
+                 2 * average.ar.params[1] * average.ar.params[3] + 
+                 average.ar.params[4])
+W <- estimate.W(start.vec, T)
+heatmap(W[, seq(T, 1)], Rowv = NA, Colv = NA, labRow = NA, labCol = NA)
 ```
 
 As expected from the average autocorrelation plot, the autocorrelation matrix 
@@ -197,7 +204,7 @@ ggplot(acf.summary.df) +
               alpha = .25) + 
   labs(x = 'lag', y = 'ACF', colour = NULL) + 
   geom_line(aes(x = acf.lag, 
-                y = first.row[1:21], 
+                y = W[1, 1:21], 
                 colour = 'AR(4) estimated'))
 ```
 
@@ -209,7 +216,7 @@ We can finally apply the prewhitening and fit a GLM on the prewhitened data:
 glm.list <- fit.glm(data.list$t1w_bold.nifti,
                     data.list$t1w_mask.nifti,
                     data.list$reg.df,
-                    V,
+                    W,
                     remove.global = REMOVE.GLOBAL)
 ```
 

@@ -293,3 +293,27 @@ fit.glm <- function(bold.array,
               t.stats = t.stats,
               voxel.ind.array = Y.list$voxel.ind.array))
 }
+
+estimate.V <- function(start.vec, ndim) {
+  if (length(start.vec) > ndim) {
+    stop('bad parameters')
+  }
+  
+  k <- length(start.vec) - 1
+  
+  first.row <- c(start.vec, rep(NA, ndim - k - 1))
+  for (i in seq(k + 2, ndim)) {
+    first.row[i] <- sum(sapply(seq(k), function(j) {
+      start.vec[j + 1] * first.row[i - j]
+    }))
+  }
+  
+  V <- toeplitz(first.row)
+  return(V)
+}
+
+estimate.W <- function(start.vec, ndim) {
+  V <- estimate.V(start.vec, ndim)
+  W <- chol(solve(V))
+  return(W)
+}
