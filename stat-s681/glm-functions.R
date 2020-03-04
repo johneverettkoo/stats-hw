@@ -294,7 +294,7 @@ fit.glm <- function(bold.array,
               voxel.ind.array = Y.list$voxel.ind.array))
 }
 
-estimate.V <- function(start.vec, ndim) {
+estimate.V <- function(phi, start.vec, ndim) {
   if (length(start.vec) > ndim) {
     stop('bad parameters')
   }
@@ -304,7 +304,7 @@ estimate.V <- function(start.vec, ndim) {
   first.row <- c(start.vec, rep(NA, ndim - k - 1))
   for (i in seq(k + 2, ndim)) {
     first.row[i] <- sum(sapply(seq(k), function(j) {
-      start.vec[j + 1] * first.row[i - j]
+      phi[j] * first.row[i - j]
     }))
   }
   
@@ -312,8 +312,8 @@ estimate.V <- function(start.vec, ndim) {
   return(V)
 }
 
-estimate.W <- function(start.vec, ndim) {
-  V <- estimate.V(start.vec, ndim)
+estimate.W <- function(phi, start.vec, ndim) {
+  V <- estimate.V(phi, start.vec, ndim)
   W <- chol(solve(V))
   return(W)
 }
