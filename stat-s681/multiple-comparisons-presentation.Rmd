@@ -1,0 +1,19 @@
+---
+title: Neural Correlates of Interspecies Perspective Taking in the Post-Mortem Atlantic Salmon
+subtitle: An Argument for Multiple Comparisons Correction
+author: C. M. Bennett, A. A. Baird, M. B. Miller, G. L. Wolford
+# output: beamer_presentation
+output: html_document
+# output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.lp = '')
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
