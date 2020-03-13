@@ -174,7 +174,9 @@ plot.tmap <- function(tmap.slice, title = NULL, legend = 't-stat') {
     ggplot() + 
     geom_tile(aes(x = x, y = y, fill = z)) + 
     # viridis::scale_fill_viridis() + 
-    scale_fill_gradient2(mid = 'grey90') + 
+    scale_fill_gradient2(high = scales::muted('red'),
+                         mid = 'grey90',
+                         low = scales::muted('blue')) + 
     coord_fixed() + 
     labs(fill = legend, title = title) + 
     theme(axis.title.x = element_blank(),
@@ -244,7 +246,7 @@ pooled.var <- function(x1, x2) {
 fit.glm <- function(bold.array,
                     mask.array,
                     reg.df, 
-                    V = NULL,
+                    W = NULL,
                     task.cols = c('abstract', 'concrete'),
                     remove.global = FALSE) {
   Y.list <- construct.TxV(bold.array,
@@ -253,14 +255,14 @@ fit.glm <- function(bold.array,
                           global.signal = reg.df$global_signal)
   model.formula <- paste('~', paste(task.cols, collapse = ' + '), '+', 
                          'trans_x + trans_y + trans_z + ',
-                         'rot_x + rot_y + rot_z') %>% 
+                         'rot_x + rot_y + rot_z + drift + drift2') %>% 
     as.formula()
   
   X <- model.matrix(model.formula, data = reg.df)
   Y <- Y.list$Y
-  if (!is.null(V)) {
-    Y <- V %*% Y
-    X <- V %*% X
+  if (!is.null(W)) {
+    Y <- W %*% Y
+    X <- W %*% X
   }
   
   T <- nrow(Y)
@@ -281,11 +283,18 @@ fit.glm <- function(bold.array,
   
   # t statistics for the betas of interest
   XtX.inv.diag <- diag(XtX.inv)
-  se.betahat.abs <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[1]])
-  se.betahat.con <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[2]])
-  t.stats <- cbind(beta.hat[task.cols[1], ] / se.betahat.abs,
-                   beta.hat[task.cols[2], ] / se.betahat.con)
-  colnames(t.stats) = task.cols
+  if (length(task.cols) == 1) {
+    se.betahat <- sqrt(sigma2.hat * XtX.inv.diag[task.cols])
+    t.stats <- beta.hat[task.cols, ] / se.betahat
+  } else if (length(task.cols) == 2) {
+    se.betahat.abs <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[1]])
+    se.betahat.con <- sqrt(sigma2.hat * XtX.inv.diag[task.cols[2]])
+    t.stats <- cbind(beta.hat[task.cols[1], ] / se.betahat.abs,
+                     beta.hat[task.cols[2], ] / se.betahat.con)
+    colnames(t.stats) = task.cols
+  } else {
+    stop('expecting at most two task columns')
+  }
   
   return(list(beta = beta.hat,
               resid = E,
@@ -316,4 +325,16 @@ estimate.W <- function(phi, start.vec, ndim) {
   V <- estimate.V(phi, start.vec, ndim)
   W <- chol(solve(V))
   return(W)
+}
+
+permutation.matrix <- function(n) {
+  permutation <- sample(seq(n))
+  sign.flips <- sign(rbinom(n, 1, .5) - .5)
+  P <- sapply(permutation, function(i) {
+    x <- rep(0, n)
+    x[i] <- 1
+    return(x)
+  })
+  P <- P * sign.flips
+  return(P)
 }
