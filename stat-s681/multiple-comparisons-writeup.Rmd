@@ -1,0 +1,278 @@
+---
+title: 'Multiple Comparisons Analysis of the Memory Words Task (MSC)'
+author: 'John Koo'
+# output: pdf_document
+output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 5, 
+                      fig.width = 8, 
+                      fig.dpi = 300)
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+import::from(magrittr, `%>%`, `%<>%`)
+library(ggplot2)
+source('glm-functions.R')
+
+theme_set(theme_bw())
+
+cores.to.use <- parallel::detectCores() / 2
+doMC::registerDoMC(cores.to.use)
+```
+
+```{r params}
+SUBJECT <- 1
+SESSION <- 1
+TASK <- 'memorywords'
+
+ALPHA <- .05
+
+REMOVE.GLOBAL <- FALSE
+
+scans.to.remove <- 2
+```
+
+```{r read_data}
+data.list <- load.fmri.data(SUBJECT, SESSION, TASK, TRUE)
+```
+
+For this analysis, we will focus on session `r SESSION` for subject 
+`r SUBJECT`. We will look at the T1-weighted scans. This particular session 
+consisted of `r dim(data.list$t1w_bold.nifti)[4]` scans of 
+$`r dim(data.list$t1w_bold.nifti)[1]` \times 
+`r dim(data.list$t1w_bold.nifti)[2]` \times 
+`r dim(data.list$t1w_bold.nifti)[3]`$ voxels. Each voxel is 
+$`r data.list$t1w_bold.nifti@pixdim[2]` \times
+`r data.list$t1w_bold.nifti@pixdim[3]` \times 
+`r data.list$t1w_bold.nifti@pixdim[4]`$ mm. The scans were taken at 
+$`r data.list$t1w_bold.nifti@pixdim[5]`$ second intervals.
+
+As before, we use the model:
+
+$$Y = X \beta + E$$
+
+... where $Y, E \in \mathbb{R}^{T \times V}$, $X \in \mathbb{R}^{T \times p}$, 
+and $\beta \in \mathbb{R}^{T \times V}$, $T$ is the number of scans for the 
+session, and $V$ is the number of voxels of interest. For this session, 
+$V = `r format(sum(data.list$t1w_mask.nifti@.Data), scientific = FALSE)`$.
+$\beta$ is further separated into parameters of interest and nuisiance 
+parameters. In this case, we have one parameter of interest, related to the 
+pooled task (previous data analysis suggests that both tasks have similar 
+activation patterns). 
+
+In OLS regression, we assume that 
+$\epsilon_j \sim \mathcal{N}(0, \sigma_j^2 I)$ ($j$ is the column index of 
+$E$). However, since we have timeseries data, it makes more sense to say 
+$\epsilon_j \sim \mathcal{N}(0, \sigma_j^2 V)$ where 
+$V \in \mathbb{R}^{T \times T}$ takes on an autocorrelated structure. But if we
+multiply everything by $W$ where $W^\top W = V^{-1}$, we get 
+$W \epsilon_j \sim \mathcal{N}(0, \sigma^2_j I)$. The model then becomes 
+$W Y = W X \beta + W E$ where $W \epsilon_j$ is multivariate normal with 
+diagonal constant variance (note that while we use the same $W$ across all 
+$V$ voxels, we allow $\sigma_j^2$ to vary from voxel to voxel). For this 
+analysis, we will model the timeseries using an AR(4) process.
+
+```{r}
+scans.array <- data.list$t1w_bold.nifti
+mask.array <- data.list$t1w_mask.nifti
+reg.df <- data.list$reg.df
+scans.array <- scans.array[, , , seq(scans.to.remove + 1, dim(scans.array)[4])]
+reg.df <- reg.df[seq(scans.to.remove + 1, nrow(reg.df)), ]
+glm.list <- fit.glm(scans.array,
+                    mask.array,
+                    reg.df,
+                    task.cols = 'ref', 
+                    remove.global = REMOVE.GLOBAL)
+```
+
+```{r}
+average.ar.params <- plyr::aaply(glm.list$resid, 2, function(x) {
+  ar(x, aic = FALSE, order.max = 4)$ar
+}, .parallel = TRUE) %>% 
+  colMeans()
+
+T <- nrow(reg.df)
+
+start.vec <- c(1, 
+               average.ar.params[1],
+               average.ar.params[1] ** 2 + average.ar.params[2],
+               average.ar.params[1] ** 3 + 
+                 2 * average.ar.params[1] * average.ar.params[2] + 
+                 average.ar.params[3],
+               average.ar.params[1] ** 4 + 
+                 average.ar.params[2] ** 2 + 
+                 3 * average.ar.params[1] ** 2 * average.ar.params[2] + 
+                 2 * average.ar.params[1] * average.ar.params[3] + 
+                 average.ar.params[4])
+W <- estimate.W(average.ar.params, start.vec, T)
+```
+
+```{r}
+glm.list <- fit.glm(scans.array,
+                    mask.array,
+                    reg.df,
+                    task.cols = 'ref',
+                    W,
+                    remove.global = REMOVE.GLOBAL)
+```
+
+```{r}
+Y <- construct.TxV(scans.array, mask.array, remove.global = REMOVE.GLOBAL)$Y
+WY <- W %*% Y
+WX <- reg.df %>% 
+  dplyr::transmute(intercept = 1, 
+                   ref,  
+                   trans_x, trans_y, trans_z, 
+                   rot_x, rot_y, rot_z, 
+                   drift, drift2) %>% 
+    as.matrix() %>% 
+    magrittr::multiply_by_matrix(W, .) %>% 
+    as.data.frame()
+```
+
+```{r eval = FALSE}
+# verification checks with lm
+lm.list <- plyr::alply(WY, 2, function(y) {
+  WX %>% 
+    dplyr::mutate(y = y) %>% 
+    lm(y ~ intercept + ref + 
+         trans_x + trans_y + trans_z + 
+         rot_x + rot_y + rot_z + 
+         drift + drift2 - 1,
+       data = .) %>% 
+    return()
+}, .parallel = TRUE)
+
+ind <- sample(seq_along(lm.list), 1)
+lm.list[[ind]]
+glm.list$beta[, ind]
+
+summary(lm.list[[ind]])
+glm.list$t.stats[ind]
+glm.list$sigma2[ind] ** .5
+```
+
+Using $\alpha = `r ALPHA`$, we can individually classify the voxels as 
+activated ($T > t_{\alpha}$): 
+
+```{r}
+tmap <- construct.t.map(glm.list$t.stats, 
+                        glm.list$voxel.ind.array, 
+                        alpha = ALPHA * 2, 
+                        p = 10)
+tmap[tmap < 0] <- 0
+
+# look for most interesting slices
+i <- which.max(apply(tmap, 1, function(x) mean(sign(x), na.rm = TRUE)))
+j <- which.max(apply(tmap, 2, function(x) mean(sign(x), na.rm = TRUE)))
+k <- which.max(apply(tmap, 3, function(x) mean(sign(x), na.rm = TRUE)))
+
+plot.tmap(tmap[i, , ], title = paste('x =', i))
+plot.tmap(tmap[, j, ], title = paste('y =', j))
+plot.tmap(tmap[, , k], title = paste('z =', k))
+
+V <- sum(mask.array)
+active_voxels <- sum(sign(tmap), na.rm = TRUE)
+```
+
+However, we have `r format(V, scientific = FALSE)` voxels, so if there were no
+activation, we would expect on average `r round(V * ALPHA)` false positives. 
+The number of activations we get from a naive voxel-level analysis is 
+`r active_voxels`. This means that in our analysis, we expect 
+`r round(V * ALPHA / active_voxels * 100)`\% of our "active" voxels to be 
+false positives.
+
+Performing the same analysis with the Bonferroni correction:
+
+```{r}
+tmap <- construct.t.map(glm.list$t.stats, 
+                        glm.list$voxel.ind.array, 
+                        alpha = ALPHA * 2 / V, 
+                        p = 10)
+tmap[tmap < 0] <- 0
+
+# look for most interesting slices
+i <- which.max(apply(tmap, 1, function(x) mean(sign(x), na.rm = TRUE)))
+j <- which.max(apply(tmap, 2, function(x) mean(sign(x), na.rm = TRUE)))
+k <- which.max(apply(tmap, 3, function(x) mean(sign(x), na.rm = TRUE)))
+
+plot.tmap(tmap[i, , ], title = paste('x =', i))
+plot.tmap(tmap[, j, ], title = paste('y =', j))
+plot.tmap(tmap[, , k], title = paste('z =', k))
+
+active_voxels <- sum(sign(tmap), na.rm = TRUE)
+```
+
+This time, we get only `r active_voxels` activations. However, the Bonferroni 
+correction tends to be overly conservative.
+
+We can also try a Feedman-Lane permutation test:
+
+```{r, cache = TRUE}
+Np <- 2 ** 10  # number of permutations
+
+t0 <- glm.list$t.stats  # original t-stats
+
+# nuisance residuals
+Z <- WX %>% 
+  dplyr::select(trans_x, trans_y, trans_z,
+                rot_x, rot_y, rot_z,
+                drift, drift2) %>% 
+  as.matrix()
+gamma.hat <- solve(t(Z) %*% Z) %*% t(Z) %*% WY
+resid.z <- WY - Z %*% gamma.hat
+
+X <- as.matrix(WX)
+p <- ncol(X)
+XtX.inv <- solve(t(X) %*% X)
+XtX.inv.diag <- diag(XtX.inv)
+
+t.matrix <- plyr::llply(seq(Np), function(i) {
+  P <- permutation.matrix(T)
+  Y.star <- P %*% resid.z + Z %*% gamma.hat
+  beta.hat.star <- XtX.inv %*% t(X) %*% Y.star
+  sigma2.hat.star <- apply(Y.star - X %*% beta.hat.star,
+                           2, 
+                           function(x) sum(x ** 2)) / (T - p)
+  se.betahat.star <- sqrt(sigma2.hat.star * XtX.inv.diag['ref'])
+  t.stats <- beta.hat.star['ref', ] / se.betahat.star
+  return(t.stats)
+}, .parallel = TRUE) %>% 
+  do.call(rbind, .)
+
+# cutoffs <- apply(t.matrix, 2, function(x) quantile(x, 1 - ALPHA))
+cutoffs <- quantile(apply(t.matrix, 2, max), 1 - ALPHA)
+permutation.test <- t0 * (t0 >= cutoffs)
+tmap <- construct.t.map(permutation.test, 
+                        glm.list$voxel.ind.array, 
+                        1, 
+                        p = 10)
+
+# look for most interesting slices
+i <- which.max(apply(tmap, 1, function(x) mean(sign(x), na.rm = TRUE)))
+j <- which.max(apply(tmap, 2, function(x) mean(sign(x), na.rm = TRUE)))
+k <- which.max(apply(tmap, 3, function(x) mean(sign(x), na.rm = TRUE)))
+
+plot.tmap(tmap[i, , ], title = paste('x =', i))
+plot.tmap(tmap[, j, ], title = paste('y =', j))
+plot.tmap(tmap[, , k], title = paste('z =', k))
+
+active_voxels <- sum(sign(tmap), na.rm = TRUE)
+```
+
+Using the same cutoff of $\alpha = `r ALPHA`$, we get $`r active_voxels`$ 
+voxels flagged as activated. 
