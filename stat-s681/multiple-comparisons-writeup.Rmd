@@ -229,15 +229,19 @@ t0 <- glm.list$t.stats  # original t-stats
 
 # nuisance residuals
 Z <- WX %>% 
-  dplyr::select(trans_x, trans_y, trans_z,
+  dplyr::select(intercept, 
+                trans_x, trans_y, trans_z,
                 rot_x, rot_y, rot_z,
                 drift, drift2) %>% 
   as.matrix()
 gamma.hat <- solve(t(Z) %*% Z) %*% t(Z) %*% WY
 resid.z <- WY - Z %*% gamma.hat
 
-X <- as.matrix(WX)
+X <- WX %>% 
+#   dplyr::select(ref) %>% 
+  as.matrix()
 p <- ncol(X)
+# p <- ncol(X) + ncol(Z)
 XtX.inv <- solve(t(X) %*% X)
 XtX.inv.diag <- diag(XtX.inv)
 
