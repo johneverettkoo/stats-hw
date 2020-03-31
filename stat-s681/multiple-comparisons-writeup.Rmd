@@ -161,9 +161,12 @@ ind <- sample(seq_along(lm.list), 1)
 lm.list[[ind]]
 glm.list$beta[, ind]
 
+p <- 10
+
 summary(lm.list[[ind]])
 glm.list$t.stats[ind]
 glm.list$sigma2[ind] ** .5
+pt(glm.list$t.stats[ind], T - p, lower.tail = FALSE) * 2
 ```
 
 Using $\alpha = `r ALPHA`$, we can individually classify the voxels as 
