@@ -1,0 +1,215 @@
+---
+title: Fast and Accurate Modelling of Longitudinal and Repeated Measures Neuroimaging Data
+author: B. Guillaume, X. Hua, P. M. Thompson, L. Waldorp, T. E. Nichols
+# output: beamer_presentation
+# output: html_document
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.lp = '')
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+library(ggplot2)
+
+theme_set(theme_bw())
+```
+
+# The Linear Mixed Effects Model
+
+For individual $i \in \{1, ..., m\}$ with $n_i$ observations:
+
+$$y_i = X_i \beta + Z_i b_i + \epsilon_i$$
+
+* $y_i, \epsilon_i \in \mathbb{R}^{n_i}$
+* $\beta \in \mathbb{R}^p$
+* $X_i \in \mathbb{R}^{n_i \times p}$
+* $b_i \in \mathbb{R}^r$
+* $Z_i \in \mathbb{R}^{n_i \times r}$
+* $\epsilon_i \sim \mathcal{N}_{n_i} (0, \Sigma_i)$
+
+Can think of it as fitting $m$ linear models, one for each individual
+
+... BUT note that:
+
+* $\beta$ has no subscript $i$---use common $\beta$ across all $m$ individuals
+* $b_i$ is different for each individual, but we assume 
+$b_i \sim \mathcal{N}_r(0, D)$
+    * also assuming $b_i \perp \epsilon_i$
+
+# The Marginal Model
+
+If we marginalize the random effects:
+
+$$y_i = X_i \beta + \epsilon_i^*$$
+
+Common model for each individual
+
+Variance explained by $b_i$'s absorbed into $\epsilon_i^*$
+
+$\epsilon_i^* \sim \mathcal{N}_{n_i}(0, V_i)$  
+$\implies \epsilon^* \sim \mathcal{N}_{\sum_i n_i}(0, V)$  
+where $V$ is a block diagonal matrix of $V_i$'s
+
+$V_i = \Sigma_i + Z_i D Z_i$
+
+# The Sandwich Estimator
+
+To estimate fixed effects coefficients: 
+
+$$\hat{\beta} = 
+\bigg(\sum_i^m X_i^\top W_i X_i \bigg)^{-1} \sum_i^m X_i^\top W_i y_i$$
+
+* $W_i$:  working covariance matrix
+    * $W_i = V_i^{-1}$ for UMVUE
+
+In order to determine "significance" of the slope, we need:
+
+$$\hat{Var}(\hat{\beta}) = \bigg( \sum_i X_i^\top W_i X_i \bigg)^{-1}
+  \bigg( \sum_i X_i^\top W_i \hat{V}_i W_i X_i \bigg)
+  \bigg( \sum_i X_i^\top W_i X_i \bigg)^{-1}$$
+
+* $p \times p$ matrix
+* this is the sandwich estimator
+* $m^{-1} \sum_i^m X_i^\top W_i \hat{V}_i W_i X_i \to 
+m^{-1} \sum_i^m X_i^\top W_i V_i W_i X_i \implies 
+\hat{Var}(\hat{\beta}) \to Var(\hat{\beta})$
+    * True even if $W_i$ is misspecified
+    * Even if we incorrectly assume GLS or even OLS conditions, this still 
+    converges to the correct value
+        * But can result in loss of efficiency (requires greater $m$ and $n_i$'s
+        to get closer to true value)
+        * This paper uses $W_i = I$
+        * Efficiency can be made up for by careful construction of design matrix
+* $\hat{V}_i$ typically from crossproduct of residuals 
+$\hat{V}_i = e_i e_i^\top$
+
+# Hypothesis testing
+
+Have both $\hat{\beta}$ and $\hat{Var}(\hat{\beta}) = S$
+
+LME assumptions imply $\hat{\beta}$ is normal
+
+$\implies$ have all the tools for hypothesis testing  
+$H_0: c \beta = 0$
+
+$$T = (c \hat{\beta})^\top (c S c^\top)^{-1} (c \hat{\beta}) / q$$
+
+$$T \stackrel{p}{\to} \chi^2_q$$
+
+* $q = 1$ for most cases we've dealt with in class
+* $q$ is the rank of $c$ when $c$ is a contrast matrix
+
+# Homogeneous Sandwich Estimator
+
+* Instead of separate $V_i$ per subject, group subjects into $n_G$ groups 
+that share $V_i$
+
+To estimate $V_{0g}$, the shared covariance matrix for group $g$:
+
+* $I(g, j, k)$ is the set of subjects in group $g$ with data from both visits 
+$j$ and $k$
+* $[\hat{V}_{0g}]_{jj} = m_{gjj}^{-1} \sum_{i \in I(g, j, j)} e_{ij}^2$
+* $[\hat{V}_{0g}]_{jk} = 
+\hat{\rho}_{0gjk} \sqrt{[\hat{V}_{0g}]_{jj} [\hat{V}_{0g}]_{kk}}$
+* $\hat{\rho}_{0gjk} = 
+  \frac{\sum_{i \in I(g, j, k)} e_{ij} e_{ik}}
+  {\sqrt{(\sum_{i \in I(g, j, k)} e_{ij}^2)(\sum_{i \in I(g, j, k)} e_{ik}^2)}}$
+* $V_{0g}$ not guarnateed to be positive semidefinite when data are missing---
+use spectral decomposition to truncate negative eigenvalues
+
+# Small Sample Adjustments
+
+1.  Standard heterogeneous maximum likelihood sandwich estimator is biased
+    * Underestimation of variance
+    * Inflated false positive rates
+2.  Using a point estimator for $Var(\hat{\beta})$ to estimate $T$ results in 
+heavier tails (analogous to $z$-test vs $t$-test)
+
+Corrections
+
+1. Three approaches in the literature
+    i. Multiply the residuals by a correction factor $\sqrt{n / (n - p)}$
+    ii. Use adjusted residuals $e_{ik} / \sqrt{1 - h_{ik}}$ 
+        * $H = X (X^\top X)^{-1} X^\top$
+        * Index $ik$ refers to individual $i$ and session $k$
+    iii. Use adjusted residuals $e_{ik} / (1 - h_{ik})$
+2. Instead of using $T \stackrel{p}{\to} \chi^2_q$ which only really works when 
+$S = Var(\hat{\beta})$, use 
+$\frac{\nu - q + 1}{\nu q} (c \hat{\beta})^\top (c S c^\top)^{-1} (c \hat{\beta})
+\stackrel{p}{\to} F(q, \nu - q + 1)$
+    * When $q = 1$ (i.e., $c$ is a contrast vector), we can take the square root
+    and get a $t$ distribution with $\nu$ degress of freedom
+    * Need to estimate $\nu$
+
+# Analysis
+
+## Simulations
+
+Regressors considered:
+
+* Intercept term
+* $\overline{Age}_i - \overline{Age}$
+* $Age - \overline{Age}_i$
+* Interaction term
+* Visit
+
+Group cvariance structure: 
+
+* $Var(Y_{ik}) = \alpha_g (1 + \gamma t_k)$
+* $Corr(Y_{ij}, Y_{ik}) = \rho (1 = \psi |t_j - t_k|)$
+* Different correlation structures
+
+## Real data
+
+Alzheimer's Disease Neuroimaging Initiative (ANI)
+
+* 3314 images
+* 229 normal controls (119M/110F)
+* 400 amnestic MCI (257M/143F)
+* 118 probable AD patients (99M/89F)
+* Follow-up scans taken 6, 12, 18, 24, 36 months after initial scans
+* Random effect: Visit
+
+## Estimating $\hat{Var}(\hat{\beta})$:
+
+* Homogeneous (assuming group structure) vs heterogeneous (different $V_i$ per 
+subject)
+* Four methods:
+    * MLE
+    * $\sqrt{n / (n-p)}$ adjustment
+    * $e_{ik} / \sqrt{1 - h_{ik}}$ adjustment
+    * $e_{ik} / (1 - h_{ik})$ adjustment
+* Various estimation methods for $\nu$
+
+# Simulation Results
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr1.jpg)
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr2.jpg)
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr3.jpg)
+
+# Real Data Results: Comparison of OLS vs SwE
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr4.jpg)
+
+* Consistent with simulation results
+    * N-OLS has more voxels testing as positive
+    * SS-OLS has fewer voxels testing as positive
+* SwE assumes group covariance structure and uses the 
+$e_{ij} = e_{ij} / (1 - h_{ij})$ adjustment
+
+# Real Data Analysis: Deep-Dive into Particular Voxels
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr5.jpg)
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr6.jpg)
+
+![](https://ars.els-cdn.com/content/image/1-s2.0-S1053811914001761-gr7.jpg)
