@@ -1,0 +1,184 @@
+---
+title: A Bayesian General Linear Model Approach to Cortical Surface fMRI Data Analysis
+author: A. F. Mejia, Y. Yue, D. Bolin, L. Lindgren, M. A. Lindquist
+# output: beamer_presentation
+# output: html_document
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      fig.lp = '')
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+library(ggplot2)
+
+theme_set(theme_bw())
+```
+
+# Single Subject Bayesian GLM
+
+$$y = \sum_{k=0}^K X_k \beta_k + \sum_{j=1}^J Z_j b_j + \epsilon$$
+
+* $T$: number of scans/timepoints
+* $N$: number of vertices
+* $K$: number of tasks
+* $J$: number of nuisiance parameters
+* $y, \epsilon \in \mathbb{R}^{TN}$
+* $X_k, Z_k \in \mathbb{R}^{TN \times N}$
+* $\beta_k, b_j \in \mathbb{R}^{N}$
+
+# Single Subject Bayesian GLM
+
+$$y = \sum_{k=0}^K X_k \beta_k + \sum_{j=1}^J Z_j b_j + \epsilon$$
+
+* $\epsilon \sim \mathcal{N}(0, V)$
+* $V = I_N \otimes \Sigma(\xi, \phi)$,  
+    * $\Sigma(\xi, \phi)$ covariance matrix for $AR(p)$ process
+    * $\xi$ is the marginal precision
+    * $\phi \in \mathbb{R}^p$ are partial autocorrelation functions 
+* $\log \xi = \theta_1 \sim LogGamma(\cdot, \cdot)$
+* $\log \frac{1 + \phi_{r-1}}{1 - \phi_{r+1}} = \theta_r$,  
+$\begin{bmatrix} \theta_2 \\ \vdots \\ \theta_{p+1} \end{bmatrix} \sim 
+\mathcal{N}(\cdot, \cdot)$
+* $b_j \sim \mathcal{N}(0, \delta I)$
+
+# Stochastic PDE Spatial Priors
+
+Matern Gaussian process for $\beta(u)$:
+
+$$Cov(u, v) = \frac{\sigma^2}{2^{\nu - 1}} 
+\kappa^\nu ||u - v||^\nu K_\nu (\kappa ||u - v||)$$
+
+* $u, v \in \mathbb{R}^d$
+* $K_\nu(\cdot)$: modified Bessel function of the second kind with order 
+$\nu > 0$
+* $\nu$: controls smoothness
+* $\kappa$: spatial scale
+* $\sigma^2 = Var(u) = Cov(u, u)$
+* Results in a dense covariance matrix - hard to invert
+
+# Stochastic PDE Spatial Priors
+
+Gaussian Markov Random Field Representation Through Solving SPDE:
+
+$$(\kappa^2 - \nabla_u^2) (\tau \beta(u)) = \mathcal{W}(u)$$
+
+* $\nu = 2 - d / 2$
+* $\sigma^2 = \frac{\Gamma(\nu)}{(4 \pi)^{d/2} \kappa^{2 \nu} \tau^2}$
+* $\mathcal{W}(u)$: Gaussian white noise process
+
+Gaussian Markov Random Field Representation Through Solving SPDE:
+
+$\beta(u)$ can be approximated using basis expansion:
+
+$$\beta(u) \approx \sum_i^N \psi_i (u) w_i$$
+
+* $N$: number of vertices
+* $\phi_i = \begin{cases} 
+1 & u \text{ at } i^{th} \text{ vertex} \\ 0 & \text{else} 
+\end{cases}$
+* $w_i$: weights at each vertex (determined by interpolation)
+
+SPDE prior for $\beta$: 
+
+$$\beta = \Psi w$$
+$$w \mid \kappa, \tau \sim \mathcal{N}(0, Q_{\kappa, \tau}^{-1})$$
+
+* $Q_{\kappa, \tau} = \tau^2 (\kappa^4 C + 2 \kappa^2 G + G C^{-1} G)$
+* $C$:  a diagonal matrix
+* $G$: graph adjacency matrix
+
+# Stochastic PDE Spatial Priors
+
+$$y \mid \beta_k, b_j, \kappa, \tau \sim \mathcal{N}(\mu_y, V)$$
+
+$$\mu_y = \sum_{k=0}^K X_k \beta_k + \sum_{j=1}^J Z_j b_j$$
+
+$$\beta_k = \Psi_k w_k$$
+
+$$w_k \mid \theta \sim \mathcal{N}(0, Q_{\kappa_k, \tau_k}^{-1})$$
+
+$$b_j \sim \mathcal{N}(0, \delta I)$$
+
+$$\theta \sim \pi(\theta)$$
+
+$\theta = (\xi, \phi_1, ..., \phi_p, 
+\kappa_0, ..., \kappa_K, \tau_0, ..., \tau_K)$
+
+# Posterior Approximation
+
+Goal: Determine $\pi(\beta_0, ..., \beta_K \mid y)$
+
+Typical method: Determine conditional distributions and sample using MCMC  
+But this method is too costly for this problem
+
+INLA method
+
+1. Use Laplace approximation for $\pi(\theta | y)$ to obtain 
+$\tilde{\pi}(\theta | y)$
+2. Use Laplace approximation to obtain $\tilde{\pi}(f_i | y, \theta_l)$
+    * $f = \begin{bmatrix} 
+    \beta_0 \\ \vdots \\ \beta_K \\ b_1 \\ \vdots b_J \end{bmatrix}$
+3. Approximate 
+$\tilde{\pi}(f_i | y) \approx \sum_l \lambda_l \tilde{\pi}(f_i | y, \theta_l)$
+    * $\lambda_l \propto \tilde{\pi}(\theta_l | y)$
+
+# Activation Identification
+
+Typical method: 
+
+* For each vertex $u$, compute $p$-value $P(\beta(u) > \gamma_\alpha)$ 
+* Classify vertices where $p$-values are small as active
+* Make sure to control for FDR or FWER
+
+Using joint posterior probability maps
+
+1. Let $A_\gamma^+(f) = \{u \in \Omega : f(u) > \gamma\}$, the set of vertices 
+where the estimated value exceeds some threshold $\gamma$
+2. Define the positive excursion set 
+$E_{\gamma, \alpha}^+(f) = 
+\arg\max_D \{|D| : P(D \subset A_\gamma^+(f)) \geq 1 - \alpha\}$
+    * $\pi(f | y) = \int \pi(f | y, \theta) \pi(\theta | y) d \theta$
+
+# Simulation Study
+
+![](bglmcs-fig3.png)
+
+![](bglmcs-fig5.png)
+
+# Simulation Study
+
+![](bglmcs-fig6.png)
+
+![](bglmcs-fig7.png)
+
+# Experimental Data Results
+
+Data description
+
+* Pre-processed cs-fMRI data from 20 HCP subjects
+* Visual, motor, and gambling tasks
+* BOLD signal normalized by global signal - responses represent percent change
+    * Also removes intercept term
+* Removed nuisiance covariates beforehand
+* Prewhitening performed assuming AR(6) process
+* Each hemisphere resampled to 6000 vertices
+
+Model after preprocessing:
+
+$$y_m = \sum_{k=1}^K X_{mk} \beta_{mk} + e_m$$
+$$e_m \sim \mathcal{N}(0, \sigma^2_m I)$$
+
+* $m$ - subject index
+* $K = 1$ or $2$ based on task/model
+* $y$, $\epsilon$, $X_{mk}$, $\beta_{mk}$ of dimension described in theory part
+
+# Experimental Data Results
+
+![](bglmcs-fig13.png)
