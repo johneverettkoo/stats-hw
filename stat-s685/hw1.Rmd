@@ -1,0 +1,93 @@
+---
+title: 'HW1'
+author: 'John Koo'
+# output: pdf_document
+output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+# 2.1
+
+$f(x) = 100 (x_2 - x_1^2)^2 + (1 - x_1)^2$
+
+Then taking the partial derivatives w.r.t. each variable,  
+$\partial_{x_1} f = 100 * (-2) * (x_2 - x_1^2) * (-2x_1) - 2 (1 - x_1)$ 
+$= 400 x_1 (x_1^2 - x_2) + 2 (x_1 - 1)$  
+$\partial_{x_2} f = 200 (x_2 - x_1^2)$
+
+Then the gradient is:  
+$\nabla f(x) = \begin{bmatrix}
+  400 x_1 (x_1^2 - x_2) + 2 (x_1 - 1) \\
+  200 (x_2 - x_1^2)
+\end{bmatrix}$
+
+Taking the partials of the partials w.r.t. each variable,  
+$\partial_{x_1}^2 f = 400 x_1 * 2 x_1 + 400 (x_1^2 - x_2) + 2$
+$= 400 (3 x_1^2 - x_2) + 2$  
+$\partial_{x_2}^2 f = 200$  
+$\partial_{x_1} \partial_{x_2} f = -400 x_1$
+
+Then the Hessian is:
+
+$\nabla \times \nabla f(x) = \begin{bmatrix}
+  400 (3 x_1^2 - x_2) + 2 & -400 x_1 \\
+  -400 x_1 & 200
+\end{bmatrix}$
+
+We can see that the point $\begin{bmatrix} 1 \\ 1 \end{bmatrix}$ is a local 
+minimizer since at that point, the gradient is $0$ and the determinant of 
+the Hessian at this point is positive. 
+
+Checking for other critical points reveals that the only other point for which 
+the partial derivative w.r.t. $x_2$ is $0$ is 
+$\begin{bmatrix} \pm \sqrt{y}  \\ y \end{bmatrix}$ for $y \geq 0$. Plugging 
+this into the partial derivative w.r.t $x_1$ and equating to $0$ yields 
+$\pm \sqrt{y} = 1$, which reveals that the only critical point is 
+$\begin{bmatrix} 1 \\ 1 \end{bmatrix}$.
+
+# 2.3
+
+$\nabla f_1(x) = a$  
+$\nabla \times \nabla f_1(x) = 0_{n \times n}$
+
+$\nabla f_2(x) = \nabla \sum_i \sum_j A_{ij} x_i x_j$.  
+We can see that 
+$\partial_{x_k} \sum_i \sum_j A_{ij} x_i x_j = 
+\sum_i A_{ik} x_i + \sum_i A_{ki} x_i$.
+Since $A$ is symmetric, we can combine these into $2 \sum_i A_{ik} x_i = 2 A x$.
+
+Then the Hessian is simply 
+$\nabla 2 A x = 2 A$.
+
+# 2.7
+
+Plugging $f$ into the expression in (1.4), we get:
+
+$f(y + \alpha (x - y)) - \alpha f(x) - (1 - \alpha) f(y)$  
+$\begin{split}
+  = & y^\top Q y + \alpha y^\top Q x - \alpha y^\top Q y \\
+  & + \alpha x^\top Q y + \alpha^2 x^\top Q x - \alpha^2 x^\top Q y \\
+  & - \alpha y^\top Q y - \alpha^2 y^\top Q x + \alpha^2 y^top Q y \\
+  & - \alpha x^\top Q x - y^\top Q y + \alpha y^\top Q y \\
+  = & 2 \alpha y^\top Q x - \alpha y^\top Q y - \alpha x^\top Q x \\
+  & + \alpha^2 x^\top Q x - 2 \alpha^2 x^\top Q y + \alpha^2 y^\top Q y \\
+  = & \alpha (\alpha - 1) ((x - y)^\top Q (x - y))
+\end{split}$  
+We can see that this expression cannot be positive since $\alpha \geq 0$, 
+$\alpha - 1 \leq 0$, and $(x - y)^\top Q (x - y) \geq 0$.
+
+# 2.8
+
+Let $S$ be the set of global minimizers of $f$. Let $x, y \in S$. Since $f$ 
+is convex, $\forall \alpha \in [0, 1]$, 
+$f(\alpha x + (1 - \alpha) y) \leq \alpha f(x) + (1 - \alpha) f(y)$.  
+Since $x$ and $y$ are global minimizers, $f(x) = f(y)$, so the right side 
+becomes $f(x)$ (or $f(y)$).  
+Therefore, $f(\alpha x + (1 - \alpha) y) = f(x)$ (equality since $x$ is a 
+global minimizer). Therefore, $\alpha x + (1 - \alpha) y$ is also a global 
+minimizer $\forall \alpha \in [0, 1]$, i.e., it is in $S$. Therefore, $S$ is a 
+convex set.
