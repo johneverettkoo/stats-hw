@@ -71,7 +71,7 @@ $f(y + \alpha (x - y)) - \alpha f(x) - (1 - \alpha) f(y)$
 $\begin{split}
   = & y^\top Q y + \alpha y^\top Q x - \alpha y^\top Q y \\
   & + \alpha x^\top Q y + \alpha^2 x^\top Q x - \alpha^2 x^\top Q y \\
-  & - \alpha y^\top Q y - \alpha^2 y^\top Q x + \alpha^2 y^top Q y \\
+  & - \alpha y^\top Q y - \alpha^2 y^\top Q x + \alpha^2 y^\top Q y \\
   & - \alpha x^\top Q x - y^\top Q y + \alpha y^\top Q y \\
   = & 2 \alpha y^\top Q x - \alpha y^\top Q y - \alpha x^\top Q x \\
   & + \alpha^2 x^\top Q x - 2 \alpha^2 x^\top Q y + \alpha^2 y^\top Q y \\
