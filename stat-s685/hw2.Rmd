@@ -48,7 +48,8 @@ rosenbrock.hess <- function(x) {
 backtrack <- function(fn, grad.fn, hess.fn, 
                       x.start, 
                       method = 'newton', 
-                      alpha = 1, rho = .5, c. = .5,
+                      backtrack = TRUE,
+                      alpha = 1, rho = .5, c. = 1e-4,
                       eps = 1e-9,
                       maxit = 1000) {
   x <- x.start
@@ -61,12 +62,15 @@ backtrack <- function(fn, grad.fn, hess.fn,
     grad <- grad.fn(x)
     if (method == 'newton') {
       hess <- hess.fn(x)
-      p <- -as.numeric(solve(hess) %*% grad)
+      # p <- -as.numeric(solve(hess) %*% grad)
+      p <- as.numeric(solve(hess, -grad))
     } else {
       p <- -grad
     }
-    while (fn(x + a * p) > fn(x) + c. * a * as.numeric(t(grad) %*% p)) {
-      a <- rho * a
+    if (backtrack) {
+      while (fn(x + a * p) > fn(x) + c. * a * as.numeric(t(grad) %*% p)) {
+        a <- rho * a
+      }
     }
     print(paste('step length:', a))
     x <- x + a * p
@@ -88,4 +92,11 @@ x <- backtrack(rosenbrock, rosenbrock.grad, rosenbrock.hess, c(1.2, 1.2),
                method = 'steepest descent')
 x <- backtrack(rosenbrock, rosenbrock.grad, rosenbrock.hess, c(-1.2, 1),
                method = 'steepest descent')
+```
+
+```{r}
+x <- backtrack(rosenbrock, rosenbrock.grad, rosenbrock.hess, c(-1.2, 1),
+               backtrack = FALSE)
+# x <- backtrack(rosenbrock, rosenbrock.grad, rosenbrock.hess, c(-1.2, 1),
+#                method = 'steepest descent', backtrack = FALSE)
 ```
