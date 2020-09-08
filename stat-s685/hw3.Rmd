@@ -184,6 +184,18 @@ stress.grad <- function(X, Delta) {
 ```
 
 ```{r}
+transform.2D <- function(X) {
+  origin <- X[1, ]
+  X <- X - origin
+  angle <- atan2(X[2, 2], X[2, 1]) + pi / 2
+  rot.mat <- matrix(c(cos(angle), sin(angle), -sin(angle), cos(angle)),
+                    nrow = 2, ncol = 2)
+  X <- X %*% rot.mat
+  return(X)
+}
+```
+
+```{r}
 Delta <- as.matrix(read.table(
   'https://mtrosset.pages.iu.edu/Courses/675/congress.dat'))
 X <- cmdscale(Delta, 2)
@@ -206,6 +218,6 @@ stress(Y, Delta)
 ```
 
 ```{r}
-plot(out$x)
-points(Y, col = 2, pch = 3)
+plot(transform.2D(out$x), xlim = c(-15, 5), ylim = c(-20, 15))
+points(transform.2D(Y), col = 2, pch = 3)
 ```
