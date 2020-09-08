@@ -186,7 +186,7 @@ stress.grad <- function(X, Delta) {
 ```{r}
 transform.2D <- function(X) {
   origin <- X[1, ]
-  X <- X - origin
+  X <- sweep(X, 1, origin, `-`)
   angle <- atan2(X[2, 2], X[2, 1]) + pi / 2
   rot.mat <- matrix(c(cos(angle), sin(angle), -sin(angle), cos(angle)),
                     nrow = 2, ncol = 2)

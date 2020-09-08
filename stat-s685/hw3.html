@@ -510,7 +510,7 @@ stress.grad &lt;- function(X, Delta) {
 }</code></pre>
 <pre class="r"><code>transform.2D &lt;- function(X) {
   origin &lt;- X[1, ]
-  X &lt;- X - origin
+  X &lt;- sweep(X, 1, origin, `-`)
   angle &lt;- atan2(X[2, 2], X[2, 1]) + pi / 2
   rot.mat &lt;- matrix(c(cos(angle), sin(angle), -sin(angle), cos(angle)),
                     nrow = 2, ncol = 2)
