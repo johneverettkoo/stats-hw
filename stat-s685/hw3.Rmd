@@ -1,0 +1,211 @@
+---
+title: 'HW3'
+author: 'John Koo'
+# output: pdf_document
+output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+```
+
+```{r}
+phi <- function(alpha, fn, x, p, ...) {
+  fn(x + alpha * p, ...)
+}
+
+phi.prime <- function(alpha, grad.fn, x, p, ...) {
+  as.numeric(t(grad.fn(x + alpha * p, ...)) %*% p)
+}
+```
+
+```{r}
+chol.mod <- function(A, beta = 1e-3) {
+  # algorithm 3.3
+  n <- nrow(A)
+  min.a <- min(diag(A))
+  if (min.a > 0) {
+    tau <- 0 
+  } else {
+    tau <- -min.a + beta
+  } 
+  L <- NULL
+  while (is.null(L)) {
+    tryCatch(
+      L <- chol(A + tau * diag(n)),
+      error = function(e) {}
+    )
+    tau <- max(2 * tau, beta)
+  }
+  return(A + tau * diag(n))
+}
+```
+
+```{r}
+zoom <- function(alpha.hi, alpha.lo, n.steps = 1e2) {
+  while (TRUE) {
+    
+  }
+}
+```
+
+```{r}
+linesearch <- function(fn, grad.fn, hess.fn = NULL, 
+                       x.start, 
+                       method = 'newton', 
+                       step.size = 'fixed',
+                       alpha = 1, rho = .5, c1 = 1e-4,
+                       c2 = .5, 
+                       alpha.max = 2, 
+                       beta = 1e-3, 
+                       eps = 1e-3,
+                       maxit = 1000, 
+                       ...) {
+  x <- x.start
+  x.prev <- x + 1
+  x.hist <- rep(NA, maxit)  # fix
+  f.val.hist <- rep(NA, maxit)
+  iter <- 0
+  while (sum((grad.fn(x, ...)) ** 2) > eps) {
+    iter <- iter + 1
+    x.prev <- x
+    a <- alpha
+    grad <- grad.fn(x, ...)
+    if (method == 'newton') {
+      hess <- hess.fn(x, ...)
+      p <- as.numeric(solve(hess, -grad))
+    } else if (method == 'steepest') {
+      p <- -grad
+    } else if (method == 'cholesky diagonalization') {
+      hess <- hess.fn(x, ...)
+      A <- chol.mod(hess, beta)
+      p <- as.numeric(solve(A, -grad))
+    }
+    if (step.size == 'backtrack') {
+      while (fn(x + a * p, ...) > 
+             fn(x, ...) + c1 * a * as.numeric(t(grad) %*% p)) {
+        a <- rho * a
+      }
+    } else if (step.size == 'interpolation') {
+      alpha.prev <- 0
+      phi.alpha <- phi(alpha, fn, x, p, ...)
+      while (TRUE) {
+        phi.alpha <- phi(alpha, fn, x, p, ...)
+        if (phi.alpha > 
+            phi(0, fn, x, p, ...) + 
+            c1 * alpha * phi.prime(0, grad.fn, x, p, ...)) {
+          alpha <- zoom(alpha.prev, alpha)
+          break
+        }
+        phi.prime.alpha <- phi.prime(alpha, grad.fn, x, p, ...)
+        if (abs(phi.prime.alpha) <= -c2 * phi.prime(0, grad.fn, x, p, ...)) {
+          break
+        }
+        if (phi.prime(0, grad.fn, x, p, ...) >= 0) {
+          alpha <- zoom(alpha, alpha.prev)
+          break
+        }
+        alpha.prev <- alpha
+        alpha <- (alpha + alpha.max) / 2
+      }
+    }
+    x <- x + a * p
+    x.hist[iter] <- x
+    f.val.hist[iter] <- fn(x, ...)
+    if (iter >= maxit) {
+      warning('failed to converge')
+      break
+    }
+  }
+  return(list(x = x,
+              niter = iter,
+              x.hist = x.hist[!is.na(x.hist)],
+              f.val.hist = f.val.hist[!is.na(f.val.hist)]))
+}
+```
+
+```{r}
+rosenbrock <- function(x) {
+  100 * (x[2] - x[1] ** 2) ** 2 + (1 - x[1]) ** 2
+}
+
+rosenbrock.grad <- function(x) {
+  c(400 * x[1] * (x[1] ** 2 - x[2]) + 2 * (x[1] - 1),
+    200 * (x[2] - x[1] ** 2))
+}
+
+rosenbrock.hess <- function(x) {
+  matrix(c(400 * (3 * x[1] ** 2 - x[2]) + 2, 
+           -400 * x[1],
+           -400 * x[1],
+           200),
+         nrow = 2, ncol = 2)
+}
+```
+
+```{r}
+stress <- function(X, Delta) {
+  Dist <- dist(X)
+  Delta <- as.dist(Delta)
+  return(sum((Dist - Delta) ** 2))
+}
+
+stress.grad <- function(X, Delta) {
+  n <- nrow(X)
+  p <- ncol(X)
+  gradient <- X
+  D <- as.matrix(dist(X))
+  for (i in seq(n)) {
+    ratios <- Delta[i, ] / D[i, ]
+    ratios[is.nan(ratios)] <- 1
+    for (j in seq(p)) {
+      gradient[i, j] <- 2 * sum(X[i, j] - X[, j]) + 
+        2 * sum(ratios * (X[i, j] - X[, j]))
+    }
+  }
+  return(gradient)
+}
+```
+
+```{r}
+Delta <- as.matrix(read.table(
+  'https://mtrosset.pages.iu.edu/Courses/675/congress.dat'))
+X <- cmdscale(Delta, 2)
+```
+
+```{r}
+out <- linesearch(stress, stress.grad, x.start = X, 
+                  Delta = Delta, 
+                  method = 'steepest', 
+                  step.size = 'backtrack',
+                  alpha = 1)
+
+stress(out$x, Delta)
+```
+
+```{r}
+source('https://mtrosset.pages.iu.edu/Courses/675/stress.r')
+Y <- mds.gma(X, Delta, matrix(1, nrow = nrow(X), ncol = nrow(X)))
+stress(Y, Delta)
+```
+
+```{r}
+plot(out$x)
+points(Y, col = 2, pch = 3)
+```
