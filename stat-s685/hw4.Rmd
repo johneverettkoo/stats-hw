@@ -1,0 +1,287 @@
+---
+title: 'HW4'
+author: 'John Koo'
+# output: pdf_document
+output: html_document
+# geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
+urlcolor: blue
+header-includes:
+- \usepackage{float}
+- \usepackage{mathtools}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      comment = NA, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      fig.pos = 'H', 
+                      fig.align = 'center', 
+                      fig.height = 4, 
+                      fig.width = 6, 
+                      fig.dpi = 300)
+
+options(xtable.comment = FALSE, 
+        xtable.table.placement = 'H')
+
+library(ggplot2)
+import::from(magrittr, `%>%`)
+
+theme_set(theme_bw())
+
+set.seed(314159)
+```
+
+# 4.1
+
+```{r}
+x1 <- seq(-2, 2, .1)
+x2 <- seq(-2, 2, .1)
+deltas <- seq(.1, 2, .1)
+
+f <- function(x1, x2) 10 * (x2 - x1 ** 2) ** 2 + (1 - x1) ** 2
+g <- function(x1, x2) {
+  c(40 * x1 * (x1 ** 2 - x2) + 2 * (x1 - 1),
+    20 * (x2 - x1 ** 2))
+}
+B <- function(x1, x2) {
+  matrix(c(40 * (3 * x1 ** 2 - x2) + 2, -40, -40, 20),
+         nrow = 2, ncol = 2)
+}
+
+cauchy <- function(x1, x2, Delta) {
+  f.k <- f(x1, x2)
+  g.k <- g(x1, x2)
+  B.k <- B(x1, x2)
+  
+  g.k.norm <- sqrt(sum(g.k ** 2))
+  gBg <- as.numeric(t(g.k) %*% B.k %*% g.k)
+  
+  if (gBg <= 0) {
+    tau <- 1
+  } else {
+    tau <- min(g.k.norm ** 3 / Delta / gBg, 1)
+  }
+  
+  return(-tau * Delta / g.k.norm * g.k)
+}
+
+solutions.1.df <- sapply(deltas, function(d) cauchy(0, -1, d)) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(Delta = deltas, x1 = V1, x2 = V2)
+
+solutions.2.df <- sapply(deltas, function(d) cauchy(0, .5, d)) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  dplyr::transmute(Delta = deltas, x1 = V1, x2 = V2)
+
+main.plot <- expand.grid(x1 = x1, x2 = x2) %>% 
+  dplyr::mutate(y = f(x1, x2)) %>% 
+  ggplot() + 
+  coord_fixed() + 
+  viridis::scale_fill_viridis() + 
+  geom_tile(aes(x = x1, y = x2, fill = y)) + 
+  geom_contour(aes(x = x1, y = x2, z = y),
+               colour = 'black') + 
+  scale_x_continuous(expand = c(0, 0)) + 
+  scale_y_continuous(expand = c(0, 0)) + 
+  labs(x = expression(x[1]), y = expression(x[2]),
+       fill = NULL)
+
+main.plot + 
+  geom_point(data = solutions.1.df, 
+            aes(x = x1, y = x2, colour = Delta)) + 
+  ggtitle('solutions at point (0, -1)') + 
+  scale_colour_gradient2(low = 'blue', mid = 'white', high = 'red',
+                         midpoint = 1)
+
+main.plot + 
+  geom_point(data = solutions.2.df, 
+            aes(x = x1, y = x2, colour = Delta)) + 
+  ggtitle('solutions at point (0, .5)') + 
+  scale_colour_gradient2(low = 'blue', mid = 'white', high = 'red',
+                         midpoint = 1)
+```
+
+# 4.3
+
+(Assuming 7.2 should be 4.1)
+
+```{r}
+f <- function(x) {
+  n <- length(x) / 2
+  sapply(seq(n), function(i) {
+    (1 - x[2 * i - 1]) ** 2 + 10 * (x[2 * i] - x[2 * i - 1] ** 2) ** 2
+  }) %>% 
+    sum()
+}
+g <- function(x) {
+  n <- length(x) / 2
+  out <- rep(NA, 2 * n)
+  for (i in seq(n)) {
+    out[2 * i - 1] <- 
+      40 * x[2 * i - 1] * (x[2 * i - 1] ** 2 - x[2 * i]) + 
+      2 * (x[2 * i - 1] - 1)
+    out[2 * i] <- 20 * (x[2 * i] - x[2 * i - 1] ** 2)
+  }
+  return(out)
+}
+B <- function(x) {
+  n <- length(x) / 2
+  out <- matrix(0, nrow = 2 * n, ncol = 2 * n)
+  for (i in seq(n)) {
+    out[2 * i - 1, 2 * i - 1] <- 40 * (3 * x[2 * i - 1] ** 2 + x[2 * i]) + 2
+    out[2 * i, 2 * i] <- 20
+    out[2 * i - 1, 2 * i] <- -40
+    out[2 * i, 2 * i - 1] <- -40
+  }
+  return(out)
+}
+```
+
+```{r}
+m <- function(p, x, f, g, B, ...) {
+  f(x, ...) + t(g(x, ...)) %*% p + .5 * t(p) %*% B(x, ...) %*% p
+}
+
+rho <- function(x, p, f, g, B, ...) {
+  z <- rep(0, length(x))
+  (f(x, ...) - f(x + p, ...)) / (m(z, x, f, g, B, ...) - m(p, x, f, g, B, ...))
+}
+
+trust.region <- function(f, g, B, 
+                         x0, 
+                         method = 'dogleg', 
+                         Delta.hat = .01,
+                         Delta0 = .001, 
+                         eta = .1,
+                         maxiter = 1e3,
+                         eps = 1e-4, 
+                         ...) {
+  x <- x0
+  Delta <- Delta0
+  
+  function.vals <- rep(NA, maxiter)
+  
+  iter <- 0
+  
+  while (sum(g(x) ** 2) > eps) {
+    iter <- iter + 1
+    if (iter > maxiter) {
+      warning('failed to converge')
+      break
+    }
+    
+    g.k <- g(x, ...)
+    g.k.norm <- sqrt(sum(g.k ** 2))
+    B.k <- B(x, ...)
+    
+    # 4.12
+    tau <- ifelse(t(g.k) %*% B.k %*% g.k <= 0, 
+                  1, 
+                  min(g.k.norm ** 3 / (Delta * t(g.k) %*% B.k %*% g.k), 1))
+    tau <- as.numeric(tau)
+    
+    if (method == '4.2') {
+      # 4.11
+      p <- -tau * Delta / g.k.norm * g.k
+    } else if (method == 'dogleg') {
+      # 4.16
+      p.U <- -as.numeric(g.k.norm ** 2 / (t(g.k) %*% B.k %*% g.k)) * g.k
+      p.B <- -solve(B.k, g.k)
+      if (tau <= 1) {
+        p <- tau * p.U
+      } else {
+        p <- p.U + (tau - 1) * (p.B - p.U)
+      }
+    }
+    
+    # 4.4
+    rho.k <- as.numeric(rho(x, p, f, g, B, ...))
+    
+    # pg 69
+    if (rho.k < .25) {
+      Delta <- .25 * Delta
+    } else {
+      if ((rho.k > .75) & (sum(p ** 2) == Delta ** 2)) {
+        Delta <- min(2 * Delta, Delta.hat)
+      }
+    }
+    
+    if (rho.k > eta) {
+      x <- x + p
+    }
+    function.vals[iter] <- f(x, ...)
+  }
+  
+  function.vals <- function.vals[!is.na(function.vals)]
+  
+  return(list(x = x, 
+              function.vals = function.vals))
+}
+```
+
+```{r}
+# x.start <- runif(20, -2, 2)
+x.start <- rnorm(20, 1, .1)
+# x.start <- rep(1.2, 20)
+out <- trust.region(f, g, B, x.start)
+summary(out$x)
+f(out$x)
+sum(g(out$x) ** 2)
+plot(out$function.vals)
+plot(log(out$function.vals))
+```
+
+```{r}
+# x.start <- runif(50, -2, 2)
+x.start <- rnorm(50, 1, .1)
+# x.start <- rep(1.2, 50)
+out <- trust.region(f, g, B, x.start)
+summary(out$x)
+f(out$x)
+sum(g(out$x) ** 2)
+plot(out$function.vals)
+plot(log(out$function.vals))
+```
+
+# 4.4
+
+Since $x$ is bounded in set $\mathcal{B}$ and $\lim \inf ||g_k|| = 0$, there 
+exists a subsequence $||g_{k_j}||$ that is monotone decreasing to $0$. 
+$g_k = g(x_k)$ (and $g$ is continuous), so there must be an accompanying 
+subsequence $\{x_{k_j}\}$ such that $||g(x_{k_j})|| \to 0$.
+
+# 4.5
+
+$m_k(-\tau \frac{\Delta_k}{||g_k||} g_k)$
+$= f_k + g_k^\top (-\tau \frac{\Delta_k}{||g_k||} g_k) + 
+\frac{1}{2} \frac{\Delta_k^2 g_k^\top B_k g_k}{||g_k||^2} \tau^2$
+
+To minimize w.r.t. $\tau$:  
+$\partial_\tau m_k = 
+-\Delta_k ||g_k|| + \frac{\Delta_k^2 g_k^\top B_k g_k}{||g_k||^2} \tau = 0$  
+$\rightarrow \tau = \frac{||g_k||^3}{\Delta_k g_k^\top B_k g_k}$
+
+# 4.6
+
+By matching, we can say $u = \frac{B g}{\sqrt{g^\top B g}}$ and 
+$v = \frac{B^{-1} g}{\sqrt{g^\top B^{-1} g}}$. Then 
+$(u^\top u) (v^\top v) = 
+\frac{(g^\top B g) (g^\top B^{-1} g)}
+{\sqrt{(g^\top B g) (g^\top B g) (g^\top B^{-1} g) (g^\top B^{-1} g)}}$  
+$= \frac{(g^\top B g) (g^\top B^{-1} g)}
+{\sqrt{(g^\top B g)^2 (g^\top B^{-1} g)^2}}$  
+$= 1$
+
+# 4.9
+
+# 4.10
+
+Since $B$ is symmetric, it can be decomposed as $B = V D V^\top$ where 
+$V V^\top = I$ and $D$ is a diagonal matrix. Then we can write 
+$\lambda I = V \Lambda I$ where $\Lambda = diag_n(\lambda)$. So 
+$B + \lambda I = V (D + \Lambda) V^\top$ where $D_{ii} + \lambda$ are the
+eigenvalues of $B + \lambda I$. Setting a large enough $\lambda$ will then 
+ensure that $D_{ii} + \lambda > 0$ $\forall i$.
