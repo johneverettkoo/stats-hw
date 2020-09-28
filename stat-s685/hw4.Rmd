@@ -1,8 +1,8 @@
 ---
 title: 'HW4'
 author: 'John Koo'
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 # geometry: "left=1cm,right=1cm,top=1cm,bottom=1.5cm"
 urlcolor: blue
 header-includes:
@@ -224,9 +224,9 @@ trust.region <- function(f, g, B,
 
 ```{r}
 # x.start <- runif(20, -2, 2)
-x.start <- rnorm(20, 1, .1)
+x.start <- rnorm(20, 1, .5)
 # x.start <- rep(1.2, 20)
-out <- trust.region(f, g, B, x.start)
+out <- trust.region(f, g, B, x.start, method = '4.2')
 summary(out$x)
 f(out$x)
 sum(g(out$x) ** 2)
@@ -236,9 +236,9 @@ plot(log(out$function.vals))
 
 ```{r}
 # x.start <- runif(50, -2, 2)
-x.start <- rnorm(50, 1, .1)
+x.start <- rnorm(50, 1, .5)
 # x.start <- rep(1.2, 50)
-out <- trust.region(f, g, B, x.start)
+out <- trust.region(f, g, B, x.start, method = '4.2')
 summary(out$x)
 f(out$x)
 sum(g(out$x) ** 2)
@@ -248,8 +248,8 @@ plot(log(out$function.vals))
 
 # 4.4
 
-Since $x$ is bounded in set $\mathcal{B}$ and $\lim \inf ||g_k|| = 0$, there 
-exists a subsequence $||g_{k_j}||$ that is monotone decreasing to $0$. 
+Since $\{x_k\}$ is bounded in set $\mathcal{B}$ and $\lim \inf ||g_k|| = 0$,
+there exists a subsequence $||g_{k_j}||$ that is monotone decreasing to $0$. 
 $g_k = g(x_k)$ (and $g$ is continuous), so there must be an accompanying 
 subsequence $\{x_{k_j}\}$ such that $||g(x_{k_j})|| \to 0$.
 
@@ -266,16 +266,31 @@ $\rightarrow \tau = \frac{||g_k||^3}{\Delta_k g_k^\top B_k g_k}$
 
 # 4.6
 
-By matching, we can say $u = \frac{B g}{\sqrt{g^\top B g}}$ and 
-$v = \frac{B^{-1} g}{\sqrt{g^\top B^{-1} g}}$. Then 
-$(u^\top u) (v^\top v) = 
+By matching, we can say $u = \frac{B^{1/2} g}{\sqrt{g^\top B g}}$ and 
+$v = \frac{B^{-1/2} g}{\sqrt{g^\top B^{-1} g}}$ to get the expression on the
+left-hand side.  
+Then the right hand side becomes $(u^\top u) (v^\top v) = 
 \frac{(g^\top B g) (g^\top B^{-1} g)}
-{\sqrt{(g^\top B g) (g^\top B g) (g^\top B^{-1} g) (g^\top B^{-1} g)}}$  
-$= \frac{(g^\top B g) (g^\top B^{-1} g)}
 {\sqrt{(g^\top B g)^2 (g^\top B^{-1} g)^2}}$  
 $= 1$
 
 # 4.9
+
+Since our solution must be in $span(g, B^{-1} g)$, we can write it in the 
+form $a g + b B^{-1} g$ where $a, b \in \mathbb{R}$.
+
+$m(a g + b B^{-1} g) = f + g^\top (a g + b B^{-1} g) + 
+\frac{1}{2} (a g + b B^{-1} g)^\top B (a g + b B^{-1} g)$  
+$= f + ||g||^2 a + g^\top B^{-1} g b + \frac{g^\top B g}{2} a^2 + ||g||^2 a b + \frac{g^\top B^{-1} g}{2} b^2$
+
+To minimize w.r.t. $a$ and $b$, we take the partial derivatives and set them 
+to 0 to obtain this system of linear equations:
+
+$\begin{bmatrix} 
+g^\top B g & ||g||^2 \\ ||g||^2 & (g^\top B^{-1} g) 
+\end{bmatrix} 
+\begin{bmatrix}a \\ b \end{bmatrix} = 
+\begin{bmatrix} -||g||^2 \\ -g^\top B^{-1} g \end{bmatrix}$
 
 # 4.10
 
