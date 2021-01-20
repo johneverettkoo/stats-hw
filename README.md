@@ -7,6 +7,7 @@
 * MATH-M463 (Probability Theory)
 * CSCI-B555 (Machine Learning) *removed per instructor's request*
 * CSCI-B561 (Advanced Database Concepts)
+* CSCI-B659 (Learning Theory and Graphical Models)
 * STAT-S620 (Statistical Theory)
 * STAT-S626 (Bayesian Statistics)
 * STAT-S631 (Linear Models I)
